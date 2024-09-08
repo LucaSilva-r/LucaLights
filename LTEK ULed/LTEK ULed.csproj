@@ -12,6 +12,7 @@
 
   <ItemGroup>
     <None Remove="Assets\arrow.png" />
+    <None Remove="Assets\bootstrap-icons.ttf" />
     <None Remove="Assets\reload.png" />
   </ItemGroup>
 
@@ -28,5 +29,11 @@
     <PackageReference Include="Semi.Avalonia.ColorPicker" Version="11.1.0.2" />
     <PackageReference Include="System.Configuration.ConfigurationManager" Version="8.0.0" />
     <PackageReference Include="System.IO.Ports" Version="8.0.0" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <Compile Update="Views\PadSettings.axaml.cs">
+      <DependentUpon>PadSettings.axaml</DependentUpon>
+    </Compile>
   </ItemGroup>
 </Project>

@@ -4,7 +4,12 @@
              xmlns:semi="https://irihi.tech/semi"
 			 RequestedThemeVariant="Default">
 
-		<Application.Styles>
-			<semi:SemiTheme/>
-		</Application.Styles>
+	<Application.Styles>
+		<semi:SemiTheme/>
+	</Application.Styles>
+	
+	<Application.Resources>
+		<FontFamily x:Key="BootstrapIcons">avares://LTEK ULed/Assets#bootstrap-icons</FontFamily>
+	</Application.Resources>
+	
 </Application>
