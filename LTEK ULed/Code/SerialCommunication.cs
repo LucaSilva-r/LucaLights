@@ -36,7 +36,7 @@ public static class SerialManager
 
     public static void Disconnect()
     {
-        run.Cancel();
+        run?.Cancel();
     }
 
     private class SerialPortThread

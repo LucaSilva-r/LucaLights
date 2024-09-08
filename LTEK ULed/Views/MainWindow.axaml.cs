@@ -17,6 +17,7 @@ public partial class MainWindow : Window
 
         PipeManager.Start();
         LightingManager.Start();
+
     }
 
     private void Button_Click(object? sender, Avalonia.Interactivity.RoutedEventArgs e)

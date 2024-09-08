@@ -17,7 +17,7 @@ namespace LTEK_ULed.Code
         private static PipeThread? _pipeThread;
         private static Thread? thread;
 
-        private static CancellationTokenSource run;
+        private static CancellationTokenSource run = new CancellationTokenSource();
 
         public static void Start()
         {
@@ -34,7 +34,6 @@ namespace LTEK_ULed.Code
         public static void Stop()
         {
             run?.Cancel();
-            thread?.Join();
         }
 
         public class PipeThread
@@ -63,6 +62,10 @@ namespace LTEK_ULed.Code
                     Thread.Sleep(100);
                 }
 
+                if (token.IsCancellationRequested) {
+                    pipe.Dispose();
+                    return;
+                }
                 try
                 {
                     pipe.EndWaitForConnection(result);
