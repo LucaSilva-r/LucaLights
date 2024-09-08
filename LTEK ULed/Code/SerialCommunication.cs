@@ -21,7 +21,7 @@ public static class SerialManager
     public static void Connect(string port)
     {
         run?.Cancel();
-        
+
         run = new CancellationTokenSource();
         _serialPortThread = new SerialPortThread(port, 576000, run.Token, LightingManager.leds);
 
@@ -34,7 +34,8 @@ public static class SerialManager
         thread.Start();
     }
 
-    public static void Disconnect() {
+    public static void Disconnect()
+    {
         run.Cancel();
     }
 
@@ -60,10 +61,16 @@ public static class SerialManager
             SerialPort mySerialPort = new SerialPort(port, baud);
             mySerialPort.DtrEnable = true;
             mySerialPort.RtsEnable = true;
+            mySerialPort.ReadTimeout = 1000;
             mySerialPort.Open();
             connected = true;
 
-            while (!token.IsCancellationRequested && mySerialPort.ReadByte() < 0) ;
+            string result = "";
+
+            while (!token.IsCancellationRequested && !result.Contains("1093484567786")) {
+                result = mySerialPort.ReadLine();
+            }
+            Debug.WriteLine("Pad connected");
 
             while (!token.IsCancellationRequested)
             {
@@ -74,6 +81,10 @@ public static class SerialManager
                     data[i * 3 + 2] = leds[i].B;
                 }
                 mySerialPort.Write(data, 0, data.Length);
+                if (mySerialPort.ReadByte() < 0) 
+                {
+                    Debug.WriteLine("Read timeout!");
+                }
             }
             mySerialPort.Dispose();
 
