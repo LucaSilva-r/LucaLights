@@ -32,7 +32,7 @@ public partial class App : Application
             desktop.MainWindow.Closed += (sender, e) =>
             {
                 LightingManager.Stop();
-                SerialManager.Disconnect();
+                DDPStreamer.Disconnect();
                 PipeManager.Stop();
                 desktop.Shutdown();
             };

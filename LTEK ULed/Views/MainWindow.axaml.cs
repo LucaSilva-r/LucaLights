@@ -26,11 +26,11 @@ public partial class MainWindow : Window
 
     private void ConnectSerial(object? sender, Avalonia.Interactivity.RoutedEventArgs e)
     {
-        if (!SerialManager.connected)
+        if (!DDPStreamer.connected)
         {
             if (serialComboBox.SelectedItem != null && serialComboBox.SelectedItem.GetType() == typeof(string))
             {
-                SerialManager.Connect((string)serialComboBox.SelectedItem);
+                DDPStreamer.Connect("192.168.1.84", 60);
                 serialConnect.Content = "Disconnect";
                 serialConnect.Classes.Add("Danger");
 
@@ -38,7 +38,8 @@ public partial class MainWindow : Window
         }
         else
         {
-            SerialManager.Disconnect();
+            DDPStreamer.Disconnect();
+
             serialConnect.Content = "Connect";
             serialConnect.Classes.Remove("Danger");
             serialConnect.IsEnabled = false;
