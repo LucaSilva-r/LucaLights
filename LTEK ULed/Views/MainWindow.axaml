@@ -17,20 +17,8 @@
 		</Grid.ColumnDefinitions>
 
 		<StackPanel VerticalAlignment="Center" Spacing="10">
-			<TextBlock Text="Choose Serial Port" HorizontalAlignment="Center" VerticalAlignment="Center"/>
-
-			<StackPanel Orientation="Horizontal" HorizontalAlignment="Center">
-				<ComboBox x:Name="serialComboBox" MinWidth="150" HorizontalAlignment="Center" SelectedIndex="0" MaxDropDownHeight="100">
-					<ComboBox.ItemTemplate>
-						<DataTemplate>
-							<TextBlock Text="{Binding}"/>
-						</DataTemplate>
-					</ComboBox.ItemTemplate>
-				</ComboBox>
-				<Button Width="30" Height="30" Padding="3" Click="RefreshSerial">
-					<Image Source="avares://LTEK ULed/Assets/reload.png"/>
-				</Button>
-			</StackPanel>
+			<TextBlock Text="Choose ip address" HorizontalAlignment="Center" VerticalAlignment="Center"/>
+			<TextBox x:Name="ipAddressTextBox" MaxWidth="200"></TextBox>
 
 			<Button x:Name="serialConnect" Content="Connect" Click="ConnectSerial" FontWeight="Bold"></Button>
 		</StackPanel>
