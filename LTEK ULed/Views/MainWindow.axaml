@@ -23,8 +23,8 @@
 			<Border Padding="10" BorderThickness="2" BorderBrush="{DynamicResource BackgroundBrush}">
 				<StackPanel>
 					<TextBlock Text="Status" FontSize="24" FontWeight="Bold"></TextBlock>
-
 					<StackPanel Orientation="Horizontal">
+						<!--Cabinet-->
 						<Border Padding="5" BorderThickness="1" BorderBrush="{DynamicResource BackgroundBrush}">
 							<StackPanel>
 								<TextBlock Text="Cabinet" HorizontalAlignment="Center" FontWeight="Bold">
@@ -45,71 +45,49 @@
 
 									</Grid.RowDefinitions>
 
-									<Button Grid.Column="0" Grid.Row="0">
-										<Button.Template>
-											<ControlTemplate>
-												<Rectangle
-													Fill="{Binding }"
-													Width="30"
-													Height="30"/>
-											</ControlTemplate>
-										</Button.Template>
-									</Button>
-									<Button Grid.Column="3" Grid.Row="0">
-										<Button.Template>
-											<ControlTemplate>
-												<Rectangle
-													Fill="{DynamicResource BackgroundBrush}"
-													Width="30"
-													Height="30"/>
-											</ControlTemplate>
-										</Button.Template>
-									</Button>
-									<Button Grid.Column="0" Grid.Row="2">
-										<Button.Template>
-											<ControlTemplate>
-												<Rectangle
-													Fill="{DynamicResource BackgroundBrush}"
-													Width="30"
-													Height="30"/>
-											</ControlTemplate>
-										</Button.Template>
-									</Button>
-									<Button Grid.Column="3" Grid.Row="2">
-										<Button.Template>
-											<ControlTemplate>
-												<Rectangle
-													Fill="{DynamicResource BackgroundBrush}"
-													Width="30"
-													Height="30"/>
-											</ControlTemplate>
-										</Button.Template>
-									</Button>
-									<Button Grid.Column="0" Grid.Row="3" Grid.RowSpan="2">
-										<Button.Template>
-											<ControlTemplate>
-												<Rectangle
-													Fill="{DynamicResource BackgroundBrush}"
-													Width="30"
-													Height="60"/>
-											</ControlTemplate>
-										</Button.Template>
-									</Button>
-									<Button Grid.Column="3" Grid.Row="3" Grid.RowSpan="2">
-										<Button.Template>
-											<ControlTemplate>
-												<Rectangle
-													Fill="{DynamicResource BackgroundBrush}"
-													Width="30"
-													Height="60"/>
-											</ControlTemplate>
-										</Button.Template>
-									</Button>
+									<Rectangle
+										
+										x:Name="mUpLeft"
+										Grid.Column="0" Grid.Row="0"
+										Fill="{DynamicResource BackgroundBrush}"
+										Width="30"
+										Height="30"/>
+									<Rectangle
+										x:Name="mUpRight"
+										Grid.Column="3" Grid.Row="0"
+										Fill="{DynamicResource BackgroundBrush}"
+										Width="30"
+										Height="30"/>
+									<Rectangle
+										x:Name="mDownLeft"
+										Grid.Column="0" Grid.Row="2"
+										Fill="{DynamicResource BackgroundBrush}"
+										Width="30"
+										Height="30"/>
+									<Rectangle
+										x:Name="mDownRight"
+										Grid.Column="3" Grid.Row="2"
+										Fill="{DynamicResource BackgroundBrush}"
+										Width="30"
+										Height="30"/>
+									<Rectangle
+										x:Name="bassLeft"
+										Grid.Column="0" Grid.Row="3" Grid.RowSpan="2"
+										Fill="{DynamicResource BackgroundBrush}"
+										Width="30"
+										Height="60"/>
+									<Rectangle
+										x:Name="bassRight"
+										Grid.Column="3" Grid.Row="3" Grid.RowSpan="2"
+										Fill="{DynamicResource BackgroundBrush}"
+										Width="30"
+										Height="60"/>
 								</Grid>
 							</StackPanel>
-
 						</Border>
-						<Border Padding="5" BorderThickness="1" BorderBrush="{DynamicResource BackgroundBrush}">
+
+						<!--Player 1-->
+						<Border  x:Name="player1" Padding="5" BorderThickness="1" BorderBrush="{DynamicResource BackgroundBrush}">
 							<StackPanel>
 								<TextBlock Text="Player 1" HorizontalAlignment="Center" FontWeight="Bold">
 								</TextBlock>
@@ -132,96 +110,61 @@
 										<RowDefinition Height="33"/>
 									</Grid.RowDefinitions>
 
-									<Button Grid.Column="0" Grid.Row="0">
-										<Button.Template>
-											<ControlTemplate>
-												<Rectangle
-													Fill="{DynamicResource BackgroundBrush}"
-													Width="30"
-													Height="30"/>											
-											</ControlTemplate>
-										</Button.Template>
-									</Button>
-									<Button Grid.Column="1" Grid.Row="0">
-										<Button.Template>
-											<ControlTemplate>
-												<Rectangle
-													Fill="{DynamicResource BackgroundBrush}"
-													Width="30"
-													Height="30"/>
-											</ControlTemplate>
-										</Button.Template>
-									</Button>
-									<Button Grid.Column="2" Grid.Row="0">
-										<Button.Template>
-											<ControlTemplate>
-												<Rectangle
-													Fill="{DynamicResource BackgroundBrush}"
-													Width="30"
-													Height="30"/>
-											</ControlTemplate>
-										</Button.Template>
-									</Button>
-									<Button Grid.Column="0" Grid.Row="1">
-										<Button.Template>
-											<ControlTemplate>
-												<Rectangle
-													Fill="{DynamicResource BackgroundBrush}"
-													Width="30"
-													Height="30"/>
-											</ControlTemplate>
-										</Button.Template>
-									</Button>
-									<Button Grid.Column="1" Grid.Row="1">
-										<Button.Template>
-											<ControlTemplate>
-												<Rectangle
-													Fill="{DynamicResource BackgroundBrush}"
-													Width="30"
-													Height="30"/>
-											</ControlTemplate>
-										</Button.Template>
-									</Button>
-									<Button Grid.Column="2" Grid.Row="1">
-										<Button.Template>
-											<ControlTemplate>
-												<Rectangle
-													Fill="{DynamicResource BackgroundBrush}"
-													Width="30"
-													Height="30"/>
-											</ControlTemplate>
-										</Button.Template>
-									</Button>
-									<Button Grid.Column="0" Grid.Row="2">
-										<Button.Template>
-											<ControlTemplate>
-												<Rectangle
-													Fill="{DynamicResource BackgroundBrush}"
-													Width="30"
-													Height="30"/>
-											</ControlTemplate>
-										</Button.Template>
-									</Button>
-									<Button Grid.Column="1" Grid.Row="2">
-										<Button.Template>
-											<ControlTemplate>
-												<Rectangle
-													Fill="{DynamicResource BackgroundBrush}"
-													Width="30"
-													Height="30"/>
-											</ControlTemplate>
-										</Button.Template>
-									</Button>
-									<Button Grid.Column="2" Grid.Row="2">
-										<Button.Template>
-											<ControlTemplate>
-												<Rectangle
-													Fill="{DynamicResource BackgroundBrush}"
-													Width="30"
-													Height="30"/>
-											</ControlTemplate>
-										</Button.Template>
-									</Button>
+
+									<Rectangle
+										Grid.Column="0" Grid.Row="0"
+										x:Name="r10"
+										Fill="{DynamicResource BackgroundBrush}"
+										Width="30"
+										Height="30"/>
+									<Rectangle
+										Grid.Column="1" Grid.Row="0"
+										x:Name="r11"
+										Fill="{DynamicResource BackgroundBrush}"
+										Width="30"
+										Height="30"/>
+									<Rectangle
+										Grid.Column="2" Grid.Row="0"
+										x:Name="r12"
+										Fill="{DynamicResource BackgroundBrush}"
+										Width="30"
+										Height="30"/>
+									<Rectangle
+										Grid.Column="0" Grid.Row="1"
+										x:Name="r13"
+										Fill="{DynamicResource BackgroundBrush}"
+										Width="30"
+										Height="30"/>
+									<Rectangle
+										Grid.Column="1" Grid.Row="1"
+										x:Name="r14"
+										Fill="{DynamicResource BackgroundBrush}"
+										Width="30"
+										Height="30"/>
+									<Rectangle
+										Grid.Column="2" Grid.Row="1"
+										x:Name="r15"
+										Fill="{DynamicResource BackgroundBrush}"
+										Width="30"
+										Height="30"/>
+									<Rectangle
+										Grid.Column="0" Grid.Row="2"
+										x:Name="r16"
+										Fill="{DynamicResource BackgroundBrush}"
+										Width="30"
+										Height="30"/>
+									<Rectangle
+										Grid.Column="1" Grid.Row="2"
+										x:Name="r17"
+										Fill="{DynamicResource BackgroundBrush}"
+										Width="30"
+										Height="30"/>
+									<Rectangle
+										Grid.Column="2" Grid.Row="2"
+										x:Name="r18"
+										Fill="{DynamicResource BackgroundBrush}"
+										Width="30"
+										Height="30"/>
 								</Grid>
 							</StackPanel>
 

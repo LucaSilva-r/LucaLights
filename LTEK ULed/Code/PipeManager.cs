@@ -86,11 +86,11 @@ namespace LTEK_ULed.Code
                 {
 
                     currentData = pipe.ReadByte();
-                    Debug.Write((char) currentData);
+                    //Debug.Write((char) currentData);
                     if (currentData == (byte)'\n')
                     {
                         counter = 0;
-                        Debug.WriteLine("");
+                        //Debug.WriteLine("");
                     }
                     else if (currentData != -1 && counter < buffer.Length)
                     {
