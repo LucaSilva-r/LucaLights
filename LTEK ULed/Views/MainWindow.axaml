@@ -7,7 +7,10 @@
         mc:Ignorable="d" d:DesignWidth="800" d:DesignHeight="450"
         x:Class="LTEK_ULed.Views.MainWindow"
         Icon="/Assets/avalonia-logo.ico"
-        Title="LTEK_ULed">
+        Title="LTEK_ULed"
+		MinHeight="720"
+		MinWidth="1280"
+		>
 
 
 	<Grid>
@@ -17,6 +20,216 @@
 		</Grid.ColumnDefinitions>
 
 		<StackPanel VerticalAlignment="Center" Spacing="10">
+			<Border Padding="10" BorderThickness="2" BorderBrush="{DynamicResource BackgroundBrush}">
+				<StackPanel>
+					<TextBlock Text="Status" FontSize="24" FontWeight="Bold"></TextBlock>
+
+					<StackPanel Orientation="Horizontal">
+						<Border Padding="5" BorderThickness="1" BorderBrush="{DynamicResource BackgroundBrush}">
+							<StackPanel>
+								<TextBlock Text="Cabinet" HorizontalAlignment="Center" FontWeight="Bold">
+								</TextBlock>
+								<Grid HorizontalAlignment="Center">
+									<Grid.ColumnDefinitions>
+										<ColumnDefinition Width="33"/>
+										<ColumnDefinition Width="32"/>
+										<ColumnDefinition Width="32"/>
+										<ColumnDefinition Width="33"/>
+									</Grid.ColumnDefinitions>
+									<Grid.RowDefinitions>
+										<RowDefinition Height="33"/>
+										<RowDefinition Height="32"/>
+										<RowDefinition Height="33"/>
+										<RowDefinition Height="33"/>
+										<RowDefinition Height="33"/>
+
+									</Grid.RowDefinitions>
+
+									<Button Grid.Column="0" Grid.Row="0">
+										<Button.Template>
+											<ControlTemplate>
+												<Rectangle
+													Fill="{Binding }"
+													Width="30"
+													Height="30"/>
+											</ControlTemplate>
+										</Button.Template>
+									</Button>
+									<Button Grid.Column="3" Grid.Row="0">
+										<Button.Template>
+											<ControlTemplate>
+												<Rectangle
+													Fill="{DynamicResource BackgroundBrush}"
+													Width="30"
+													Height="30"/>
+											</ControlTemplate>
+										</Button.Template>
+									</Button>
+									<Button Grid.Column="0" Grid.Row="2">
+										<Button.Template>
+											<ControlTemplate>
+												<Rectangle
+													Fill="{DynamicResource BackgroundBrush}"
+													Width="30"
+													Height="30"/>
+											</ControlTemplate>
+										</Button.Template>
+									</Button>
+									<Button Grid.Column="3" Grid.Row="2">
+										<Button.Template>
+											<ControlTemplate>
+												<Rectangle
+													Fill="{DynamicResource BackgroundBrush}"
+													Width="30"
+													Height="30"/>
+											</ControlTemplate>
+										</Button.Template>
+									</Button>
+									<Button Grid.Column="0" Grid.Row="3" Grid.RowSpan="2">
+										<Button.Template>
+											<ControlTemplate>
+												<Rectangle
+													Fill="{DynamicResource BackgroundBrush}"
+													Width="30"
+													Height="60"/>
+											</ControlTemplate>
+										</Button.Template>
+									</Button>
+									<Button Grid.Column="3" Grid.Row="3" Grid.RowSpan="2">
+										<Button.Template>
+											<ControlTemplate>
+												<Rectangle
+													Fill="{DynamicResource BackgroundBrush}"
+													Width="30"
+													Height="60"/>
+											</ControlTemplate>
+										</Button.Template>
+									</Button>
+								</Grid>
+							</StackPanel>
+
+						</Border>
+						<Border Padding="5" BorderThickness="1" BorderBrush="{DynamicResource BackgroundBrush}">
+							<StackPanel>
+								<TextBlock Text="Player 1" HorizontalAlignment="Center" FontWeight="Bold">
+								</TextBlock>
+								<TextBlock Text="Combo: ">
+									<TextBlock Text="100" FontWeight="Bold"></TextBlock>
+								</TextBlock>
+								<TextBlock Text="Precision: ">
+									<TextBlock Text="100" FontWeight="Bold"></TextBlock>
+									<TextBlock Text="%" FontWeight="Bold"></TextBlock>
+								</TextBlock>
+								<Grid HorizontalAlignment="Center">
+									<Grid.ColumnDefinitions>
+										<ColumnDefinition Width="33"/>
+										<ColumnDefinition Width="32"/>
+										<ColumnDefinition Width="33"/>
+									</Grid.ColumnDefinitions>
+									<Grid.RowDefinitions>
+										<RowDefinition Height="33"/>
+										<RowDefinition Height="32"/>
+										<RowDefinition Height="33"/>
+									</Grid.RowDefinitions>
+
+									<Button Grid.Column="0" Grid.Row="0">
+										<Button.Template>
+											<ControlTemplate>
+												<Rectangle
+													Fill="{DynamicResource BackgroundBrush}"
+													Width="30"
+													Height="30"/>											
+											</ControlTemplate>
+										</Button.Template>
+									</Button>
+									<Button Grid.Column="1" Grid.Row="0">
+										<Button.Template>
+											<ControlTemplate>
+												<Rectangle
+													Fill="{DynamicResource BackgroundBrush}"
+													Width="30"
+													Height="30"/>
+											</ControlTemplate>
+										</Button.Template>
+									</Button>
+									<Button Grid.Column="2" Grid.Row="0">
+										<Button.Template>
+											<ControlTemplate>
+												<Rectangle
+													Fill="{DynamicResource BackgroundBrush}"
+													Width="30"
+													Height="30"/>
+											</ControlTemplate>
+										</Button.Template>
+									</Button>
+									<Button Grid.Column="0" Grid.Row="1">
+										<Button.Template>
+											<ControlTemplate>
+												<Rectangle
+													Fill="{DynamicResource BackgroundBrush}"
+													Width="30"
+													Height="30"/>
+											</ControlTemplate>
+										</Button.Template>
+									</Button>
+									<Button Grid.Column="1" Grid.Row="1">
+										<Button.Template>
+											<ControlTemplate>
+												<Rectangle
+													Fill="{DynamicResource BackgroundBrush}"
+													Width="30"
+													Height="30"/>
+											</ControlTemplate>
+										</Button.Template>
+									</Button>
+									<Button Grid.Column="2" Grid.Row="1">
+										<Button.Template>
+											<ControlTemplate>
+												<Rectangle
+													Fill="{DynamicResource BackgroundBrush}"
+													Width="30"
+													Height="30"/>
+											</ControlTemplate>
+										</Button.Template>
+									</Button>
+									<Button Grid.Column="0" Grid.Row="2">
+										<Button.Template>
+											<ControlTemplate>
+												<Rectangle
+													Fill="{DynamicResource BackgroundBrush}"
+													Width="30"
+													Height="30"/>
+											</ControlTemplate>
+										</Button.Template>
+									</Button>
+									<Button Grid.Column="1" Grid.Row="2">
+										<Button.Template>
+											<ControlTemplate>
+												<Rectangle
+													Fill="{DynamicResource BackgroundBrush}"
+													Width="30"
+													Height="30"/>
+											</ControlTemplate>
+										</Button.Template>
+									</Button>
+									<Button Grid.Column="2" Grid.Row="2">
+										<Button.Template>
+											<ControlTemplate>
+												<Rectangle
+													Fill="{DynamicResource BackgroundBrush}"
+													Width="30"
+													Height="30"/>
+											</ControlTemplate>
+										</Button.Template>
+									</Button>
+								</Grid>
+							</StackPanel>
+
+						</Border>
+					</StackPanel>
+				</StackPanel>
+			</Border>
+
 			<TextBlock Text="Choose ip address" HorizontalAlignment="Center" VerticalAlignment="Center"/>
 			<TextBox x:Name="ipAddressTextBox" MaxWidth="200"></TextBox>
 
@@ -120,15 +333,29 @@
 						FontFamily="{StaticResource BootstrapIcons}"
 						Content="&#xF14D;"/>
 			</Grid>
-			
-			<Button Click="SettingsClicked" 
-					HorizontalAlignment="Right" 
-					Margin="20" 
-					CornerRadius="50" 
-					Width="50" Height="50" 
-					FontSize="20" 
-					FontFamily="{StaticResource BootstrapIcons}" 
+
+			<Button Click="SettingsClicked"
+					HorizontalAlignment="Right"
+					Margin="20"
+					CornerRadius="50"
+					Width="50" Height="50"
+					FontSize="20"
+					FontFamily="{StaticResource BootstrapIcons}"
 					Content="&#xF3E2;"/>
 		</StackPanel>
 	</Grid>
+
+
+	<Window.Resources>
+		<ResourceDictionary>
+			<ResourceDictionary.ThemeDictionaries>
+				<ResourceDictionary x:Key='Light'>
+					<SolidColorBrush x:Key='BackgroundBrush'>LightGray</SolidColorBrush>
+				</ResourceDictionary>
+				<ResourceDictionary x:Key='Dark'>
+					<SolidColorBrush x:Key='BackgroundBrush'>White</SolidColorBrush>
+				</ResourceDictionary>
+			</ResourceDictionary.ThemeDictionaries>
+		</ResourceDictionary>
+	</Window.Resources>
 </Window>

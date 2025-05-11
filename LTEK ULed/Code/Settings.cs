@@ -10,5 +10,6 @@ namespace LTEK_ULed.Code
     public class Settings
     {
         public string? ip { get; set; }
+        public List<string>? additionalIps { get; set; }
     }
 }

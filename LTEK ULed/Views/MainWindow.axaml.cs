@@ -9,6 +9,7 @@ using System.Text.RegularExpressions;
 using System.Text.Json;
 using System.Text.Json.Serialization;
 using System.Diagnostics;
+using Avalonia.Media;
 
 namespace LTEK_ULed.Views;
 
@@ -16,6 +17,7 @@ public partial class MainWindow : Window
 {
     FileInfo file;
     Settings settings = new Settings();
+    GameState gameState = GameState.gameState;
 
     public MainWindow()
     {

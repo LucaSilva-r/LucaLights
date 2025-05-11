@@ -86,24 +86,27 @@ namespace LTEK_ULed.Code
                 {
 
                     currentData = pipe.ReadByte();
-                    Debug.Write("," + currentData.ToString());
+                    Debug.Write((char) currentData);
                     if (currentData == (byte)'\n')
                     {
-                        Debug.WriteLine("  " + counter);
                         counter = 0;
+                        Debug.WriteLine("");
                     }
                     else if (currentData != -1 && counter < buffer.Length)
                     {
                         buffer[counter] = (byte)currentData;
+                        counter++;
                     }
                     if (counter == buffer.Length)
                     {
                         for (int i = 0; i < light_events.Length; i++)
                         {
                             light_events[i] = buffer[i];
+
                         }
+                        GameState.gameState.Parse(light_events);
+                        
                     }
-                    counter++;
                 }
                 if (!token.IsCancellationRequested)
                 {
