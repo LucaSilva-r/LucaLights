@@ -48,15 +48,15 @@ namespace LTEK_ULed.Code
 
         public static void Start()
         {
-            squares[0] = new Pad(4, SEGMENT_LEN, UP_OFFSET, UP);
-            squares[1] = new Pad(4, SEGMENT_LEN, LEFT_OFFSET, LEFT);
-            squares[2] = new Pad(4, SEGMENT_LEN, RIGHT_OFFSET, RIGHT);
-            squares[3] = new Pad(4, SEGMENT_LEN, DOWN_OFFSET, DOWN);
+            squares[0] = new Pad(4, SEGMENT_LEN, UP_OFFSET, GameButton.GAME_BUTTON_CUSTOM_03, CabinetLight.LIGHT_MARQUEE_UP_RIGHT);
+            squares[1] = new Pad(4, SEGMENT_LEN, LEFT_OFFSET, GameButton.GAME_BUTTON_CUSTOM_01, CabinetLight.LIGHT_MARQUEE_LR_LEFT);
+            squares[2] = new Pad(4, SEGMENT_LEN, RIGHT_OFFSET, GameButton.GAME_BUTTON_CUSTOM_02, CabinetLight.LIGHT_MARQUEE_UP_LEFT);
+            squares[3] = new Pad(4, SEGMENT_LEN, DOWN_OFFSET, GameButton.GAME_BUTTON_CUSTOM_04, CabinetLight.LIGHT_MARQUEE_LR_RIGHT);
 
             run?.Cancel();
 
             run = new CancellationTokenSource();
-            _lightThread = new LightThread(run.Token, PipeManager.light_events, leds, squares);
+            _lightThread = new LightThread(run.Token, leds, squares);
 
             thread = new Thread(new ThreadStart(_lightThread.Run));
             thread.Start();
@@ -75,8 +75,6 @@ namespace LTEK_ULed.Code
             float decreaseSpeed = 0.2f;
             float increaseSpeed = 0.5f;
 
-            byte[] light_events;
-
             Stopwatch animationGlobalTimer = new Stopwatch();
 
             CancellationToken token;
@@ -84,11 +82,10 @@ namespace LTEK_ULed.Code
             Color[] leds;
             Pad[] squares;
 
-            public LightThread(CancellationToken token, byte[] light_events, Color[] leds, Pad[] squares)
+            public LightThread(CancellationToken token, Color[] leds, Pad[] squares)
             {
                 this.token = token;
                 animationGlobalTimer.Start();
-                this.light_events = light_events;
                 this.leds = leds;
                 this.squares = squares;
             }
@@ -105,52 +102,62 @@ namespace LTEK_ULed.Code
                         {
                             leds[i] = Color.Black;
                         }
-                        ProcessVisual();
-                        ProcessInput();
+
+                        GameButton gameButton;
+                        CabinetLight cabinetLight;
+
+                        lock (GameState.gameState)
+                        {
+                            gameButton = GameState.gameState.state.gameButton;
+                            cabinetLight = GameState.gameState.state.cabinetLight;
+                        }
+
+                        ProcessVisual(cabinetLight);
+                        ProcessInput(gameButton);
                     }
                 }
                 Debug.WriteLine("LightThread Exited");
             }
 
-            void ProcessVisual()
+            void ProcessVisual(CabinetLight cabinetLight)
             {
-                foreach (Pad i in squares)
+                for (int i = 0; i < squares.Length; i++)
                 {
-                    if (IsBitSet(light_events[0], i.bitMask))
+                    if (cabinetLight.HasFlag(squares[i].cabinetLight))
                     {
-                        visualTimers[i.bitMask] = Math.Clamp(visualTimers[i.bitMask] + increaseSpeed, 0, 100);
-                        FillSquare(i.offset, i.segmentLen, i.nSegments, RainbowAnimation(animationGlobalTimer.ElapsedMilliseconds / 10f));
-
+                        visualTimers[i] = Math.Clamp(visualTimers[i] + increaseSpeed, 0, 100);
+                        FillSquare(squares[i].offset, squares[i].segmentLen, squares[i].nSegments, RainbowAnimation(animationGlobalTimer.ElapsedMilliseconds / 10f));
                     }
-                    else if (inputTimers[i.bitMask] > 1)
+                    else if (inputTimers[i] > 1)
                     {
-                        visualTimers[i.bitMask] = 1;
+                        visualTimers[i] = 1;
                     }
                     else
                     {
-                        visualTimers[i.bitMask] = Math.Clamp(visualTimers[i.bitMask] - decreaseSpeed, 0, 100);
+                        visualTimers[i] = Math.Clamp(visualTimers[i] - decreaseSpeed, 0, 100);
                     }
                 }
             }
 
-            void ProcessInput()
+            void ProcessInput(GameButton gameButton)
             {
-                foreach (Pad i in squares)
+
+                for (int i = 0; i < squares.Length; i++)
                 {
-                    if (IsBitSet(light_events[3], i.bitMask))
+                    if (gameButton.HasFlag(squares[i].gameButton))
                     {
-                        inputTimers[i.bitMask] = Math.Clamp(inputTimers[i.bitMask] + increaseSpeed, 0, 100); ; ;
+                        inputTimers[i] = Math.Clamp(inputTimers[i] + increaseSpeed, 0, 100); ; ;
                     }
-                    else if (inputTimers[i.bitMask] > 1)
+                    else if (inputTimers[i] > 1)
                     {
-                        inputTimers[i.bitMask] = 1;
+                        inputTimers[i] = 1;
                     }
                     else
                     {
-                        inputTimers[i.bitMask] = Math.Clamp(inputTimers[i.bitMask] - decreaseSpeed, 0, 100);
+                        inputTimers[i] = Math.Clamp(inputTimers[i] - decreaseSpeed, 0, 100);
                     }
 
-                    CollapsingAnimation(i.offset, i.segmentLen, i.nSegments, inputTimers[i.bitMask], FireAnimation(inputTimers[i.bitMask]));
+                    CollapsingAnimation(squares[i].offset, squares[i].segmentLen, squares[i].nSegments, inputTimers[i], FireAnimation(inputTimers[i]));
                 }
             }
 
@@ -202,7 +209,7 @@ namespace LTEK_ULed.Code
                 return Color.FromArgb((int)c.R, (int)c.G, (int)c.B);
             }
 
-            bool IsBitSet(byte b, int pos)
+            bool IsBitSet(int b, int pos)
             {
                 return (b & (1 << pos)) != 0;
             }
@@ -213,14 +220,17 @@ namespace LTEK_ULed.Code
             public int nSegments;
             public int segmentLen;
             public int offset;
-            public int bitMask;
+            public GameButton gameButton;
 
-            public Pad(int nSegments, int segmentLen, int offset, int bitMask)
+            public CabinetLight cabinetLight;
+
+            public Pad(int nSegments, int segmentLen, int offset, GameButton gameButton, CabinetLight cabinetLight)
             {
                 this.nSegments = nSegments;
                 this.segmentLen = segmentLen;
                 this.offset = offset;
-                this.bitMask = bitMask;
+                this.gameButton = gameButton;
+                this.cabinetLight = cabinetLight;
             }
         }
     }

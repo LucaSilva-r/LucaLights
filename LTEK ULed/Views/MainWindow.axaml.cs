@@ -59,19 +59,28 @@ public partial class MainWindow : Window
 
     public void UpdateUi()
     {
-        updatePad(p1Pad, true, gameState.state.gameButton);
 
-        updateCabinetLighting();
+        GameButton gameButton;
+        CabinetLight cabinetLight;
+
+        lock (gameState)
+        {
+            gameButton = gameState.state.gameButton;
+            cabinetLight = gameState.state.cabinetLight;
+        }
+
+        updatePad(true, gameButton);
+        updatePad(false, gameButton);
+
+        updateCabinetLighting(cabinetLight);
 
     }
 
-    private void updateCabinetLighting()
+    private void updateCabinetLighting(CabinetLight cabinetLight)
     {
 
         SolidColorBrush active = new SolidColorBrush(Color.FromRgb(255, 0, 0));
         SolidColorBrush inactive = new SolidColorBrush(Color.FromRgb(200, 200, 200));
-
-        CabinetLight cabinetLight = GameState.gameState.state.cabinetLight;
         
         bassLeft.Fill = cabinetLight.HasFlag(CabinetLight.LIGHT_BASS_LEFT) ? active : inactive;
         bassRight.Fill = cabinetLight.HasFlag(CabinetLight.LIGHT_BASS_RIGHT) ? active : inactive;
@@ -84,7 +93,7 @@ public partial class MainWindow : Window
 
     }
 
-    private void updatePad(Rectangle[] pad, bool player1, GameButton gameButton)
+    private void updatePad(bool player1, GameButton gameButton)
     {
         SolidColorBrush active = new SolidColorBrush(Color.FromRgb(255, 0, 0));
         SolidColorBrush inactive = new SolidColorBrush(Color.FromRgb(200, 200, 200));
@@ -92,13 +101,24 @@ public partial class MainWindow : Window
         if (player1)
         {
             //p1Pad[0].Fill = gameButton.HasFlag(GameButton.GAME_BUTTON_CUSTOM_01) ? active : inactive;
-            p1Pad[1].Fill = gameButton.HasFlag(GameButton.GAME_BUTTON_CUSTOM_03) ? active : inactive;
+            r11.Fill = gameButton.HasFlag(GameButton.GAME_BUTTON_CUSTOM_03) ? active : inactive;
             //p1Pad[2].Fill = gameButton.HasFlag(GameButton.GAME_BUTTON_CUSTOM_03) ? active : inactive;
-            p1Pad[3].Fill = gameButton.HasFlag(GameButton.GAME_BUTTON_CUSTOM_01) ? active : inactive;
+            r13.Fill = gameButton.HasFlag(GameButton.GAME_BUTTON_CUSTOM_01) ? active : inactive;
             //p1Pad[4].Fill = gameButton.HasFlag(GameButton.GAME_BUTTON_CUSTOM_05) ? active : inactive;
-            p1Pad[5].Fill = gameButton.HasFlag(GameButton.GAME_BUTTON_CUSTOM_02) ? active : inactive;
+            r15.Fill = gameButton.HasFlag(GameButton.GAME_BUTTON_CUSTOM_02) ? active : inactive;
             //p1Pad[6].Fill = gameButton.HasFlag(GameButton.GAME_BUTTON_CUSTOM_07) ? active : inactive;
-            p1Pad[7].Fill = gameButton.HasFlag(GameButton.GAME_BUTTON_CUSTOM_04) ? active : inactive;
+            r17.Fill = gameButton.HasFlag(GameButton.GAME_BUTTON_CUSTOM_04) ? active : inactive;
+            //p1Pad[8].Fill = gameButton.HasFlag(GameButton.GAME_BUTTON_CUSTOM_09) ? active : inactive;
+        } else
+        {
+            //p1Pad[0].Fill = gameButton.HasFlag(GameButton.GAME_BUTTON_CUSTOM_01) ? active : inactive;
+            r21.Fill = gameButton.HasFlag(GameButton.GAME_BUTTON_CUSTOM_03) ? active : inactive;
+            //p1Pad[2].Fill = gameButton.HasFlag(GameButton.GAME_BUTTON_CUSTOM_03) ? active : inactive;
+            r23.Fill = gameButton.HasFlag(GameButton.GAME_BUTTON_CUSTOM_01) ? active : inactive;
+            //p1Pad[4].Fill = gameButton.HasFlag(GameButton.GAME_BUTTON_CUSTOM_05) ? active : inactive;
+            r25.Fill = gameButton.HasFlag(GameButton.GAME_BUTTON_CUSTOM_02) ? active : inactive;
+            //p1Pad[6].Fill = gameButton.HasFlag(GameButton.GAME_BUTTON_CUSTOM_07) ? active : inactive;
+            r27.Fill = gameButton.HasFlag(GameButton.GAME_BUTTON_CUSTOM_04) ? active : inactive;
             //p1Pad[8].Fill = gameButton.HasFlag(GameButton.GAME_BUTTON_CUSTOM_09) ? active : inactive;
         }
     }

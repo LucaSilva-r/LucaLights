@@ -169,6 +169,89 @@
 							</StackPanel>
 
 						</Border>
+						<Border  x:Name="player2" Padding="5" BorderThickness="1" BorderBrush="{DynamicResource BackgroundBrush}">
+							<StackPanel>
+								<TextBlock Text="Player 2" HorizontalAlignment="Center" FontWeight="Bold">
+								</TextBlock>
+								<TextBlock Text="Combo: ">
+									<TextBlock Text="100" FontWeight="Bold"></TextBlock>
+								</TextBlock>
+								<TextBlock Text="Precision: ">
+									<TextBlock Text="100" FontWeight="Bold"></TextBlock>
+									<TextBlock Text="%" FontWeight="Bold"></TextBlock>
+								</TextBlock>
+								<Grid HorizontalAlignment="Center">
+									<Grid.ColumnDefinitions>
+										<ColumnDefinition Width="33"/>
+										<ColumnDefinition Width="32"/>
+										<ColumnDefinition Width="33"/>
+									</Grid.ColumnDefinitions>
+									<Grid.RowDefinitions>
+										<RowDefinition Height="33"/>
+										<RowDefinition Height="32"/>
+										<RowDefinition Height="33"/>
+									</Grid.RowDefinitions>
+
+
+									<Rectangle
+										Grid.Column="0" Grid.Row="0"
+										x:Name="r20"
+										Fill="{DynamicResource BackgroundBrush}"
+										Width="30"
+										Height="30"/>
+									<Rectangle
+										Grid.Column="1" Grid.Row="0"
+										x:Name="r21"
+										Fill="{DynamicResource BackgroundBrush}"
+										Width="30"
+										Height="30"/>
+									<Rectangle
+										Grid.Column="2" Grid.Row="0"
+										x:Name="r22"
+										Fill="{DynamicResource BackgroundBrush}"
+										Width="30"
+										Height="30"/>
+									<Rectangle
+										Grid.Column="0" Grid.Row="1"
+										x:Name="r23"
+										Fill="{DynamicResource BackgroundBrush}"
+										Width="30"
+										Height="30"/>
+									<Rectangle
+										Grid.Column="1" Grid.Row="1"
+										x:Name="r24"
+										Fill="{DynamicResource BackgroundBrush}"
+										Width="30"
+										Height="30"/>
+									<Rectangle
+										Grid.Column="2" Grid.Row="1"
+										x:Name="r25"
+										Fill="{DynamicResource BackgroundBrush}"
+										Width="30"
+										Height="30"/>
+									<Rectangle
+										Grid.Column="0" Grid.Row="2"
+										x:Name="r26"
+										Fill="{DynamicResource BackgroundBrush}"
+										Width="30"
+										Height="30"/>
+									<Rectangle
+										Grid.Column="1" Grid.Row="2"
+										x:Name="r27"
+										Fill="{DynamicResource BackgroundBrush}"
+										Width="30"
+										Height="30"/>
+									<Rectangle
+										Grid.Column="2" Grid.Row="2"
+										x:Name="r28"
+										Fill="{DynamicResource BackgroundBrush}"
+										Width="30"
+										Height="30"/>
+								</Grid>
+							</StackPanel>
+
+						</Border>
+
 					</StackPanel>
 				</StackPanel>
 			</Border>

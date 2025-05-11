@@ -134,9 +134,8 @@ namespace LTEK_ULed.Code
                         data[DDP_HEADER_LEN + i * 3 + 1] = leds[i].G;
                         data[DDP_HEADER_LEN + i * 3 + 2] = leds[i].B;
                     }
-
+                    
                     client.SendAsync(data, data.Length, endPoint);
-
 
                     while (sw.ElapsedMilliseconds < wait) ;
 
