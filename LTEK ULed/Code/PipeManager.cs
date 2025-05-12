@@ -12,8 +12,8 @@ namespace LTEK_ULed.Code
 {
     public static class PipeManager
     {
-        const int FULL_SEXTET_COUNT = 33;
-        public static readonly byte[] light_events = new byte[FULL_SEXTET_COUNT];
+        private const int FULL_SEXTET_COUNT = 33;
+
 
         private static PipeThread? _pipeThread;
         private static Thread? thread;
@@ -39,6 +39,7 @@ namespace LTEK_ULed.Code
 
         public class PipeThread
         {
+
             byte[] buffer = new byte[FULL_SEXTET_COUNT];
             string pipename;
             CancellationToken token;
@@ -86,11 +87,9 @@ namespace LTEK_ULed.Code
                 {
 
                     currentData = pipe.ReadByte();
-                    //Debug.Write((char) currentData);
                     if (currentData == (byte)'\n')
                     {
                         counter = 0;
-                        //Debug.WriteLine("");
                     }
                     else if (currentData != -1 && counter < buffer.Length)
                     {
@@ -99,13 +98,7 @@ namespace LTEK_ULed.Code
                     }
                     if (counter == buffer.Length)
                     {
-                        for (int i = 0; i < light_events.Length; i++)
-                        {
-                            light_events[i] = buffer[i];
-
-                        }
-                        GameState.gameState.Parse(light_events);
-                        
+                        GameState.gameState.Parse(buffer);
                     }
                 }
                 if (!token.IsCancellationRequested)

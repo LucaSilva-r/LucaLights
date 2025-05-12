@@ -32,11 +32,8 @@ namespace LTEK_ULed.Code
                          (((int)data[3] & 0b001111) << 17) |
                          (((int)data[2] & 0b001111) << 23) |
                          (((int)data[1] & 0b001111) << 29);
-            //long test = BitConverter.ToInt64([data[1], data[2], data[3], data[4], data[5], data[6], 0, 0], 0);
-
 
             GameButton gameButton = 0;
-
 
             gameButton = gameButton |
                 ((data[1] & (1 << 0)) != 0 ? GameButton.GAME_BUTTON_MENULEFT : 0) |
@@ -79,16 +76,6 @@ namespace LTEK_ULed.Code
 
             gameButton = gameButton |
                 ((data[6] & (1 << 0)) != 0 ? GameButton.GAME_BUTTON_CUSTOM_19 : 0);
-
-
-            //for (int i = 1; i < 7; i++)
-            //{
-            //    Debug.Write(Convert.ToString(data[i], 2).PadLeft(8, '0'));
-            //}
-            //Debug.WriteLine("");
-
-
-            //Debug.WriteLine(Convert.ToString((int)gameButton, 2).PadLeft(32, '0'));
 
 
             lock (state)

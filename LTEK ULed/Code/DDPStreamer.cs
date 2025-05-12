@@ -61,7 +61,7 @@ namespace LTEK_ULed.Code
             run?.Cancel();
 
             run = new CancellationTokenSource();
-            _dDPStreamerThread = new DDPStreamerThread(ip, framerate, run.Token, LightingManager.leds);
+            //_dDPStreamerThread = new DDPStreamerThread(ip, framerate, run.Token, LightingManager.leds);
 
             if (thread != null)
             {

@@ -23,7 +23,7 @@ public static class SerialManager
         run?.Cancel();
 
         run = new CancellationTokenSource();
-        _serialPortThread = new SerialPortThread(port, 576000, run.Token, LightingManager.leds);
+        //_serialPortThread = new SerialPortThread(port, 576000, run.Token, LightingManager.leds);
 
         if (thread != null)
         {

@@ -129,34 +129,34 @@ public partial class MainWindow : Window
 
     private void ConnectSerial(object? sender, Avalonia.Interactivity.RoutedEventArgs e)
     {
-        if (!DDPStreamer.connected)
-        {
+        //if (!DDPStreamer.connected)
+        //{
 
-            if (ipAddressTextBox.Text != null && Regex.IsMatch(ipAddressTextBox.Text, "^((25[0-5]|2[0-4][0-9]|[01]?[0-9][0-9]?)\\.){3}(25[0-5]|2[0-4][0-9]|[01]?[0-9][0-9]?)$"))
-            {
-                DDPStreamer.Connect(ipAddressTextBox.Text, 60);
-                serialConnect.Content = "Disconnect";
-                serialConnect.Classes.Add("Danger");
+        //    if (ipAddressTextBox.Text != null && Regex.IsMatch(ipAddressTextBox.Text, "^((25[0-5]|2[0-4][0-9]|[01]?[0-9][0-9]?)\\.){3}(25[0-5]|2[0-4][0-9]|[01]?[0-9][0-9]?)$"))
+        //    {
+        //        DDPStreamer.Connect(ipAddressTextBox.Text, 60);
+        //        serialConnect.Content = "Disconnect";
+        //        serialConnect.Classes.Add("Danger");
 
 
-                settings.ip = ipAddressTextBox.Text;
-                File.WriteAllText(file.FullName, JsonSerializer.Serialize(settings));
+        //        settings.ip = ipAddressTextBox.Text;
+        //        File.WriteAllText(file.FullName, JsonSerializer.Serialize(settings));
 
-            }
-        }
-        else
-        {
-            DDPStreamer.Disconnect();
+        //    }
+        //}
+        //else
+        //{
+        //    DDPStreamer.Disconnect();
 
-            serialConnect.Content = "Connect";
-            serialConnect.Classes.Remove("Danger");
-            serialConnect.IsEnabled = false;
+        //    serialConnect.Content = "Connect";
+        //    serialConnect.Classes.Remove("Danger");
+        //    serialConnect.IsEnabled = false;
 
-            DispatcherTimer.RunOnce(() =>
-            {
-                serialConnect.IsEnabled = true;
-            }, new TimeSpan(0, 0, 0, 2));
-        }
+        //    DispatcherTimer.RunOnce(() =>
+        //    {
+        //        serialConnect.IsEnabled = true;
+        //    }, new TimeSpan(0, 0, 0, 2));
+        //}
     }
 
     private async void SettingsClicked(object? sender, Avalonia.Interactivity.RoutedEventArgs e)

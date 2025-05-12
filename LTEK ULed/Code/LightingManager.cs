@@ -11,58 +11,37 @@ using System.Threading.Tasks;
 using ColorMine;
 using ColorMine.ColorSpaces;
 using Extensions;
+using System.Xml.Serialization;
 
 namespace LTEK_ULed.Code
 {
     public static class LightingManager
     {
-        public static Color[] leds = new Color[144];
-        private static Pad[] squares = new Pad[4];
-
         private static LightThread? _lightThread;
         private static Thread? thread;
 
         private static CancellationTokenSource run;
 
-        //temporary
-        const int SEGMENT_LEN = 9;
-        const int SQUARE_LEN = SEGMENT_LEN * 4;
-
-        const int UP = 2;
-        const int UP_OFFSET = SQUARE_LEN;
-
-        const int RIGHT = 1;
-        const int RIGHT_OFFSET = SQUARE_LEN * 3;
-
-        const int LEFT = 0;
-        const int LEFT_OFFSET = 0;
-
-        const int DOWN = 3;
-        const int DOWN_OFFSET = SQUARE_LEN * 2;
-        //temporary
-
-        public static void Setup()
-        {
-
-        }
+        private static Dictionary<GameButton, List<Segment>> buttonMappings = new();
+        private static Dictionary<CabinetLight, List<Segment>> cabinetMappings = new();
 
         public static void Start()
         {
-            squares[0] = new Pad(4, SEGMENT_LEN, UP_OFFSET, GameButton.GAME_BUTTON_CUSTOM_03, CabinetLight.LIGHT_MARQUEE_UP_RIGHT);
-            squares[1] = new Pad(4, SEGMENT_LEN, LEFT_OFFSET, GameButton.GAME_BUTTON_CUSTOM_01, CabinetLight.LIGHT_MARQUEE_LR_LEFT);
-            squares[2] = new Pad(4, SEGMENT_LEN, RIGHT_OFFSET, GameButton.GAME_BUTTON_CUSTOM_02, CabinetLight.LIGHT_MARQUEE_UP_LEFT);
-            squares[3] = new Pad(4, SEGMENT_LEN, DOWN_OFFSET, GameButton.GAME_BUTTON_CUSTOM_04, CabinetLight.LIGHT_MARQUEE_LR_RIGHT);
+
+
+
 
             run?.Cancel();
 
             run = new CancellationTokenSource();
-            _lightThread = new LightThread(run.Token, leds, squares);
+            _lightThread = new LightThread(run.Token);
 
             thread = new Thread(new ThreadStart(_lightThread.Run));
             thread.Start();
         }
 
-        public static void Stop() {
+        public static void Stop()
+        {
             run?.Cancel();
             thread?.Join();
         }
@@ -75,115 +54,186 @@ namespace LTEK_ULed.Code
             float decreaseSpeed = 0.2f;
             float increaseSpeed = 0.5f;
 
+            static Device[] devices;
+
             Stopwatch animationGlobalTimer = new Stopwatch();
 
             CancellationToken token;
 
-            Color[] leds;
-            Pad[] squares;
 
-            public LightThread(CancellationToken token, Color[] leds, Pad[] squares)
+            int wait = 25;
+
+            public LightThread(CancellationToken token)
             {
                 this.token = token;
                 animationGlobalTimer.Start();
-                this.leds = leds;
-                this.squares = squares;
+
+                devices = [
+                    new Device("192.168.1.20", new Segment[]
+                        {
+                            new Segment(36, GameButton.GAME_BUTTON_CUSTOM_01, 0),
+                            new Segment(36, GameButton.GAME_BUTTON_CUSTOM_03, 0),
+                            new Segment(36, GameButton.GAME_BUTTON_CUSTOM_04, 0),
+                            new Segment(36, GameButton.GAME_BUTTON_CUSTOM_02, 0),
+
+                        }),
+                    new Device("192.168.1.21", [new Segment(1,0,CabinetLight.LIGHT_MARQUEE_UP_LEFT)]),
+                    new Device("192.168.1.22", [new Segment(1,0,CabinetLight.LIGHT_BASS_RIGHT)]),
+                    new Device("192.168.1.23", [new Segment(1,0,CabinetLight.LIGHT_MARQUEE_LR_RIGHT)]),
+                    new Device("192.168.1.24", [new Segment(1,0,CabinetLight.LIGHT_BASS_LEFT)]),
+                    new Device("192.168.1.25", [new Segment(1,0,CabinetLight.LIGHT_MARQUEE_LR_LEFT)]),
+                    new Device("192.168.1.26", [new Segment(1,0,CabinetLight.LIGHT_MARQUEE_UP_RIGHT)])
+
+                   ];
+
+
+                int totalSegments = 0;
+                foreach (Device device in devices)
+                {
+                    totalSegments += device.segments.Count();
+
+                    foreach (Segment segment in device.segments)
+                    {
+                        foreach (GameButton i in Enum.GetValues(typeof(GameButton)))
+                        {
+                            if (segment.buttonMapping.HasFlag(i) && i != 0)
+                            {
+                                if (!buttonMappings.ContainsKey(i))
+                                {
+                                    buttonMappings.Add(i, new List<Segment>());
+                                }
+                                buttonMappings[i].Add(segment);
+                            }
+                        }
+                        foreach (CabinetLight i in Enum.GetValues(typeof(CabinetLight)))
+                        {
+                            if (segment.cabinetMapping.HasFlag(i) && i != 0)
+                            {
+                                if (!cabinetMappings.ContainsKey(i))
+                                {
+                                    cabinetMappings.Add(i, new List<Segment>());
+                                }
+                                cabinetMappings[i].Add(segment);
+                            }
+                        }
+                    }
+                }
+
+                inputTimers = new float[totalSegments];
+                visualTimers = new float[totalSegments];
+
             }
 
             public void Run()
             {
+                Stopwatch sw = new Stopwatch();
+
                 Debug.WriteLine("Started light thread.");
                 while (!token.IsCancellationRequested)
                 {
-                    Thread.Sleep(16);
-                    lock (leds)
+
+                    sw.Start();
+
+                    GameButton gameButton;
+                    CabinetLight cabinetLight;
+
+                    lock (GameState.gameState)
                     {
-                        for (int i = 0; i < leds.Length; i++)
-                        {
-                            leds[i] = Color.Black;
-                        }
-
-                        GameButton gameButton;
-                        CabinetLight cabinetLight;
-
-                        lock (GameState.gameState)
-                        {
-                            gameButton = GameState.gameState.state.gameButton;
-                            cabinetLight = GameState.gameState.state.cabinetLight;
-                        }
-
-                        ProcessVisual(cabinetLight);
-                        ProcessInput(gameButton);
+                        gameButton = GameState.gameState.state.gameButton;
+                        cabinetLight = GameState.gameState.state.cabinetLight;
                     }
+
+                    ProcessVisual(cabinetLight);
+                    ProcessInput(gameButton);
+
+                    foreach (Device device in devices)
+                    {
+                        device.Send();
+                    }
+
+                    while (sw.ElapsedMilliseconds < wait) ;
+
+                    sw.Reset();
                 }
+                sw.Reset();
+
                 Debug.WriteLine("LightThread Exited");
             }
 
             void ProcessVisual(CabinetLight cabinetLight)
             {
-                for (int i = 0; i < squares.Length; i++)
+
+                foreach (KeyValuePair<CabinetLight, List<Segment>> entry in cabinetMappings)
                 {
-                    if (cabinetLight.HasFlag(squares[i].cabinetLight))
+                    bool value = cabinetLight.HasFlag(entry.Key);
+
+                    foreach (Segment segment in entry.Value)
                     {
-                        visualTimers[i] = Math.Clamp(visualTimers[i] + increaseSpeed, 0, 100);
-                        FillSquare(squares[i].offset, squares[i].segmentLen, squares[i].nSegments, RainbowAnimation(animationGlobalTimer.ElapsedMilliseconds / 10f));
-                    }
-                    else if (inputTimers[i] > 1)
-                    {
-                        visualTimers[i] = 1;
-                    }
-                    else
-                    {
-                        visualTimers[i] = Math.Clamp(visualTimers[i] - decreaseSpeed, 0, 100);
+                        if (value)
+                        {
+                            FillSegment(segment, RainbowAnimation(animationGlobalTimer.ElapsedMilliseconds / 10f));
+                        }
+                        else
+                        {
+                            FillSegment(segment, Color.Black);
+                        }
                     }
                 }
             }
+
+
+            void FillSegment(Segment segment, Color color)
+            {
+                for (int i = 0; i < segment.leds.Length; i++)
+                {
+                    segment.leds[i] = color;
+                }
+            }
+
 
             void ProcessInput(GameButton gameButton)
             {
+                int indexy = 0;
 
-                for (int i = 0; i < squares.Length; i++)
+                foreach (KeyValuePair<GameButton, List<Segment>> entry in buttonMappings)
                 {
-                    if (gameButton.HasFlag(squares[i].gameButton))
-                    {
-                        inputTimers[i] = Math.Clamp(inputTimers[i] + increaseSpeed, 0, 100); ; ;
-                    }
-                    else if (inputTimers[i] > 1)
-                    {
-                        inputTimers[i] = 1;
-                    }
-                    else
-                    {
-                        inputTimers[i] = Math.Clamp(inputTimers[i] - decreaseSpeed, 0, 100);
-                    }
+                    bool value = gameButton.HasFlag(entry.Key);
 
-                    CollapsingAnimation(squares[i].offset, squares[i].segmentLen, squares[i].nSegments, inputTimers[i], FireAnimation(inputTimers[i]));
+                    int indexj = 0;
+                    foreach (Segment segment in entry.Value)
+                    {
+
+                        int index = indexj +indexy; 
+                        if (value)
+                        {
+                            inputTimers[index] = Math.Clamp(inputTimers[index] + increaseSpeed, 0, 100);
+                        }
+                        else if (inputTimers[index] > 1)
+                        {
+                            inputTimers[index] = 1;
+                        }
+                        else
+                        {
+                            inputTimers[index] = Math.Clamp(inputTimers[index] - decreaseSpeed, 0, 100);
+                        }
+
+                        FillSegment(segment, Color.Black);
+                        CollapsingAnimation(segment,4, inputTimers[index], FireAnimation(inputTimers[index]));
+
+                        indexj++;
+                    }
+                    indexy++;
                 }
             }
 
-            void CollapsingAnimation(int offset, int segmentLength, int numSegments, float time, Color color)
+            void CollapsingAnimation(Segment segment, int numSegments, float time, Color color)
             {
                 time = Math.Clamp(time, 0, 1);
-                int length = (int)Math.Ceiling(Extension.Map(time, 0, 1, 0, segmentLength));
+                int length = (int)Math.Ceiling(Extension.Map(time, 0, 1, 0, segment.leds.Length));
 
-                for (int i = 0; i < numSegments; i++)
+                for (int i = 0; i < length; i++)
                 {
-                    for (int j = offset + segmentLength * i; j < offset + segmentLength * i + length; j++)
-                    {
-                        leds[j] = leds[j].Sum(color);
-                    }
-                }
-            }
-
-            void FillSquare(int offset, int segmentLength, int numSegments, Color color)
-            {
-
-                for (int i = 0; i < numSegments; i++)
-                {
-                    for (int j = offset + segmentLength * i; j < offset + segmentLength * (i + 1); j++)
-                    {
-                        leds[j] = leds[j].Sum(color);
-                    }
+                    segment.leds[i] = color;
                 }
             }
 
