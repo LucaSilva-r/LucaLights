@@ -27,10 +27,6 @@ namespace LTEK_ULed.Code
 
         public static void Start()
         {
-
-
-
-
             run?.Cancel();
 
             run = new CancellationTokenSource();
@@ -151,7 +147,7 @@ namespace LTEK_ULed.Code
                         device.Send();
                     }
 
-                    while (sw.ElapsedMilliseconds < wait) ;
+                    while (sw.ElapsedMilliseconds < wait || (!GameState.gameState.Connected && !token.IsCancellationRequested));
 
                     sw.Reset();
                 }

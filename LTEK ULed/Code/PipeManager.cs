@@ -29,7 +29,7 @@ namespace LTEK_ULed.Code
             _pipeThread = new PipeThread(run.Token);
 
             thread = new Thread(new ThreadStart(_pipeThread.Run));
-            thread.Start();            
+            thread.Start();
         }
 
         public static void Stop()
@@ -55,63 +55,78 @@ namespace LTEK_ULed.Code
                 IAsyncResult result;
                 NamedPipeServerStream pipe;
 
-                pipe = new NamedPipeServerStream(pipename, PipeDirection.In, 1, PipeTransmissionMode.Byte, PipeOptions.Asynchronous, 1000000, 100000);
-
-                result = pipe.BeginWaitForConnection(null, this);
-
-                while (!pipe.IsConnected && !token.IsCancellationRequested)
+                while (true)
                 {
-                    Thread.Sleep(100);
-                }
+                    pipe = new NamedPipeServerStream(pipename, PipeDirection.In, 1, PipeTransmissionMode.Byte, PipeOptions.Asynchronous, 1000000, 100000);
 
-                if (token.IsCancellationRequested) {
-                    pipe.Dispose();
-                    return;
-                }
-                try
-                {
-                    pipe.EndWaitForConnection(result);
-                } catch
-                {
+                    result = pipe.BeginWaitForConnection(null, this);
+
+                    while (!pipe.IsConnected && !token.IsCancellationRequested)
+                    {
+                        Thread.Sleep(100);
+                    }
+
                     if (token.IsCancellationRequested)
                     {
                         pipe.Dispose();
                         return;
                     }
-                }
-                Debug.WriteLine("Pipe Connected");
+                    try
+                    {
+                        pipe.EndWaitForConnection(result);
+                    }
+                    catch
+                    {
+                        if (token.IsCancellationRequested)
+                        {
+                            pipe.Dispose();
+                            return;
+                        }
+                    }
+                    Debug.WriteLine("Pipe Connected");
 
-                int counter = 0;
-                int currentData = -1;
-                while (!token.IsCancellationRequested && pipe.IsConnected)
-                {
+                    int counter = 0;
+                    int currentData = -1;
+                    while (!token.IsCancellationRequested && pipe.IsConnected)
+                    {
+                        if (!GameState.gameState.Connected)
+                        {
+                            lock (GameState.gameState)
+                            {
+                                GameState.gameState.SetConnectionStatus(true);
+                            }
+                        }
+                        currentData = pipe.ReadByte();
+                        if (currentData == (byte)'\n')
+                        {
+                            counter = 0;
+                        }
+                        else if (currentData != -1 && counter < buffer.Length)
+                        {
+                            buffer[counter] = (byte)currentData;
+                            counter++;
+                        }
+                        if (counter == buffer.Length)
+                        {
+                            GameState.gameState.Parse(buffer);
+                        }
+                    }
+                    if (!token.IsCancellationRequested)
+                    {
+                        Debug.WriteLine("Pipe was closed/stepmania terminated, restarting");
+                        lock (GameState.gameState)
+                        {
+                            GameState.gameState.SetConnectionStatus(false);
+                        }
+                        pipe.Dispose();
 
-                    currentData = pipe.ReadByte();
-                    if (currentData == (byte)'\n')
-                    {
-                        counter = 0;
                     }
-                    else if (currentData != -1 && counter < buffer.Length)
+                    else
                     {
-                        buffer[counter] = (byte)currentData;
-                        counter++;
+                        pipe.Dispose();
+                        Debug.WriteLine("Pipe has been disposed, exiting thread");
+                        return;
                     }
-                    if (counter == buffer.Length)
-                    {
-                        GameState.gameState.Parse(buffer);
-                    }
-                }
-                if (!token.IsCancellationRequested)
-                {
-                    Debug.WriteLine("Pipe was closed/stepmania terminated, restarting");
-                    pipe.Dispose();
-                    Run();
-                }
-                else
-                {
-                    pipe.Dispose();
-                    Debug.WriteLine("Pipe has been disposed, exiting thread");
-                    return;
                 }
             }
         }

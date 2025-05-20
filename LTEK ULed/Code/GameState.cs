@@ -19,6 +19,11 @@ namespace LTEK_ULed.Code
 
         public readonly State state = new State();
 
+        public bool Connected {
+            get;
+            protected set;
+        }
+
         public void Parse(byte[] data)
         {
 
@@ -77,6 +82,11 @@ namespace LTEK_ULed.Code
             gameButton = gameButton |
                 ((data[6] & (1 << 0)) != 0 ? GameButton.GAME_BUTTON_CUSTOM_19 : 0);
 
+            //for(int i = 1; i < 7; i++)
+            //{
+            //    Debug.Write(Convert.ToString(data[i],2).PadLeft(8, '0'));
+            //}
+            //Debug.WriteLine("");
 
             lock (state)
             {
@@ -87,6 +97,11 @@ namespace LTEK_ULed.Code
 
             Dispatcher.UIThread.Post(MainWindow.Instance.UpdateUi);
 
+        }
+
+        public void SetConnectionStatus(bool connected)
+        {
+            this.Connected = connected;
         }
     }
 
