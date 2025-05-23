@@ -7,9 +7,8 @@ using System.Threading.Tasks;
 
 namespace LTEK_ULed.Code
 {
-    public class Settings
+    internal class Settings
     {
-        public string? ip { get; set; }
-        public List<string>? additionalIps { get; set; }
+        internal List<Device>? Devices { get; set; }
     }
 }

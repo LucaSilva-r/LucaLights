@@ -12,6 +12,7 @@ using System.Diagnostics;
 using Avalonia.Media;
 using Avalonia.Controls.Shapes;
 using System.Security.Cryptography;
+using System.Collections.Generic;
 
 namespace LTEK_ULed.Views;
 
@@ -23,8 +24,13 @@ public partial class MainWindow : Window
 
     public static MainWindow? Instance { get; private set; }
 
-    Rectangle[] p1Pad = new Rectangle[9];
-    Rectangle[] p2Pad = new Rectangle[9];
+    SolidColorBrush active = new SolidColorBrush(Color.FromRgb(255, 0, 0));
+    SolidColorBrush inactive = new SolidColorBrush(Color.FromRgb(200, 200, 200));
+
+    Dictionary<Rectangle, GameButton> RectToGB = new Dictionary<Rectangle, GameButton>();
+    Dictionary<GameButton, Rectangle> GBToRect = new Dictionary<GameButton, Rectangle>();
+
+    public bool debug;
 
     public MainWindow()
     {
@@ -44,16 +50,27 @@ public partial class MainWindow : Window
             {
                 settings = temp;
             }
-            ipAddressTextBox.Text = settings.ip;
         }
         else
         {
             file.Directory?.Create();
         }
 
-        for (int i = 0; i < 9; i++)
+
+        for(int i =1; i<= 18; i++)
         {
-            p1Pad[i] = player1.FindControl<Rectangle>("r1" + i);
+            GameButton result;
+            string text = Convert.ToString(i).PadLeft(2, '0');
+            Enum.TryParse<GameButton>("GAME_BUTTON_CUSTOM_" + text, false,out result);
+            Rectangle? rect = this.FindControl<Rectangle>("g" + text);
+
+
+            RectToGB.Add(rect!, result);
+            GBToRect.Add(result, rect!);
+            rect!.PointerPressed += Rectangle_PointerPressed;
+            rect!.PointerReleased += Rectangle_PointerReleased;
+            rect!.PointerExited += Rectangle_PointerExited;
+
         }
     }
 
@@ -95,75 +112,55 @@ public partial class MainWindow : Window
 
     private void updatePad(bool player1, GameButton gameButton)
     {
-        SolidColorBrush active = new SolidColorBrush(Color.FromRgb(255, 0, 0));
-        SolidColorBrush inactive = new SolidColorBrush(Color.FromRgb(200, 200, 200));
-
-        if (player1)
+        foreach (GameButton item in Enum.GetValues(typeof(GameButton)))
         {
-            //p1Pad[0].Fill = gameButton.HasFlag(GameButton.GAME_BUTTON_CUSTOM_01) ? active : inactive;
-            r11.Fill = gameButton.HasFlag(GameButton.GAME_BUTTON_CUSTOM_03) ? active : inactive;
-            //p1Pad[2].Fill = gameButton.HasFlag(GameButton.GAME_BUTTON_CUSTOM_03) ? active : inactive;
-            r13.Fill = gameButton.HasFlag(GameButton.GAME_BUTTON_CUSTOM_01) ? active : inactive;
-            //p1Pad[4].Fill = gameButton.HasFlag(GameButton.GAME_BUTTON_CUSTOM_05) ? active : inactive;
-            r15.Fill = gameButton.HasFlag(GameButton.GAME_BUTTON_CUSTOM_02) ? active : inactive;
-            //p1Pad[6].Fill = gameButton.HasFlag(GameButton.GAME_BUTTON_CUSTOM_07) ? active : inactive;
-            r17.Fill = gameButton.HasFlag(GameButton.GAME_BUTTON_CUSTOM_04) ? active : inactive;
-            //p1Pad[8].Fill = gameButton.HasFlag(GameButton.GAME_BUTTON_CUSTOM_09) ? active : inactive;
-        } else
-        {
-            //p1Pad[0].Fill = gameButton.HasFlag(GameButton.GAME_BUTTON_CUSTOM_01) ? active : inactive;
-            r21.Fill = gameButton.HasFlag(GameButton.GAME_BUTTON_CUSTOM_03) ? active : inactive;
-            //p1Pad[2].Fill = gameButton.HasFlag(GameButton.GAME_BUTTON_CUSTOM_03) ? active : inactive;
-            r23.Fill = gameButton.HasFlag(GameButton.GAME_BUTTON_CUSTOM_01) ? active : inactive;
-            //p1Pad[4].Fill = gameButton.HasFlag(GameButton.GAME_BUTTON_CUSTOM_05) ? active : inactive;
-            r25.Fill = gameButton.HasFlag(GameButton.GAME_BUTTON_CUSTOM_02) ? active : inactive;
-            //p1Pad[6].Fill = gameButton.HasFlag(GameButton.GAME_BUTTON_CUSTOM_07) ? active : inactive;
-            r27.Fill = gameButton.HasFlag(GameButton.GAME_BUTTON_CUSTOM_04) ? active : inactive;
-            //p1Pad[8].Fill = gameButton.HasFlag(GameButton.GAME_BUTTON_CUSTOM_09) ? active : inactive;
+            if (GBToRect.ContainsKey(item))
+            {
+                GBToRect[item]!.Fill = gameButton.HasFlag(item) ? active : inactive;
+            }
         }
     }
-
-    private void Button_Click(object? sender, Avalonia.Interactivity.RoutedEventArgs e)
-    {
-    }
-
-    private void ConnectSerial(object? sender, Avalonia.Interactivity.RoutedEventArgs e)
-    {
-        //if (!DDPStreamer.connected)
-        //{
-
-        //    if (ipAddressTextBox.Text != null && Regex.IsMatch(ipAddressTextBox.Text, "^((25[0-5]|2[0-4][0-9]|[01]?[0-9][0-9]?)\\.){3}(25[0-5]|2[0-4][0-9]|[01]?[0-9][0-9]?)$"))
-        //    {
-        //        DDPStreamer.Connect(ipAddressTextBox.Text, 60);
-        //        serialConnect.Content = "Disconnect";
-        //        serialConnect.Classes.Add("Danger");
-
-
-        //        settings.ip = ipAddressTextBox.Text;
-        //        File.WriteAllText(file.FullName, JsonSerializer.Serialize(settings));
-
-        //    }
-        //}
-        //else
-        //{
-        //    DDPStreamer.Disconnect();
-
-        //    serialConnect.Content = "Connect";
-        //    serialConnect.Classes.Remove("Danger");
-        //    serialConnect.IsEnabled = false;
-
-        //    DispatcherTimer.RunOnce(() =>
-        //    {
-        //        serialConnect.IsEnabled = true;
-        //    }, new TimeSpan(0, 0, 0, 2));
-        //}
-    }
-
     private async void SettingsClicked(object? sender, Avalonia.Interactivity.RoutedEventArgs e)
     {
 
         Window settings = new PadSettings();
         await settings.ShowDialog(this);
 
+    }
+
+    private void Rectangle_PointerPressed(object? sender, Avalonia.Input.PointerPressedEventArgs e)
+    {
+        (sender as Rectangle)!.Fill = active;
+
+        lock (gameState)
+        {
+            gameState.state.gameButton |= RectToGB[(sender as Rectangle)!];
+            Debug.WriteLine(gameState.state.gameButton);
+        }
+    }
+
+    private void Rectangle_PointerReleased(object? sender, Avalonia.Input.PointerReleasedEventArgs e)
+    {
+        (sender as Rectangle)!.Fill = inactive;
+
+        lock (gameState)
+        {
+            gameState.state.gameButton &= ~RectToGB[(sender as Rectangle)!];
+        }
+    }
+
+    private void Rectangle_PointerExited(object? sender, Avalonia.Input.PointerEventArgs e)
+    {
+        (sender as Rectangle)!.Fill = inactive;
+
+        lock (gameState)
+        {
+            gameState.state.gameButton &= ~RectToGB[(sender as Rectangle)!];
+        }
+    }
+
+    private void DebugChanged(object? sender, Avalonia.Interactivity.RoutedEventArgs e)
+    {
+        debug = (bool) (sender as CheckBox)!.IsChecked;
     }
 }

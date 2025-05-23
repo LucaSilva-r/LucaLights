@@ -1,4 +1,5 @@
-﻿using System;
+﻿using LTEK_ULed.Views;
+using System;
 using System.Collections.Generic;
 using System.Diagnostics;
 using System.IO.Pipes;
@@ -13,7 +14,6 @@ namespace LTEK_ULed.Code
     public static class PipeManager
     {
         private const int FULL_SEXTET_COUNT = 33;
-
 
         private static PipeThread? _pipeThread;
         private static Thread? thread;
@@ -108,7 +108,10 @@ namespace LTEK_ULed.Code
                         }
                         if (counter == buffer.Length)
                         {
-                            GameState.gameState.Parse(buffer);
+                            if (!MainWindow.Instance!.debug)
+                            {
+                                GameState.gameState.Parse(buffer);
+                            }
                         }
                     }
                     if (!token.IsCancellationRequested)
