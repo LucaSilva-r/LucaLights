@@ -12,6 +12,8 @@ using ColorMine;
 using ColorMine.ColorSpaces;
 using Extensions;
 using System.Xml.Serialization;
+using System.Text.Json;
+using LTEK_ULed.Views;
 
 namespace LTEK_ULed.Code
 {
@@ -20,10 +22,9 @@ namespace LTEK_ULed.Code
         private static LightThread? _lightThread;
         private static Thread? thread;
 
-        private static CancellationTokenSource run;
+        private static CancellationTokenSource? run;
 
-        private static Dictionary<GameButton, List<Segment>> buttonMappings = new();
-        private static Dictionary<CabinetLight, List<Segment>> cabinetMappings = new();
+
 
         public static void Start()
         {
@@ -44,48 +45,42 @@ namespace LTEK_ULed.Code
 
         private class LightThread
         {
+            private Dictionary<GameButton, List<Segment>> buttonMappings = new();
+            private Dictionary<CabinetLight, List<Segment>> cabinetMappings = new();
+
             int counter;
             float[] inputTimers = new float[4];
             float[] visualTimers = new float[4];
             float decreaseSpeed = 0.2f;
             float increaseSpeed = 0.5f;
 
-            static Device[] devices;
+            //static Device[] devices;
 
             Stopwatch animationGlobalTimer = new Stopwatch();
 
             CancellationToken token;
 
 
-            int wait = 25;
+            int wait = 1000/60;
 
             public LightThread(CancellationToken token)
             {
                 this.token = token;
                 animationGlobalTimer.Start();
+                Setup();
+            }
 
-                devices = [
-                    new Device("192.168.1.20", new Segment[]
-                        {
-                            new Segment(36, GameButton.GAME_BUTTON_CUSTOM_01, 0),
-                            new Segment(36, GameButton.GAME_BUTTON_CUSTOM_03, 0),
-                            new Segment(36, GameButton.GAME_BUTTON_CUSTOM_04, 0),
-                            new Segment(36, GameButton.GAME_BUTTON_CUSTOM_02, 0),
 
-                        }),
-                    new Device("192.168.1.21", [new Segment(1,0,CabinetLight.LIGHT_MARQUEE_UP_LEFT)]),
-                    new Device("192.168.1.22", [new Segment(1,0,CabinetLight.LIGHT_BASS_RIGHT)]),
-                    new Device("192.168.1.23", [new Segment(1,0,CabinetLight.LIGHT_MARQUEE_LR_RIGHT)]),
-                    new Device("192.168.1.24", [new Segment(1,0,CabinetLight.LIGHT_BASS_LEFT)]),
-                    new Device("192.168.1.25", [new Segment(1,0,CabinetLight.LIGHT_MARQUEE_LR_LEFT)]),
-                    new Device("192.168.1.26", [new Segment(1,0,CabinetLight.LIGHT_MARQUEE_UP_RIGHT)])
-
-                   ];
-
+            private void Setup()
+            {
+                Debug.WriteLine("HMMMM");
+                buttonMappings = new();
+                cabinetMappings = new();
 
                 int totalSegments = 0;
-                foreach (Device device in devices)
+                foreach (Device device in Settings.Instance!.devices)
                 {
+                    device.Recalculate();
                     totalSegments += device.segments.Count();
 
                     foreach (Segment segment in device.segments)
@@ -98,7 +93,10 @@ namespace LTEK_ULed.Code
                                 {
                                     buttonMappings.Add(i, new List<Segment>());
                                 }
-                                buttonMappings[i].Add(segment);
+                                if (!buttonMappings[i].Contains(segment))
+                                {
+                                    buttonMappings[i].Add(segment);
+                                }
                             }
                         }
                         foreach (CabinetLight i in Enum.GetValues(typeof(CabinetLight)))
@@ -117,17 +115,26 @@ namespace LTEK_ULed.Code
 
                 inputTimers = new float[totalSegments];
                 visualTimers = new float[totalSegments];
-
+                
+                Settings.Instance!.ClearDirty();
             }
+
 
             public void Run()
             {
                 Stopwatch sw = new Stopwatch();
 
                 Debug.WriteLine("Started light thread.");
+
+                sw.Start();
+
                 while (!token.IsCancellationRequested)
                 {
 
+                    while (sw.ElapsedMilliseconds < wait || (!GameState.gameState.Connected && !MainWindow.Instance!.debug && !token.IsCancellationRequested));
+
+
+                    sw.Reset();
                     sw.Start();
 
                     GameButton gameButton;
@@ -142,14 +149,17 @@ namespace LTEK_ULed.Code
                     ProcessVisual(cabinetLight);
                     ProcessInput(gameButton);
 
-                    foreach (Device device in devices)
+                    lock (Settings.Instance!)
                     {
-                        device.Send();
+                        if (Settings.Instance!.Dirty)
+                        {
+                            Setup();
+                        }
+                        foreach (Device device in Settings.Instance!.devices)
+                        {
+                            device.Send();
+                        }
                     }
-
-                    while (sw.ElapsedMilliseconds < wait || (!GameState.gameState.Connected && !token.IsCancellationRequested));
-
-                    sw.Reset();
                 }
                 sw.Reset();
 
@@ -199,7 +209,7 @@ namespace LTEK_ULed.Code
                     foreach (Segment segment in entry.Value)
                     {
 
-                        int index = indexj +indexy; 
+                        int index = indexj + indexy;
                         if (value)
                         {
                             inputTimers[index] = Math.Clamp(inputTimers[index] + increaseSpeed, 0, 100);
@@ -214,7 +224,7 @@ namespace LTEK_ULed.Code
                         }
 
                         FillSegment(segment, Color.Black);
-                        CollapsingAnimation(segment,4, inputTimers[index], FireAnimation(inputTimers[index]));
+                        CollapsingAnimation(segment, 4, inputTimers[index], FireAnimation(inputTimers[index]));
 
                         indexj++;
                     }

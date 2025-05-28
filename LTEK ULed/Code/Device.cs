@@ -9,74 +9,109 @@ using System.Text;
 using System.Threading.Tasks;
 using static System.Runtime.InteropServices.JavaScript.JSType;
 using System.Threading;
+using System.Text.Json.Serialization;
+using System.Diagnostics;
 
 namespace LTEK_ULed.Code
 {
+    [Serializable]
     internal class Device
     {
-        string ip;
-        public readonly List<Segment> segments = new();
+
+        public string name { get; set; } = string.Empty;
+        public string ip { get; set; } = string.Empty;
+
+        public List<Segment> segments { get; private set; } = new List<Segment>();
 
         private Color[] data = new Color[0];
 
-        DDPSend dDPsend;
+        DDPSend? dDPsend;
 
-        public Device(string ip, Segment[] segments)
+        public Device(string name, string ip, List<Segment> segments)
         {
-            this.ip = ip;
-            this.segments.AddRange(segments);
+            this.name = name;
 
+            this.ip = ip;
+            this.segments = new List<Segment>(segments);
+
+            Recalculate();
+
+        }
+
+        public void Recalculate()
+        {
             int counter = 0;
 
             foreach (Segment item in segments)
             {
                 counter += item.leds.Length;
             }
-            
+
             data = new Color[counter];
 
+            dDPsend?.Dispose();
+
             dDPsend = new DDPSend(this.ip, data.Length);
+        }
+
+        public void RemoveSegment(int index)
+        {
+            Settings.Instance!.MarkDirty();
+
+            segments.RemoveAt(index);
+            Recalculate();
         }
 
         public void AddSegment(Segment segment)
         {
+            Settings.Instance!.MarkDirty();
+
             segments.Add(segment);
 
-            int counter = 0;
-
-            foreach (Segment item in segments)
-            {
-                counter += item.leds.Length;
-            }
-            data = new Color[counter];
-
-            dDPsend.Dispose();
-            dDPsend = new DDPSend(this.ip, data.Length);
+            Recalculate();
         }
 
-        public async void Send()
+        public void Send()
         {
             int counter = 0;
 
-            foreach (Segment segment in segments)
+            for (int i = 0; i < segments.Count; i++)
             {
+                Segment segment = segments[i];
                 Array.Copy(segment.leds, 0, data, counter, segment.leds.Length);
                 counter += segment.leds.Length;
             }
 
-            dDPsend.send(data);
+            dDPsend?.send(data);
+
         }
     }
 
+    [Serializable]
     internal class Segment
     {
-        public readonly Color[] leds;
+        [JsonIgnore]
+        public Color[] leds { get; private set; }
 
-        public readonly GameButton buttonMapping;
-        public readonly CabinetLight cabinetMapping;
+        public int length
+        {
+            get => _length;
+            set
+            {
+                Settings.Instance?.MarkDirty();
+                _length = value;
+                leds = new Color[_length];
+            }
+        }
+
+        private int _length;
+
+        public GameButton buttonMapping { get; private set; }
+        public CabinetLight cabinetMapping { get; private set; }
 
         public Segment(int length, GameButton buttonMapping, CabinetLight cabinetMapping)
         {
+            this.length = length;
             leds = new Color[length];
             this.buttonMapping = buttonMapping;
             this.cabinetMapping = cabinetMapping;

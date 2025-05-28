@@ -18,8 +18,6 @@ namespace LTEK_ULed.Views;
 
 public partial class MainWindow : Window
 {
-    FileInfo file;
-    Settings settings = new Settings();
     GameState gameState = GameState.gameState;
 
     public static MainWindow? Instance { get; private set; }
@@ -36,32 +34,18 @@ public partial class MainWindow : Window
     {
         Instance = this;
 
+        Settings.Load();
+
         InitializeComponent();
 
         PipeManager.Start();
         LightingManager.Start();
 
-        file = new FileInfo(Environment.GetFolderPath(Environment.SpecialFolder.ApplicationData) + "/LtekULED/settings.json");
-        Debug.WriteLine(Environment.GetFolderPath(Environment.SpecialFolder.ApplicationData) + "/LtekULED/settings.json");
-        if (File.Exists(Environment.GetFolderPath(Environment.SpecialFolder.ApplicationData) + "/LtekULED/settings.json"))
-        {
-            Settings? temp = JsonSerializer.Deserialize<Settings>(File.ReadAllText(file.FullName));
-            if (temp != null)
-            {
-                settings = temp;
-            }
-        }
-        else
-        {
-            file.Directory?.Create();
-        }
-
-
-        for(int i =1; i<= 18; i++)
+        for (int i = 1; i <= 18; i++)
         {
             GameButton result;
             string text = Convert.ToString(i).PadLeft(2, '0');
-            Enum.TryParse<GameButton>("GAME_BUTTON_CUSTOM_" + text, false,out result);
+            Enum.TryParse<GameButton>("GAME_BUTTON_CUSTOM_" + text, false, out result);
             Rectangle? rect = this.FindControl<Rectangle>("g" + text);
 
 
@@ -98,10 +82,10 @@ public partial class MainWindow : Window
 
         SolidColorBrush active = new SolidColorBrush(Color.FromRgb(255, 0, 0));
         SolidColorBrush inactive = new SolidColorBrush(Color.FromRgb(200, 200, 200));
-        
+
         bassLeft.Fill = cabinetLight.HasFlag(CabinetLight.LIGHT_BASS_LEFT) ? active : inactive;
         bassRight.Fill = cabinetLight.HasFlag(CabinetLight.LIGHT_BASS_RIGHT) ? active : inactive;
-        
+
         mUpLeft.Fill = cabinetLight.HasFlag(CabinetLight.LIGHT_MARQUEE_UP_LEFT) ? active : inactive;
         mUpRight.Fill = cabinetLight.HasFlag(CabinetLight.LIGHT_MARQUEE_UP_RIGHT) ? active : inactive;
 
@@ -161,6 +145,6 @@ public partial class MainWindow : Window
 
     private void DebugChanged(object? sender, Avalonia.Interactivity.RoutedEventArgs e)
     {
-        debug = (bool) (sender as CheckBox)!.IsChecked;
+        debug = (bool)(sender as CheckBox)!.IsChecked!;
     }
 }
