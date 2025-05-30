@@ -28,18 +28,9 @@ public partial class MainWindow : Window
     Dictionary<Rectangle, GameButton> RectToGB = new Dictionary<Rectangle, GameButton>();
     Dictionary<GameButton, Rectangle> GBToRect = new Dictionary<GameButton, Rectangle>();
 
-    public bool debug;
-
     public MainWindow()
     {
         Instance = this;
-
-        Settings.Load();
-
-        InitializeComponent();
-
-        PipeManager.Start();
-        LightingManager.Start();
 
         for (int i = 1; i <= 18; i++)
         {
@@ -48,7 +39,6 @@ public partial class MainWindow : Window
             Enum.TryParse<GameButton>("GAME_BUTTON_CUSTOM_" + text, false, out result);
             Rectangle? rect = this.FindControl<Rectangle>("g" + text);
 
-
             RectToGB.Add(rect!, result);
             GBToRect.Add(result, rect!);
             rect!.PointerPressed += Rectangle_PointerPressed;
@@ -56,6 +46,9 @@ public partial class MainWindow : Window
             rect!.PointerExited += Rectangle_PointerExited;
 
         }
+
+        InitializeComponent();
+
     }
 
     public void UpdateUi()
@@ -141,10 +134,5 @@ public partial class MainWindow : Window
         {
             gameState.state.gameButton &= ~RectToGB[(sender as Rectangle)!];
         }
-    }
-
-    private void DebugChanged(object? sender, Avalonia.Interactivity.RoutedEventArgs e)
-    {
-        debug = (bool)(sender as CheckBox)!.IsChecked!;
     }
 }

@@ -14,6 +14,7 @@ using Extensions;
 using System.Xml.Serialization;
 using System.Text.Json;
 using LTEK_ULed.Views;
+using LTEK_ULed.ViewModels;
 
 namespace LTEK_ULed.Code
 {
@@ -131,7 +132,7 @@ namespace LTEK_ULed.Code
                 while (!token.IsCancellationRequested)
                 {
 
-                    while (sw.ElapsedMilliseconds < wait || (!GameState.gameState.Connected && !MainWindow.Instance!.debug && !token.IsCancellationRequested));
+                    while (sw.ElapsedMilliseconds < wait || (!GameState.gameState.Connected && !MainViewModel.Instance!.debug && !token.IsCancellationRequested));
 
 
                     sw.Reset();
