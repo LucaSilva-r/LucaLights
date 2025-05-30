@@ -30,10 +30,4 @@
     <PackageReference Include="System.Configuration.ConfigurationManager" Version="9.0.4" />
     <PackageReference Include="System.IO.Ports" Version="9.0.4" />
   </ItemGroup>
-
-  <ItemGroup>
-    <Compile Update="Views\PadSettings.axaml.cs">
-      <DependentUpon>PadSettings.axaml</DependentUpon>
-    </Compile>
-  </ItemGroup>
 </Project>

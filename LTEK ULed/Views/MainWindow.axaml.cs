@@ -30,6 +30,8 @@ public partial class MainWindow : Window
 
     public MainWindow()
     {
+        InitializeComponent();
+
         Instance = this;
 
         for (int i = 1; i <= 18; i++)
@@ -47,7 +49,6 @@ public partial class MainWindow : Window
 
         }
 
-        InitializeComponent();
 
     }
 
@@ -97,13 +98,7 @@ public partial class MainWindow : Window
             }
         }
     }
-    private async void SettingsClicked(object? sender, Avalonia.Interactivity.RoutedEventArgs e)
-    {
 
-        Window settings = new PadSettings();
-        await settings.ShowDialog(this);
-
-    }
 
     private void Rectangle_PointerPressed(object? sender, Avalonia.Input.PointerPressedEventArgs e)
     {

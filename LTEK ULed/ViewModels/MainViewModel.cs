@@ -4,6 +4,7 @@ using LTEK_ULed.Code;
 using LTEK_ULed.Views;
 using System;
 using System.Collections.Generic;
+using System.Collections.ObjectModel;
 
 namespace LTEK_ULed.ViewModels;
 
@@ -13,6 +14,8 @@ public partial class MainViewModel : ViewModelBase
     public static MainViewModel? Instance { get; private set; }
 
     public bool debug { get; set; }
+
+    ObservableCollection<Device> Devices => Settings.Instance!.devices;
 
     public MainViewModel() {
 

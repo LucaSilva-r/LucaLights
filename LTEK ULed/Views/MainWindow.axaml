@@ -7,375 +7,394 @@
         mc:Ignorable="d" d:DesignWidth="800" d:DesignHeight="450"
         x:Class="LTEK_ULed.Views.MainWindow"
         Icon="/Assets/avalonia-logo.ico"
-        Title="LTEK_ULed"
+        Title="Status"
 		MinHeight="720"
 		MinWidth="1280"
+        xmlns:controls="clr-namespace:LTEK_ULed"
 		>
 
 
-	<Grid>
-		<Grid.ColumnDefinitions>
-			<ColumnDefinition Width="*"></ColumnDefinition>
-			<ColumnDefinition Width="*"></ColumnDefinition>
-		</Grid.ColumnDefinitions>
+	<Border Padding="10">
+		<Grid>
+			<Grid.ColumnDefinitions>
+				<ColumnDefinition Width="500"></ColumnDefinition>
+				<ColumnDefinition Width="*"></ColumnDefinition>
+			</Grid.ColumnDefinitions>
 
-		<StackPanel VerticalAlignment="Center" Spacing="10">
-			<Border Padding="10" BorderThickness="2" BorderBrush="{DynamicResource BackgroundBrush}">
-
-				<StackPanel>
-					<StackPanel Orientation="Horizontal">
-						<TextBlock Margin="0,0,10,0" Text="Status" FontSize="24" FontWeight="Bold"></TextBlock>
-						<CheckBox VerticalAlignment="Center" x:CompileBindings="False" IsChecked="{Binding debug}" IsCheckedChanged="DebugChanged" >Debug?</CheckBox>
-					</StackPanel>
-					<StackPanel Orientation="Horizontal">
-						<!--Cabinet-->
-						<Border Padding="5" BorderThickness="1" BorderBrush="{DynamicResource BackgroundBrush}">
-							<StackPanel>
-								<TextBlock Text="Cabinet" HorizontalAlignment="Center" FontWeight="Bold">
-								</TextBlock>
-								<Grid HorizontalAlignment="Center">
-									<Grid.ColumnDefinitions>
-										<ColumnDefinition Width="33"/>
-										<ColumnDefinition Width="32"/>
-										<ColumnDefinition Width="32"/>
-										<ColumnDefinition Width="33"/>
-									</Grid.ColumnDefinitions>
-									<Grid.RowDefinitions>
-										<RowDefinition Height="33"/>
-										<RowDefinition Height="32"/>
-										<RowDefinition Height="33"/>
-										<RowDefinition Height="33"/>
-										<RowDefinition Height="33"/>
-
-									</Grid.RowDefinitions>
-
-									<Rectangle
-										x:Name="mUpLeft"
-										Grid.Column="0" Grid.Row="0"
-										Fill="{DynamicResource BackgroundBrush}"
-										Width="30"
-										Height="30"/>
-										
-									<Rectangle
-										x:Name="mUpRight"
-										Grid.Column="3" Grid.Row="0"
-										Fill="{DynamicResource BackgroundBrush}"
-										Width="30"
-										Height="30"/>
-									<Rectangle
-										x:Name="mDownLeft"
-										Grid.Column="0" Grid.Row="2"
-										Fill="{DynamicResource BackgroundBrush}"
-										Width="30"
-										Height="30"/>
-									<Rectangle
-										x:Name="mDownRight"
-										Grid.Column="3" Grid.Row="2"
-										Fill="{DynamicResource BackgroundBrush}"
-										Width="30"
-										Height="30"/>
-									<Rectangle
-										x:Name="bassLeft"
-										Grid.Column="0" Grid.Row="3" Grid.RowSpan="2"
-										Fill="{DynamicResource BackgroundBrush}"
-										Width="30"
-										Height="60"/>
-									<Rectangle
-										x:Name="bassRight"
-										Grid.Column="3" Grid.Row="3" Grid.RowSpan="2"
-										Fill="{DynamicResource BackgroundBrush}"
-										Width="30"
-										Height="60"/>
-								</Grid>
-							</StackPanel>
-						</Border>
-
-						<!--Player 1-->
-						<Border  x:Name="player1" Padding="5" BorderThickness="1" BorderBrush="{DynamicResource BackgroundBrush}">
-							<StackPanel>
-								<TextBlock Text="Player 1" HorizontalAlignment="Center" FontWeight="Bold">
-								</TextBlock>
-								<TextBlock Text="Combo: ">
-									<TextBlock Text="100" FontWeight="Bold"></TextBlock>
-								</TextBlock>
-								<TextBlock Text="Precision: ">
-									<TextBlock Text="100" FontWeight="Bold"></TextBlock>
-									<TextBlock Text="%" FontWeight="Bold"></TextBlock>
-								</TextBlock>
-								<Grid HorizontalAlignment="Center">
-									<Grid.ColumnDefinitions>
-										<ColumnDefinition Width="33"/>
-										<ColumnDefinition Width="32"/>
-										<ColumnDefinition Width="33"/>
-									</Grid.ColumnDefinitions>
-									<Grid.RowDefinitions>
-										<RowDefinition Height="33"/>
-										<RowDefinition Height="32"/>
-										<RowDefinition Height="33"/>
-									</Grid.RowDefinitions>
-
-
-									<Rectangle
-										Grid.Column="0" Grid.Row="0"
-										x:Name="g05"
-										Fill="{DynamicResource BackgroundBrush}"
-										Width="30"
-										Height="30"/>
-									<Rectangle
-										Grid.Column="1" Grid.Row="0"
-										x:Name="g03"
-										Fill="{DynamicResource BackgroundBrush}"
-										Width="30"
-										Height="30"/>
-									<Rectangle
-										Grid.Column="2" Grid.Row="0"
-										x:Name="g06"
-										Fill="{DynamicResource BackgroundBrush}"
-										Width="30"
-										Height="30"/>
-									<Rectangle
-										Grid.Column="0" Grid.Row="1"
-										x:Name="g01"
-										Fill="{DynamicResource BackgroundBrush}"
-										Width="30"
-										Height="30"/>
-									<Rectangle
-										Grid.Column="1" Grid.Row="1"
-										x:Name="g07"
-										Fill="{DynamicResource BackgroundBrush}"
-										Width="30"
-										Height="30"/>
-									<Rectangle
-										Grid.Column="2" Grid.Row="1"
-										x:Name="g02"
-										Fill="{DynamicResource BackgroundBrush}"
-										Width="30"
-										Height="30"/>
-									<Rectangle
-										Grid.Column="0" Grid.Row="2"
-										x:Name="g08"
-										Fill="{DynamicResource BackgroundBrush}"
-										Width="30"
-										Height="30"/>
-									<Rectangle
-										Grid.Column="1" Grid.Row="2"
-										x:Name="g04"
-										Fill="{DynamicResource BackgroundBrush}"
-										Width="30"
-										Height="30"/>
-									<Rectangle
-										Grid.Column="2" Grid.Row="2"
-										x:Name="g09"
-										Fill="{DynamicResource BackgroundBrush}"
-										Width="30"
-										Height="30"/>
-								</Grid>
-							</StackPanel>
-
-						</Border>
-						<Border  x:Name="player2" Padding="5" BorderThickness="1" BorderBrush="{DynamicResource BackgroundBrush}">
-							<StackPanel>
-								<TextBlock Text="Player 2" HorizontalAlignment="Center" FontWeight="Bold">
-								</TextBlock>
-								<TextBlock Text="Combo: ">
-									<TextBlock Text="100" FontWeight="Bold"></TextBlock>
-								</TextBlock>
-								<TextBlock Text="Precision: ">
-									<TextBlock Text="100" FontWeight="Bold"></TextBlock>
-									<TextBlock Text="%" FontWeight="Bold"></TextBlock>
-								</TextBlock>
-								<Grid HorizontalAlignment="Center">
-									<Grid.ColumnDefinitions>
-										<ColumnDefinition Width="33"/>
-										<ColumnDefinition Width="32"/>
-										<ColumnDefinition Width="33"/>
-									</Grid.ColumnDefinitions>
-									<Grid.RowDefinitions>
-										<RowDefinition Height="33"/>
-										<RowDefinition Height="32"/>
-										<RowDefinition Height="33"/>
-									</Grid.RowDefinitions>
-
-
-									<Rectangle
-										Grid.Column="0" Grid.Row="0"
-										x:Name="g14"
-										Fill="{DynamicResource BackgroundBrush}"
-										Width="30"
-										Height="30"/>
-									<Rectangle
-										Grid.Column="1" Grid.Row="0"
-										x:Name="g12"
-										Fill="{DynamicResource BackgroundBrush}"
-										Width="30"
-										Height="30"/>
-									<Rectangle
-										Grid.Column="2" Grid.Row="0"
-										x:Name="g15"
-										Fill="{DynamicResource BackgroundBrush}"
-										Width="30"
-										Height="30"/>
-									<Rectangle
-										Grid.Column="0" Grid.Row="1"
-										x:Name="g10"
-										Fill="{DynamicResource BackgroundBrush}"
-										Width="30"
-										Height="30"/>
-									<Rectangle
-										Grid.Column="1" Grid.Row="1"
-										x:Name="g16"
-										Fill="{DynamicResource BackgroundBrush}"
-										Width="30"
-										Height="30"/>
-									<Rectangle
-										Grid.Column="2" Grid.Row="1"
-										x:Name="g11"
-										Fill="{DynamicResource BackgroundBrush}"
-										Width="30"
-										Height="30"/>
-									<Rectangle
-										Grid.Column="0" Grid.Row="2"
-										x:Name="g17"
-										Fill="{DynamicResource BackgroundBrush}"
-										Width="30"
-										Height="30"/>
-									<Rectangle
-										Grid.Column="1" Grid.Row="2"
-										x:Name="g13"
-										Fill="{DynamicResource BackgroundBrush}"
-										Width="30"
-										Height="30"/>
-									<Rectangle
-										Grid.Column="2" Grid.Row="2"
-										x:Name="g18"
-										Fill="{DynamicResource BackgroundBrush}"
-										Width="30"
-										Height="30"/>
-								</Grid>
-							</StackPanel>
-						</Border>
-					</StackPanel>
-				</StackPanel>
-			</Border>
-		</StackPanel>
-
-		<StackPanel Grid.Column="1" VerticalAlignment="Center">
-			<Grid Width="370" Height="370" >
-				<Grid.ColumnDefinitions>
-					<ColumnDefinition></ColumnDefinition>
-					<ColumnDefinition></ColumnDefinition>
-					<ColumnDefinition></ColumnDefinition>
-				</Grid.ColumnDefinitions>
+			<Grid>
 				<Grid.RowDefinitions>
-					<RowDefinition></RowDefinition>
-					<RowDefinition></RowDefinition>
-					<RowDefinition></RowDefinition>
+					<RowDefinition Height="300"></RowDefinition>
+					<RowDefinition Height="*"></RowDefinition>
 				</Grid.RowDefinitions>
+				<!--Status-->
+				<Border Margin="10" Padding="20" BorderThickness="1" CornerRadius="10" BoxShadow="0 10 30 0 LightGray" BorderBrush="{DynamicResource BackgroundBrush}">
 
-				<Button Grid.Row="2"
-						Grid.Column="1"
-						Name="down"
-						Width="100"
-						Height="100"
-						FontSize="50"
-						FontFamily="{StaticResource BootstrapIcons}"
-						Content="&#xF128;"/>
+					<DockPanel>
+						<StackPanel Orientation="Horizontal" DockPanel.Dock="Top">
+							<TextBlock Margin="0,0,10,0" Text="Status" FontSize="24" FontWeight="Bold"></TextBlock>
+							<CheckBox VerticalAlignment="Center" x:CompileBindings="False" IsChecked="{Binding debug}" >Debug?</CheckBox>
+						</StackPanel>
+						<StackPanel Orientation="Horizontal" Spacing="20">
+							<!--Cabinet-->
+							<Border Padding="5" CornerRadius="10" BorderThickness="1" BorderBrush="{DynamicResource BackgroundBrush}">
+								<StackPanel VerticalAlignment="Center">
+									<TextBlock Text="Cabinet" HorizontalAlignment="Center" FontWeight="Bold">
+									</TextBlock>
+									<Grid HorizontalAlignment="Center">
+										<Grid.ColumnDefinitions>
+											<ColumnDefinition Width="33"/>
+											<ColumnDefinition Width="32"/>
+											<ColumnDefinition Width="32"/>
+											<ColumnDefinition Width="33"/>
+										</Grid.ColumnDefinitions>
+										<Grid.RowDefinitions>
+											<RowDefinition Height="33"/>
+											<RowDefinition Height="32"/>
+											<RowDefinition Height="33"/>
+											<RowDefinition Height="33"/>
+											<RowDefinition Height="33"/>
 
-				<Button Grid.Row="1"
-						Grid.Column="0"
-						Name="left"
-						Width="100"
-						Height="100"
-						FontSize="50"
-						FontFamily="{StaticResource BootstrapIcons}"
-						Content="&#xF12F;"/>
+										</Grid.RowDefinitions>
 
-				<Button Grid.Row="1"
-						Grid.Column="2"
-						Name="right"
-						Width="100"
-						Height="100"
-						FontSize="50"
-						FontFamily="{StaticResource BootstrapIcons}"
-						Content="&#xF138;"/>
+										<Rectangle
+											x:Name="mUpLeft"
+											Grid.Column="0" Grid.Row="0"
+											Fill="{DynamicResource BackgroundBrush}"
+											Width="30"
+											Height="30"/>
 
-				<Button Grid.Row="0"
-						Grid.Column="1"
-						Name="up"
-						Width="100"
-						Height="100"
-						FontSize="50"
-						FontFamily="{StaticResource BootstrapIcons}"
-						Content="&#xF148;"/>
+										<Rectangle
+											x:Name="mUpRight"
+											Grid.Column="3" Grid.Row="0"
+											Fill="{DynamicResource BackgroundBrush}"
+											Width="30"
+											Height="30"/>
+										<Rectangle
+											x:Name="mDownLeft"
+											Grid.Column="0" Grid.Row="2"
+											Fill="{DynamicResource BackgroundBrush}"
+											Width="30"
+											Height="30"/>
+										<Rectangle
+											x:Name="mDownRight"
+											Grid.Column="3" Grid.Row="2"
+											Fill="{DynamicResource BackgroundBrush}"
+											Width="30"
+											Height="30"/>
+										<Rectangle
+											x:Name="bassLeft"
+											Grid.Column="0" Grid.Row="3" Grid.RowSpan="2"
+											Fill="{DynamicResource BackgroundBrush}"
+											Width="30"
+											Height="60"/>
+										<Rectangle
+											x:Name="bassRight"
+											Grid.Column="3" Grid.Row="3" Grid.RowSpan="2"
+											Fill="{DynamicResource BackgroundBrush}"
+											Width="30"
+											Height="60"/>
+									</Grid>
+								</StackPanel>
+							</Border>
 
-				<Button Grid.Row="0"
-						Grid.Column="0"
-						Name="upleft"
-						Width="100"
-						Height="100"
-						FontSize="50"
-						FontFamily="{StaticResource BootstrapIcons}"
-						Content="&#xF13F;"/>
+							<!--Player 1-->
+							<Border CornerRadius="10"  x:Name="player1" Padding="5" BorderThickness="1" BorderBrush="{DynamicResource BackgroundBrush}">
+								<StackPanel VerticalAlignment="Center">
+									<TextBlock Text="Player 1" HorizontalAlignment="Center" FontWeight="Bold">
+									</TextBlock>
+									<TextBlock Text="Combo: ">
+										<TextBlock Text="100" FontWeight="Bold"></TextBlock>
+									</TextBlock>
+									<TextBlock Text="Precision: ">
+										<TextBlock Text="100" FontWeight="Bold"></TextBlock>
+										<TextBlock Text="%" FontWeight="Bold"></TextBlock>
+									</TextBlock>
+									<Grid HorizontalAlignment="Center">
+										<Grid.ColumnDefinitions>
+											<ColumnDefinition Width="33"/>
+											<ColumnDefinition Width="32"/>
+											<ColumnDefinition Width="33"/>
+										</Grid.ColumnDefinitions>
+										<Grid.RowDefinitions>
+											<RowDefinition Height="33"/>
+											<RowDefinition Height="32"/>
+											<RowDefinition Height="33"/>
+										</Grid.RowDefinitions>
 
-				<Button Grid.Row="0"
-						Grid.Column="2"
-						Name="upright"
-						Width="100"
-						Height="100"
-						FontSize="50"
-						FontFamily="{StaticResource BootstrapIcons}"
-						Content="&#xF144;"/>
 
-				<Button Grid.Row="2"
-						Grid.Column="0"
-						Name="bottomleft"
-						Width="100"
-						Height="100"
-						FontSize="50"
-						FontFamily="{StaticResource BootstrapIcons}"
-						Content="&#xF11E;"/>
+										<Rectangle
+											Grid.Column="0" Grid.Row="0"
+											x:Name="g05"
+											Fill="{DynamicResource BackgroundBrush}"
+											Width="30"
+											Height="30"/>
+										<Rectangle
+											Grid.Column="1" Grid.Row="0"
+											x:Name="g03"
+											Fill="{DynamicResource BackgroundBrush}"
+											Width="30"
+											Height="30"/>
+										<Rectangle
+											Grid.Column="2" Grid.Row="0"
+											x:Name="g06"
+											Fill="{DynamicResource BackgroundBrush}"
+											Width="30"
+											Height="30"/>
+										<Rectangle
+											Grid.Column="0" Grid.Row="1"
+											x:Name="g01"
+											Fill="{DynamicResource BackgroundBrush}"
+											Width="30"
+											Height="30"/>
+										<Rectangle
+											Grid.Column="1" Grid.Row="1"
+											x:Name="g07"
+											Fill="{DynamicResource BackgroundBrush}"
+											Width="30"
+											Height="30"/>
+										<Rectangle
+											Grid.Column="2" Grid.Row="1"
+											x:Name="g02"
+											Fill="{DynamicResource BackgroundBrush}"
+											Width="30"
+											Height="30"/>
+										<Rectangle
+											Grid.Column="0" Grid.Row="2"
+											x:Name="g08"
+											Fill="{DynamicResource BackgroundBrush}"
+											Width="30"
+											Height="30"/>
+										<Rectangle
+											Grid.Column="1" Grid.Row="2"
+											x:Name="g04"
+											Fill="{DynamicResource BackgroundBrush}"
+											Width="30"
+											Height="30"/>
+										<Rectangle
+											Grid.Column="2" Grid.Row="2"
+											x:Name="g09"
+											Fill="{DynamicResource BackgroundBrush}"
+											Width="30"
+											Height="30"/>
+									</Grid>
+								</StackPanel>
 
-				<Button Grid.Row="2"
-						Grid.Column="2"
-						Name="bottomright"
-						Width="100"
-						Height="100"
-						FontSize="50"
-						FontFamily="{StaticResource BootstrapIcons}"
-						Content="&#xF123;"/>
+							</Border>
+							<!--Player 2--> 
+							<Border CornerRadius="10" x:Name="player2" Padding="5" BorderThickness="1" BorderBrush="{DynamicResource BackgroundBrush}">
+								<StackPanel VerticalAlignment="Center">
+									<TextBlock Text="Player 2" HorizontalAlignment="Center" FontWeight="Bold">
+									</TextBlock>
+									<TextBlock Text="Combo: ">
+										<TextBlock Text="100" FontWeight="Bold"></TextBlock>
+									</TextBlock>
+									<TextBlock Text="Precision: ">
+										<TextBlock Text="100" FontWeight="Bold"></TextBlock>
+										<TextBlock Text="%" FontWeight="Bold"></TextBlock>
+									</TextBlock>
+									<Grid HorizontalAlignment="Center">
+										<Grid.ColumnDefinitions>
+											<ColumnDefinition Width="33"/>
+											<ColumnDefinition Width="32"/>
+											<ColumnDefinition Width="33"/>
+										</Grid.ColumnDefinitions>
+										<Grid.RowDefinitions>
+											<RowDefinition Height="33"/>
+											<RowDefinition Height="32"/>
+											<RowDefinition Height="33"/>
+										</Grid.RowDefinitions>
 
-				<Button Grid.Row="1"
-						Grid.Column="1"
-						Name="center"
-						Width="100"
-						Height="100"
-						FontSize="50"
-						FontFamily="{StaticResource BootstrapIcons}"
-						Content="&#xF14D;"/>
+
+										<Rectangle
+											Grid.Column="0" Grid.Row="0"
+											x:Name="g14"
+											Fill="{DynamicResource BackgroundBrush}"
+											Width="30"
+											Height="30"/>
+										<Rectangle
+											Grid.Column="1" Grid.Row="0"
+											x:Name="g12"
+											Fill="{DynamicResource BackgroundBrush}"
+											Width="30"
+											Height="30"/>
+										<Rectangle
+											Grid.Column="2" Grid.Row="0"
+											x:Name="g15"
+											Fill="{DynamicResource BackgroundBrush}"
+											Width="30"
+											Height="30"/>
+										<Rectangle
+											Grid.Column="0" Grid.Row="1"
+											x:Name="g10"
+											Fill="{DynamicResource BackgroundBrush}"
+											Width="30"
+											Height="30"/>
+										<Rectangle
+											Grid.Column="1" Grid.Row="1"
+											x:Name="g16"
+											Fill="{DynamicResource BackgroundBrush}"
+											Width="30"
+											Height="30"/>
+										<Rectangle
+											Grid.Column="2" Grid.Row="1"
+											x:Name="g11"
+											Fill="{DynamicResource BackgroundBrush}"
+											Width="30"
+											Height="30"/>
+										<Rectangle
+											Grid.Column="0" Grid.Row="2"
+											x:Name="g17"
+											Fill="{DynamicResource BackgroundBrush}"
+											Width="30"
+											Height="30"/>
+										<Rectangle
+											Grid.Column="1" Grid.Row="2"
+											x:Name="g13"
+											Fill="{DynamicResource BackgroundBrush}"
+											Width="30"
+											Height="30"/>
+										<Rectangle
+											Grid.Column="2" Grid.Row="2"
+											x:Name="g18"
+											Fill="{DynamicResource BackgroundBrush}"
+											Width="30"
+											Height="30"/>
+									</Grid>
+								</StackPanel>
+							</Border>
+						</StackPanel>
+					</DockPanel>
+				</Border>
+				
+				<!--Devices-->
+				<Border Grid.Row="1" Margin="10" Padding="20" BorderThickness="1" CornerRadius="10" BoxShadow="0 10 30 0 LightGray" BorderBrush="{DynamicResource BackgroundBrush}">
+					<DockPanel>
+						<TextBlock DockPanel.Dock="Top" Text="Devices" FontSize="24" FontWeight="Bold"></TextBlock>
+						<ScrollViewer>
+							<StackPanel>
+								<ItemsControl  x:CompileBindings="False" ItemsSource="{Binding Devices}" >
+									<ItemsControl.ItemTemplate>
+										<DataTemplate>
+											<!--<Border Margin="0,10,0,0"
+												CornerRadius="5"
+												BorderBrush="Gray" BorderThickness="1"
+												Padding="5">
+												<StackPanel Orientation="Horizontal">
+													<TextBlock Text="{Binding }"/>
+													<TextBlock Margin="5 0" FontWeight="Bold"
+																Text="2"/>
+												</StackPanel>
+											</Border>-->
+											<controls:DeviceControl DeviceName="{Binding name}" IpAddress="{Binding ip}" NumberOfLeds="{Binding Nleds}" NumberOfSegments="{Binding Nsegments}"></controls:DeviceControl>
+										</DataTemplate>
+									</ItemsControl.ItemTemplate>
+								</ItemsControl>
+							</StackPanel>
+						</ScrollViewer>
+					</DockPanel>
+				</Border>
+
 			</Grid>
 
-			<Button Click="SettingsClicked"
-					HorizontalAlignment="Right"
-					Margin="20"
-					CornerRadius="50"
-					Width="50" Height="50"
-					FontSize="20"
-					FontFamily="{StaticResource BootstrapIcons}"
-					Content="&#xF3E2;"/>
-		</StackPanel>
-	</Grid>
+			<StackPanel Grid.Column="1" VerticalAlignment="Center">
+				<Grid Width="370" Height="370" >
+					<Grid.ColumnDefinitions>
+						<ColumnDefinition></ColumnDefinition>
+						<ColumnDefinition></ColumnDefinition>
+						<ColumnDefinition></ColumnDefinition>
+					</Grid.ColumnDefinitions>
+					<Grid.RowDefinitions>
+						<RowDefinition></RowDefinition>
+						<RowDefinition></RowDefinition>
+						<RowDefinition></RowDefinition>
+					</Grid.RowDefinitions>
+
+					<Button Grid.Row="2"
+							Grid.Column="1"
+							Name="down"
+							Width="100"
+							Height="100"
+							FontSize="50"
+							FontFamily="{StaticResource BootstrapIcons}"
+							Content="&#xF128;"/>
+
+					<Button Grid.Row="1"
+							Grid.Column="0"
+							Name="left"
+							Width="100"
+							Height="100"
+							FontSize="50"
+							FontFamily="{StaticResource BootstrapIcons}"
+							Content="&#xF12F;"/>
+
+					<Button Grid.Row="1"
+							Grid.Column="2"
+							Name="right"
+							Width="100"
+							Height="100"
+							FontSize="50"
+							FontFamily="{StaticResource BootstrapIcons}"
+							Content="&#xF138;"/>
+
+					<Button Grid.Row="0"
+							Grid.Column="1"
+							Name="up"
+							Width="100"
+							Height="100"
+							FontSize="50"
+							FontFamily="{StaticResource BootstrapIcons}"
+							Content="&#xF148;"/>
+
+					<Button Grid.Row="0"
+							Grid.Column="0"
+							Name="upleft"
+							Width="100"
+							Height="100"
+							FontSize="50"
+							FontFamily="{StaticResource BootstrapIcons}"
+							Content="&#xF13F;"/>
+
+					<Button Grid.Row="0"
+							Grid.Column="2"
+							Name="upright"
+							Width="100"
+							Height="100"
+							FontSize="50"
+							FontFamily="{StaticResource BootstrapIcons}"
+							Content="&#xF144;"/>
+
+					<Button Grid.Row="2"
+							Grid.Column="0"
+							Name="bottomleft"
+							Width="100"
+							Height="100"
+							FontSize="50"
+							FontFamily="{StaticResource BootstrapIcons}"
+							Content="&#xF11E;"/>
+
+					<Button Grid.Row="2"
+							Grid.Column="2"
+							Name="bottomright"
+							Width="100"
+							Height="100"
+							FontSize="50"
+							FontFamily="{StaticResource BootstrapIcons}"
+							Content="&#xF123;"/>
+
+					<Button Grid.Row="1"
+							Grid.Column="1"
+							Name="center"
+							Width="100"
+							Height="100"
+							FontSize="50"
+							FontFamily="{StaticResource BootstrapIcons}"
+							Content="&#xF14D;"/>
+				</Grid>
+			</StackPanel>
+		</Grid>
+
+	</Border>
 
 
-	<Window.Resources>
-		<ResourceDictionary>
-			<ResourceDictionary.ThemeDictionaries>
-				<ResourceDictionary x:Key='Light'>
-					<SolidColorBrush x:Key='BackgroundBrush'>LightGray</SolidColorBrush>
-				</ResourceDictionary>
-				<ResourceDictionary x:Key='Dark'>
-					<SolidColorBrush x:Key='BackgroundBrush'>White</SolidColorBrush>
-				</ResourceDictionary>
-			</ResourceDictionary.ThemeDictionaries>
-		</ResourceDictionary>
-	</Window.Resources>
+
 </Window>

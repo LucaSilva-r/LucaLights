@@ -1,0 +1,34 @@
+<UserControl xmlns="https://github.com/avaloniaui"
+             xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+             xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
+             xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
+             mc:Ignorable="d" d:DesignWidth="800" d:DesignHeight=""
+             x:Class="LTEK_ULed.DeviceControl"
+	         xmlns:controls="clr-namespace:CustomControl.Controls"
+>
+
+	<Border Padding="10" BorderBrush="{DynamicResource BackgroundBrush}" BorderThickness="1" CornerRadius="10" Margin="10">
+		<DockPanel LastChildFill="False">
+			<StackPanel DockPanel.Dock="Left">
+				<TextBlock x:CompileBindings="False" Text="{Binding $parent[3].DeviceName}" FontWeight="Bold" FontSize="18"></TextBlock>
+				<StackPanel Orientation="Horizontal" Spacing="5">
+					<StackPanel Orientation="Horizontal">
+						<TextBlock x:CompileBindings="False"  Text="Ip: " FontSize="14" FontWeight="Bold"></TextBlock>
+						<TextBlock x:CompileBindings="False"  Text="{Binding $parent[5].IpAddress}" FontSize="14"></TextBlock>
+					</StackPanel>
+					<StackPanel Orientation="Horizontal">
+						<TextBlock x:CompileBindings="False"  Text="Segments: " FontSize="14" FontWeight="Bold"></TextBlock>
+						<TextBlock x:CompileBindings="False"  Text="{Binding $parent[5].NumberOfSegments}" FontSize="14"></TextBlock>
+					</StackPanel>
+					<StackPanel Orientation="Horizontal">
+						<TextBlock x:CompileBindings="False"  Text="Leds: " FontSize="14" FontWeight="Bold"></TextBlock>
+						<TextBlock x:CompileBindings="False"  Text="{Binding $parent[5].NumberOfLeds}" FontSize="14"></TextBlock>
+					</StackPanel>
+				</StackPanel>
+			</StackPanel>
+			<Button DockPanel.Dock="Right">
+				Setup
+			</Button>
+		</DockPanel>
+	</Border>
+</UserControl>

@@ -16,13 +16,13 @@ namespace LTEK_ULed.Code
     {
         public static Settings? Instance;
 
-        public List<Device> devices { get; set; } = new List<Device>();
+        public ObservableCollection<Device> devices { get; set; } = new();
 
 
         [JsonIgnore]
         public bool Dirty { get; private set; } = true;
 
-        public Settings(List<Device> devices)
+        public Settings(ObservableCollection<Device> devices)
         {
             this.devices = devices;
 

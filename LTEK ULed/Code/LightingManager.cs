@@ -74,7 +74,6 @@ namespace LTEK_ULed.Code
 
             private void Setup()
             {
-                Debug.WriteLine("HMMMM");
                 buttonMappings = new();
                 cabinetMappings = new();
 

@@ -21,6 +21,11 @@ namespace LTEK_ULed.Code
         public string name { get; set; } = string.Empty;
         public string ip { get; set; } = string.Empty;
 
+        [JsonIgnore]
+        public int Nsegments { get; set; } = 0;
+        [JsonIgnore]
+        public int Nleds { get; set; } = 0;
+
         public List<Segment> segments { get; private set; } = new List<Segment>();
 
         private Color[] data = new Color[0];
@@ -49,8 +54,10 @@ namespace LTEK_ULed.Code
 
             data = new Color[counter];
 
-            dDPsend?.Dispose();
+            Nleds = counter;
+            Nsegments = segments.Count;
 
+            dDPsend?.Dispose();
             dDPsend = new DDPSend(this.ip, data.Length);
         }
 

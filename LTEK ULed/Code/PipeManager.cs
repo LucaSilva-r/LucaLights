@@ -1,4 +1,5 @@
-﻿using LTEK_ULed.Views;
+﻿using LTEK_ULed.ViewModels;
+using LTEK_ULed.Views;
 using System;
 using System.Collections.Generic;
 using System.Diagnostics;
@@ -108,7 +109,7 @@ namespace LTEK_ULed.Code
                         }
                         if (counter == buffer.Length)
                         {
-                            if (!MainWindow.Instance!.debug)
+                            if (!MainViewModel.Instance!.debug)
                             {
                                 GameState.gameState.Parse(buffer);
                             }
