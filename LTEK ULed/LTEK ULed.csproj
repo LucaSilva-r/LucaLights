@@ -4,6 +4,9 @@
     <Nullable>enable</Nullable>
     <LangVersion>latest</LangVersion>
     <AvaloniaUseCompiledBindingsByDefault>true</AvaloniaUseCompiledBindingsByDefault>
+    <PublishAot>true</PublishAot>
+	<BuiltInComInteropSupport>false</BuiltInComInteropSupport>
+	<TrimMode>link</TrimMode>
   </PropertyGroup>
 
   <ItemGroup>
@@ -11,9 +14,7 @@
   </ItemGroup>
 
   <ItemGroup>
-    <None Remove="Assets\arrow.png" />
     <None Remove="Assets\bootstrap-icons.ttf" />
-    <None Remove="Assets\reload.png" />
   </ItemGroup>
 
   <ItemGroup>

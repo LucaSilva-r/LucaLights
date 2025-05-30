@@ -62,7 +62,7 @@ namespace LTEK_ULed.Code
             CancellationToken token;
 
 
-            int wait = 1000/60;
+            int wait = 1000 / 60;
 
             public LightThread(CancellationToken token)
             {
@@ -115,7 +115,7 @@ namespace LTEK_ULed.Code
 
                 inputTimers = new float[totalSegments];
                 visualTimers = new float[totalSegments];
-                
+
                 Settings.Instance!.ClearDirty();
             }
 
@@ -131,7 +131,9 @@ namespace LTEK_ULed.Code
                 while (!token.IsCancellationRequested)
                 {
 
-                    while (sw.ElapsedMilliseconds < wait || (!GameState.gameState.Connected && !MainViewModel.Instance!.debug && !token.IsCancellationRequested));
+                    while (sw.ElapsedMilliseconds < wait || (!GameState.gameState.Connected && !MainViewModel.Instance!.debug && !token.IsCancellationRequested)) { 
+                        Thread.Sleep(1); 
+                    }
 
 
                     sw.Reset();
@@ -181,7 +183,7 @@ namespace LTEK_ULed.Code
                         }
                         else
                         {
-                            FillSegment(segment, Color.FromRgb(0,0,0));
+                            FillSegment(segment, Color.FromRgb(0, 0, 0));
                         }
                     }
                 }
@@ -223,7 +225,7 @@ namespace LTEK_ULed.Code
                             inputTimers[index] = Math.Clamp(inputTimers[index] - decreaseSpeed, 0, 100);
                         }
 
-                        FillSegment(segment, Color.FromRgb(0,0,0));
+                        FillSegment(segment, Color.FromRgb(0, 0, 0));
                         CollapsingAnimation(segment, 4, inputTimers[index], FireAnimation(inputTimers[index]));
 
                         indexj++;
