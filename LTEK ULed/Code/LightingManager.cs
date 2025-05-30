@@ -2,7 +2,6 @@
 using System;
 using System.Collections.Generic;
 using System.Diagnostics;
-using System.Drawing;
 using System.Linq;
 using System.Runtime.InteropServices;
 using System.Text;
@@ -15,6 +14,7 @@ using System.Xml.Serialization;
 using System.Text.Json;
 using LTEK_ULed.Views;
 using LTEK_ULed.ViewModels;
+using Avalonia.Media;
 
 namespace LTEK_ULed.Code
 {
@@ -181,7 +181,7 @@ namespace LTEK_ULed.Code
                         }
                         else
                         {
-                            FillSegment(segment, Color.Black);
+                            FillSegment(segment, Color.FromRgb(0,0,0));
                         }
                     }
                 }
@@ -223,7 +223,7 @@ namespace LTEK_ULed.Code
                             inputTimers[index] = Math.Clamp(inputTimers[index] - decreaseSpeed, 0, 100);
                         }
 
-                        FillSegment(segment, Color.Black);
+                        FillSegment(segment, Color.FromRgb(0,0,0));
                         CollapsingAnimation(segment, 4, inputTimers[index], FireAnimation(inputTimers[index]));
 
                         indexj++;
@@ -251,7 +251,7 @@ namespace LTEK_ULed.Code
                 fire.H = 0;
                 IRgb c = fire.ToRgb();
 
-                return Color.FromArgb((int)c.R, (int)c.G, (int)c.B);
+                return Color.FromRgb((byte)c.R, (byte)c.G, (byte)c.B);
             }
 
             Color RainbowAnimation(float t)
@@ -262,7 +262,7 @@ namespace LTEK_ULed.Code
                 rainbow.H = t;
                 IRgb c = rainbow.ToRgb();
 
-                return Color.FromArgb((int)c.R, (int)c.G, (int)c.B);
+                return Color.FromRgb((byte)c.R, (byte)c.G, (byte)c.B);
             }
 
             bool IsBitSet(int b, int pos)

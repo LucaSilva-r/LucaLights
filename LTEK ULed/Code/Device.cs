@@ -1,7 +1,6 @@
 ﻿using System;
 using System.Buffers.Binary;
 using System.Collections.Generic;
-using System.Drawing;
 using System.Linq;
 using System.Net.Sockets;
 using System.Net;
@@ -11,11 +10,14 @@ using static System.Runtime.InteropServices.JavaScript.JSType;
 using System.Threading;
 using System.Text.Json.Serialization;
 using System.Diagnostics;
+using System.Collections.ObjectModel;
+using CommunityToolkit.Mvvm.ComponentModel;
+using Avalonia.Media;
 
 namespace LTEK_ULed.Code
 {
     [Serializable]
-    internal class Device
+    internal class Device : ObservableObject
     {
 
         public string name { get; set; } = string.Empty;
@@ -26,18 +28,18 @@ namespace LTEK_ULed.Code
         [JsonIgnore]
         public int Nleds { get; set; } = 0;
 
-        public List<Segment> segments { get; private set; } = new List<Segment>();
+        public ObservableCollection<Segment> segments { get; private set; } = new ObservableCollection<Segment>();
 
         private Color[] data = new Color[0];
 
         DDPSend? dDPsend;
 
-        public Device(string name, string ip, List<Segment> segments)
+        public Device(string name, string ip, ObservableCollection<Segment> segments)
         {
             this.name = name;
 
             this.ip = ip;
-            this.segments = new List<Segment>(segments);
+            this.segments = segments;
 
             Recalculate();
 
@@ -95,10 +97,12 @@ namespace LTEK_ULed.Code
     }
 
     [Serializable]
-    internal class Segment
+    internal class Segment : ObservableObject
     {
         [JsonIgnore]
-        public Color[] leds { get; private set; }
+        public  Color[] leds { get; private set; }
+
+        public string name { get; set; } = "Segment";
 
         public int length
         {
@@ -116,12 +120,13 @@ namespace LTEK_ULed.Code
         public GameButton buttonMapping { get; private set; }
         public CabinetLight cabinetMapping { get; private set; }
 
-        public Segment(int length, GameButton buttonMapping, CabinetLight cabinetMapping)
+        public Segment(string name, int length, GameButton buttonMapping, CabinetLight cabinetMapping)
         {
             this.length = length;
             leds = new Color[length];
             this.buttonMapping = buttonMapping;
             this.cabinetMapping = cabinetMapping;
+            this.name = name;
         }
     }
 

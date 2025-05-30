@@ -22,7 +22,7 @@ public partial class MainViewModel : ViewModelBase
         Instance = this;
 
         Settings.Load();
-
+        Settings.Save();
         PipeManager.Start();
         LightingManager.Start();
 

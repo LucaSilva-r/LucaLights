@@ -275,16 +275,6 @@
 								<ItemsControl  x:CompileBindings="False" ItemsSource="{Binding Devices}" >
 									<ItemsControl.ItemTemplate>
 										<DataTemplate>
-											<!--<Border Margin="0,10,0,0"
-												CornerRadius="5"
-												BorderBrush="Gray" BorderThickness="1"
-												Padding="5">
-												<StackPanel Orientation="Horizontal">
-													<TextBlock Text="{Binding }"/>
-													<TextBlock Margin="5 0" FontWeight="Bold"
-																Text="2"/>
-												</StackPanel>
-											</Border>-->
 											<controls:DeviceControl DeviceName="{Binding name}" IpAddress="{Binding ip}" NumberOfLeds="{Binding Nleds}" NumberOfSegments="{Binding Nsegments}"></controls:DeviceControl>
 										</DataTemplate>
 									</ItemsControl.ItemTemplate>
@@ -296,101 +286,45 @@
 
 			</Grid>
 
-			<StackPanel Grid.Column="1" VerticalAlignment="Center">
-				<Grid Width="370" Height="370" >
-					<Grid.ColumnDefinitions>
-						<ColumnDefinition></ColumnDefinition>
-						<ColumnDefinition></ColumnDefinition>
-						<ColumnDefinition></ColumnDefinition>
-					</Grid.ColumnDefinitions>
-					<Grid.RowDefinitions>
-						<RowDefinition></RowDefinition>
-						<RowDefinition></RowDefinition>
-						<RowDefinition></RowDefinition>
-					</Grid.RowDefinitions>
+			<!--Devices-->
+			<ScrollViewer Grid.Column="1">
+					<ItemsControl  x:CompileBindings="False" ItemsSource="{Binding Devices}" >
+						<ItemsControl.ItemsPanel>
+							<ItemsPanelTemplate>
+								<WrapPanel VerticalAlignment="Top"/>
+							</ItemsPanelTemplate>
+						</ItemsControl.ItemsPanel>
+						<ItemsControl.ItemTemplate>
+							<DataTemplate>
+								
+							    <!--Segments-->
+								<Border BorderThickness="1" BorderBrush="{DynamicResource BackgroundBrush }" Padding="10">
+									<StackPanel>
+										<TextBlock x:CompileBindings="False" Text="{Binding name}" FontWeight="Bold" FontSize="18"></TextBlock>
 
-					<Button Grid.Row="2"
-							Grid.Column="1"
-							Name="down"
-							Width="100"
-							Height="100"
-							FontSize="50"
-							FontFamily="{StaticResource BootstrapIcons}"
-							Content="&#xF128;"/>
+										<ItemsControl  x:CompileBindings="False" ItemsSource="{Binding segments}" >
+											<ItemsControl.ItemsPanel>
+												<ItemsPanelTemplate>
+													<WrapPanel VerticalAlignment="Top"/>
+												</ItemsPanelTemplate>
+											</ItemsControl.ItemsPanel>
+											<ItemsControl.ItemTemplate>
+												<DataTemplate>
 
-					<Button Grid.Row="1"
-							Grid.Column="0"
-							Name="left"
-							Width="100"
-							Height="100"
-							FontSize="50"
-							FontFamily="{StaticResource BootstrapIcons}"
-							Content="&#xF12F;"/>
+													<!--Segments-->
+													<controls:SegmentView SegmentName="{Binding name}" SegmentLength="{Binding length}"></controls:SegmentView>
+												</DataTemplate>
+											</ItemsControl.ItemTemplate>
+										</ItemsControl>
+									</StackPanel>
 
-					<Button Grid.Row="1"
-							Grid.Column="2"
-							Name="right"
-							Width="100"
-							Height="100"
-							FontSize="50"
-							FontFamily="{StaticResource BootstrapIcons}"
-							Content="&#xF138;"/>
+								</Border>
 
-					<Button Grid.Row="0"
-							Grid.Column="1"
-							Name="up"
-							Width="100"
-							Height="100"
-							FontSize="50"
-							FontFamily="{StaticResource BootstrapIcons}"
-							Content="&#xF148;"/>
+							</DataTemplate>
+						</ItemsControl.ItemTemplate>
+					</ItemsControl>
+			</ScrollViewer>
 
-					<Button Grid.Row="0"
-							Grid.Column="0"
-							Name="upleft"
-							Width="100"
-							Height="100"
-							FontSize="50"
-							FontFamily="{StaticResource BootstrapIcons}"
-							Content="&#xF13F;"/>
-
-					<Button Grid.Row="0"
-							Grid.Column="2"
-							Name="upright"
-							Width="100"
-							Height="100"
-							FontSize="50"
-							FontFamily="{StaticResource BootstrapIcons}"
-							Content="&#xF144;"/>
-
-					<Button Grid.Row="2"
-							Grid.Column="0"
-							Name="bottomleft"
-							Width="100"
-							Height="100"
-							FontSize="50"
-							FontFamily="{StaticResource BootstrapIcons}"
-							Content="&#xF11E;"/>
-
-					<Button Grid.Row="2"
-							Grid.Column="2"
-							Name="bottomright"
-							Width="100"
-							Height="100"
-							FontSize="50"
-							FontFamily="{StaticResource BootstrapIcons}"
-							Content="&#xF123;"/>
-
-					<Button Grid.Row="1"
-							Grid.Column="1"
-							Name="center"
-							Width="100"
-							Height="100"
-							FontSize="50"
-							FontFamily="{StaticResource BootstrapIcons}"
-							Content="&#xF14D;"/>
-				</Grid>
-			</StackPanel>
 		</Grid>
 
 	</Border>
