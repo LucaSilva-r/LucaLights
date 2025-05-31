@@ -9,7 +9,7 @@ using System.Threading.Tasks;
 
 namespace LTEK_ULed.Code
 {
-    internal class GameState
+    public class GameState
     {
         public static GameState gameState = new GameState();
 
@@ -106,7 +106,7 @@ namespace LTEK_ULed.Code
     }
 
 
-    internal class State
+    public class State
     {
         public LightsMode lightsMode;
 
@@ -121,7 +121,7 @@ namespace LTEK_ULed.Code
         public float p2Precision;
     }
 
-    enum LightsMode
+    public enum LightsMode
     {
         LIGHTSMODE_ATTRACT,
         LIGHTSMODE_JOINING,
@@ -138,7 +138,7 @@ namespace LTEK_ULed.Code
     };
 
     [Flags]
-    enum CabinetLight
+    public enum CabinetLight
     {
         NONE = 0,
         LIGHT_MARQUEE_UP_LEFT = 1,
@@ -152,7 +152,7 @@ namespace LTEK_ULed.Code
     };
 
     [Flags]
-    enum GameButton
+    public enum GameButton
     {
         GAME_BUTTON_MENULEFT = 1, /**< Navigate the menus to the left. */
         GAME_BUTTON_MENURIGHT = 2, /**< Navigate the menus to the right. */

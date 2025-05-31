@@ -13,6 +13,9 @@ using Avalonia.Media;
 using Avalonia.Controls.Shapes;
 using System.Security.Cryptography;
 using System.Collections.Generic;
+using System.Xml.Serialization;
+using Avalonia.VisualTree;
+using System.Linq;
 
 namespace LTEK_ULed.Views;
 
@@ -27,6 +30,7 @@ public partial class MainWindow : Window
 
     Dictionary<Rectangle, GameButton> RectToGB = new Dictionary<Rectangle, GameButton>();
     Dictionary<GameButton, Rectangle> GBToRect = new Dictionary<GameButton, Rectangle>();
+    List<SegmentView> segmentViews = new List<SegmentView>();
 
     public MainWindow()
     {
@@ -50,7 +54,7 @@ public partial class MainWindow : Window
 
         }
 
-
+        this.GetVisualDescendants().OfType<SegmentView>().ToList();
     }
 
     public void UpdateUi()
@@ -70,6 +74,18 @@ public partial class MainWindow : Window
 
         updateCabinetLighting(cabinetLight);
 
+    }
+    public void UpdateLeds(bool reset = false)
+    {
+        if (Settings.Instance!.Dirty || segmentViews.Count == 0 || reset )
+        {
+            segmentViews = this.GetVisualDescendants().OfType<SegmentView>().ToList();
+        }
+
+        foreach (SegmentView segmentView in segmentViews)
+        {
+            segmentView.UpdateLeds();
+        }
     }
 
     private void updateCabinetLighting(CabinetLight cabinetLight)
@@ -130,5 +146,15 @@ public partial class MainWindow : Window
         {
             gameState.state.gameButton &= ~RectToGB[(sender as Rectangle)!];
         }
+    }
+
+    private void SaveClick(object? sender, Avalonia.Interactivity.RoutedEventArgs e)
+    {
+        Settings.Save();
+    }
+
+    private void ReloadClick(object? sender, Avalonia.Interactivity.RoutedEventArgs e)
+    {
+        Settings.Load();
     }
 }

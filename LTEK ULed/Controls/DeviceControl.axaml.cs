@@ -1,7 +1,11 @@
 using Avalonia;
 using Avalonia.Controls;
+using Avalonia.Controls.ApplicationLifetimes;
 using Avalonia.Markup.Xaml;
+using Avalonia.VisualTree;
+using LTEK_ULed.Views;
 using System;
+using System.Diagnostics;
 
 namespace LTEK_ULed;
 
@@ -47,4 +51,14 @@ public partial class DeviceControl : UserControl
         get => GetValue(NumberOfLedsProperty);
         set => SetValue(NumberOfLedsProperty, value);
     }
+
+    private void Setup(object? sender, Avalonia.Interactivity.RoutedEventArgs e)
+    {
+        var window = new DeviceSetup()
+        {
+            DataContext = this
+        };
+
+        window.Show();
+      }
 }

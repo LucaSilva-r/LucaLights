@@ -14,6 +14,7 @@ public partial class MainViewModel : ViewModelBase
     public static MainViewModel? Instance { get; private set; }
 
     public bool debug { get; set; }
+    public bool lightOutput { get; set; } = true;
 
     ObservableCollection<Device> Devices => Settings.Instance!.devices;
 

@@ -15,6 +15,7 @@ using System.Text.Json;
 using LTEK_ULed.Views;
 using LTEK_ULed.ViewModels;
 using Avalonia.Media;
+using Avalonia.Threading;
 
 namespace LTEK_ULed.Code
 {
@@ -132,9 +133,14 @@ namespace LTEK_ULed.Code
                 {
 
                     while (sw.ElapsedMilliseconds < wait || (!GameState.gameState.Connected && !MainViewModel.Instance!.debug && !token.IsCancellationRequested)) { 
-                        Thread.Sleep(1); 
+
+                        //Thread.Sleep(1); 
                     }
 
+                    if (token.IsCancellationRequested)
+                    {
+                        break;
+                    }
 
                     sw.Reset();
                     sw.Start();
@@ -156,12 +162,19 @@ namespace LTEK_ULed.Code
                         if (Settings.Instance!.Dirty)
                         {
                             Setup();
+                            Dispatcher.UIThread.Post(() => MainWindow.Instance!.UpdateLeds(true));
                         }
-                        foreach (Device device in Settings.Instance!.devices)
+                        if (MainViewModel.Instance!.lightOutput)
                         {
-                            device.Send();
+                            foreach (Device device in Settings.Instance!.devices)
+                            {
+                                device.Send();
+                            }
                         }
                     }
+
+                    Dispatcher.UIThread.Post(()=>MainWindow.Instance!.UpdateLeds());
+
                 }
                 sw.Reset();
 

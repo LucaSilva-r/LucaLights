@@ -180,7 +180,7 @@
 								</StackPanel>
 
 							</Border>
-							<!--Player 2--> 
+							<!--Player 2-->
 							<Border CornerRadius="10" x:Name="player2" Padding="5" BorderThickness="1" BorderBrush="{DynamicResource BackgroundBrush}">
 								<StackPanel VerticalAlignment="Center">
 									<TextBlock Text="Player 2" HorizontalAlignment="Center" FontWeight="Bold">
@@ -265,17 +265,21 @@
 						</StackPanel>
 					</DockPanel>
 				</Border>
-				
+
 				<!--Devices-->
 				<Border Grid.Row="1" Margin="10" Padding="20" BorderThickness="1" CornerRadius="10" BoxShadow="0 10 30 0 LightGray" BorderBrush="{DynamicResource BackgroundBrush}">
 					<DockPanel>
-						<TextBlock DockPanel.Dock="Top" Text="Devices" FontSize="24" FontWeight="Bold"></TextBlock>
+						<DockPanel DockPanel.Dock="Top" LastChildFill="False">
+							<TextBlock DockPanel.Dock="Left" Text="Devices" FontSize="24" FontWeight="Bold"></TextBlock>
+							<Button Margin="20,0,0,0" DockPanel.Dock="Right" Click="SaveClick">Save</Button>
+							<Button DockPanel.Dock="Right" Click="ReloadClick">Reload</Button>
+						</DockPanel>
 						<ScrollViewer>
 							<StackPanel>
 								<ItemsControl  x:CompileBindings="False" ItemsSource="{Binding Devices}" >
 									<ItemsControl.ItemTemplate>
 										<DataTemplate>
-											<controls:DeviceControl DeviceName="{Binding name}" IpAddress="{Binding ip}" NumberOfLeds="{Binding Nleds}" NumberOfSegments="{Binding Nsegments}"></controls:DeviceControl>
+											<controls:DeviceControl DeviceName="{Binding name, Mode=TwoWay}" IpAddress="{Binding ip, Mode=TwoWay}" NumberOfLeds="{Binding Nleds, Mode=OneWay}" NumberOfSegments="{Binding Nsegments, Mode=OneWay}"></controls:DeviceControl>
 										</DataTemplate>
 									</ItemsControl.ItemTemplate>
 								</ItemsControl>
@@ -287,48 +291,52 @@
 			</Grid>
 
 			<!--Devices-->
-			<ScrollViewer Grid.Column="1">
-					<ItemsControl  x:CompileBindings="False" ItemsSource="{Binding Devices}" >
-						<ItemsControl.ItemsPanel>
-							<ItemsPanelTemplate>
-								<WrapPanel VerticalAlignment="Top"/>
-							</ItemsPanelTemplate>
-						</ItemsControl.ItemsPanel>
-						<ItemsControl.ItemTemplate>
-							<DataTemplate>
-								
-							    <!--Segments-->
-								<Border BorderThickness="1" BorderBrush="{DynamicResource BackgroundBrush }" Padding="10">
-									<StackPanel>
-										<TextBlock x:CompileBindings="False" Text="{Binding name}" FontWeight="Bold" FontSize="18"></TextBlock>
+			<Border Grid.Column="1" BorderThickness="1" Padding="20" BorderBrush="{DynamicResource BackgroundBrush}" CornerRadius="10" Margin="10" BoxShadow="0 10 30 0 LightGray">
+				<DockPanel>
+					<StackPanel DockPanel.Dock="Top" Orientation="Horizontal">
+						<TextBlock Text="Light Preview" FontSize="24" FontWeight="Bold"></TextBlock>
+						<CheckBox VerticalAlignment="Center" Margin="10,0,0,0" x:CompileBindings="False" IsChecked="{Binding lightOutput}">
+							Enable Light Output?
+						</CheckBox>
+					</StackPanel>
+					<ScrollViewer >
 
-										<ItemsControl  x:CompileBindings="False" ItemsSource="{Binding segments}" >
-											<ItemsControl.ItemsPanel>
-												<ItemsPanelTemplate>
-													<WrapPanel VerticalAlignment="Top"/>
-												</ItemsPanelTemplate>
-											</ItemsControl.ItemsPanel>
-											<ItemsControl.ItemTemplate>
-												<DataTemplate>
+						<ItemsControl  x:CompileBindings="False" ItemsSource="{Binding Devices, Mode=OneWay}" >
+							<ItemsControl.ItemsPanel>
+								<ItemsPanelTemplate>
+									<WrapPanel VerticalAlignment="Top"/>
+								</ItemsPanelTemplate>
+							</ItemsControl.ItemsPanel>
+							<ItemsControl.ItemTemplate>
+								<DataTemplate>
 
-													<!--Segments-->
-													<controls:SegmentView SegmentName="{Binding name}" SegmentLength="{Binding length}"></controls:SegmentView>
-												</DataTemplate>
-											</ItemsControl.ItemTemplate>
-										</ItemsControl>
-									</StackPanel>
+									<!--Segments-->
+									<Border BorderThickness="1" Margin="10" CornerRadius="10" BorderBrush="{DynamicResource BackgroundBrush }" Padding="10">
+										<StackPanel>
+											<TextBlock x:CompileBindings="False" Text="{Binding name}" FontWeight="Bold" FontSize="18"></TextBlock>
 
-								</Border>
+											<ItemsControl  x:CompileBindings="False" ItemsSource="{Binding segments}" >
+												<ItemsControl.ItemsPanel>
+													<ItemsPanelTemplate>
+														<WrapPanel VerticalAlignment="Top"/>
+													</ItemsPanelTemplate>
+												</ItemsControl.ItemsPanel>
+												<ItemsControl.ItemTemplate>
+													<DataTemplate>
 
-							</DataTemplate>
-						</ItemsControl.ItemTemplate>
-					</ItemsControl>
-			</ScrollViewer>
-
+														<!--Segments-->
+														<controls:SegmentView Leds="{Binding leds}" SegmentName="{Binding name, Mode=OneWay}" SegmentLength="{Binding length, Mode=OneWay}"></controls:SegmentView>
+													</DataTemplate>
+												</ItemsControl.ItemTemplate>
+											</ItemsControl>
+										</StackPanel>
+									</Border>
+								</DataTemplate>
+							</ItemsControl.ItemTemplate>
+						</ItemsControl>
+					</ScrollViewer>
+				</DockPanel>
+			</Border>
 		</Grid>
-
 	</Border>
-
-
-
 </Window>

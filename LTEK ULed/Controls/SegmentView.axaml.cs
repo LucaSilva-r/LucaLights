@@ -2,6 +2,7 @@ using Avalonia;
 using Avalonia.Controls;
 using Avalonia.Media;
 using Avalonia.Platform;
+using LTEK_ULed.Code;
 using System.Collections.Generic;
 using System.Diagnostics;
 using Rectangle = Avalonia.Controls.Shapes.Rectangle;
@@ -13,11 +14,13 @@ public partial class SegmentView : UserControl
 
     private List<Rectangle> ledRects = new List<Rectangle>();
 
-    private StackPanel? edContainer;
-
-    public void SetLeds(Color[] leds)
+    public void UpdateLeds()
     {
 
+        for (int i = 0; i < ledRects.Count && i < Leds.Length; i++)
+        {
+            (ledRects[i].Fill as SolidColorBrush)!.Color = Leds[i];
+        }
     }
 
     public SegmentView()
@@ -40,9 +43,9 @@ public partial class SegmentView : UserControl
         {
             for (int i = 0; i < length - ledRects.Count; i++)
             {
-                LedContainer!.Children.Add(new Rectangle() { Margin = new Thickness(5,5,5,5), Fill = new SolidColorBrush(Color.Parse("Red")), Height = 15, Width = 15 });
-                Debug.WriteLine("Updating Length " + length);
-
+                Rectangle temp = new Rectangle() { Margin = new Thickness(5, 5, 5, 5), Fill = new SolidColorBrush(Color.Parse("Black")), Height = 15, Width = 15 };
+                LedContainer!.Children.Add(temp);
+                ledRects.Add(temp);
             }
         } else if(length < ledRects.Count)
         {
@@ -82,5 +85,14 @@ public partial class SegmentView : UserControl
         {
             SetValue(SegmentLengthProperty, value);
         }
+    }
+
+    public static readonly StyledProperty<Color[]> LedsProperty =
+    AvaloniaProperty.Register<DeviceControl, Color[]>(nameof(Leds),defaultValue: []);
+
+    public Color[] Leds
+    {
+        get => GetValue(LedsProperty);
+        set => SetValue(LedsProperty, value);
     }
 }
