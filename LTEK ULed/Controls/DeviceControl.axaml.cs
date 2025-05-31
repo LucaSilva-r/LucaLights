@@ -54,11 +54,16 @@ public partial class DeviceControl : UserControl
 
     private void Setup(object? sender, Avalonia.Interactivity.RoutedEventArgs e)
     {
+
+
+        //window.Show();
+
+        MainWindow? mainWindow = this.GetVisualRoot() as MainWindow;
+
         var window = new DeviceSetup()
         {
-            DataContext = this
+            DataContext = this,            
         };
-
-        window.Show();
+        window?.ShowDialog(mainWindow!);
       }
 }
