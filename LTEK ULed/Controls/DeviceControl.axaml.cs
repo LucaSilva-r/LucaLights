@@ -3,6 +3,7 @@ using Avalonia.Controls;
 using Avalonia.Controls.ApplicationLifetimes;
 using Avalonia.Markup.Xaml;
 using Avalonia.VisualTree;
+using LTEK_ULed.Code;
 using LTEK_ULed.Views;
 using System;
 using System.Diagnostics;
@@ -52,11 +53,8 @@ public partial class DeviceControl : UserControl
         set => SetValue(NumberOfLedsProperty, value);
     }
 
-    private void Setup(object? sender, Avalonia.Interactivity.RoutedEventArgs e)
+    private async void Setup(object? sender, Avalonia.Interactivity.RoutedEventArgs e)
     {
-
-
-        //window.Show();
 
         MainWindow? mainWindow = this.GetVisualRoot() as MainWindow;
 
@@ -64,6 +62,8 @@ public partial class DeviceControl : UserControl
         {
             DataContext = this,            
         };
-        window?.ShowDialog(mainWindow!);
+        await window!.ShowDialog(mainWindow!);
+
+        Settings.Instance!.MarkDirty();
       }
 }
