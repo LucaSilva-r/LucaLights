@@ -123,18 +123,29 @@ namespace LTEK_ULed.Code
 
             public void Run()
             {
+                const int targetFps = 60;
+                const int targetFrameTimeMs = 1000 / targetFps; // 16 ms per frame approx
+
                 Stopwatch sw = new Stopwatch();
+                //Stopwatch logTimer = new Stopwatch();
 
                 Debug.WriteLine("Started light thread.");
 
-                sw.Start();
+
+                //int frameCount = 0;
+                //long totalFrameTime = 0;
+
+                //logTimer.Start();
 
                 while (!token.IsCancellationRequested)
                 {
+                    sw.Restart();
 
-                    while (sw.ElapsedMilliseconds < wait || (!GameState.gameState.Connected && !MainViewModel.Instance!.debug && !token.IsCancellationRequested)) { 
+                    while (sw.ElapsedMilliseconds < wait );
 
-                        //Thread.Sleep(1); 
+                    while ((!GameState.gameState.Connected && !MainViewModel.Instance!.debug && !token.IsCancellationRequested))
+                    {
+                        Thread.Sleep(1);
                     }
 
                     if (token.IsCancellationRequested)
@@ -142,8 +153,6 @@ namespace LTEK_ULed.Code
                         break;
                     }
 
-                    sw.Reset();
-                    sw.Start();
 
                     GameButton gameButton;
                     CabinetLight cabinetLight;
@@ -175,6 +184,35 @@ namespace LTEK_ULed.Code
 
                     Dispatcher.UIThread.Post(()=>MainWindow.Instance!.UpdateLeds());
 
+
+                    // Calculate time to wait
+                    long elapsed = sw.ElapsedMilliseconds;
+                    int remaining = targetFrameTimeMs - (int)elapsed;
+
+                    // Sleep most of the remaining time
+                    if (remaining > 1)
+                    {
+                        Thread.Sleep(remaining - 1);
+                    }
+
+                    // Spin for the last ~1 ms to maintain accuracy
+                    while (sw.ElapsedMilliseconds < targetFrameTimeMs)
+                    {
+                        Thread.SpinWait(10);
+                    }
+
+                    //// Logging average frame time
+                    //totalFrameTime += sw.ElapsedMilliseconds;
+                    //frameCount++;
+
+                    //if (logTimer.ElapsedMilliseconds >= 1000)
+                    //{
+                    //    double avg = totalFrameTime / (double)frameCount;
+                    //    Debug.WriteLine($"Average frame time: {avg:F2} ms ({frameCount} frames)");
+                    //    frameCount = 0;
+                    //    totalFrameTime = 0;
+                    //    logTimer.Restart();
+                    //}
                 }
                 sw.Reset();
 
