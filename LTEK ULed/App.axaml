@@ -1,12 +1,8 @@
 <Application xmlns="https://github.com/avaloniaui"
              xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
              x:Class="LTEK_ULed.App"
-             xmlns:semi="https://irihi.tech/semi"
+			 xmlns:themes="clr-namespace:ShadUI.Themes;assembly=ShadUI"
 			 RequestedThemeVariant="Default">
-
-	<Application.Styles>
-		<semi:SemiTheme/>
-	</Application.Styles>
 	
 	<Application.Resources>
 		<FontFamily x:Key="BootstrapIcons">avares://LTEK ULed/Assets#bootstrap-icons</FontFamily>
@@ -15,14 +11,14 @@
 	<Application.Resources>
 		<ResourceDictionary>
 			<ResourceDictionary.ThemeDictionaries>
-				<ResourceDictionary x:Key='Light'>
-					<SolidColorBrush x:Key='BackgroundBrush'>LightGray</SolidColorBrush>
-				</ResourceDictionary>
-				<ResourceDictionary x:Key='Dark'>
-					<SolidColorBrush x:Key='BackgroundBrush'>White</SolidColorBrush>
-				</ResourceDictionary>
+				<ResourceInclude x:Key="Light" Source="Themes/Light.axaml" />
+				<ResourceInclude x:Key="Dark" Source="Themes/Dark.axaml" />
 			</ResourceDictionary.ThemeDictionaries>
-		</ResourceDictionary>
-	</Application.Resources>
 
+		</ResourceDictionary>
+		<x:Double x:Key="ControlContentThemeFontSize">12</x:Double>
+	</Application.Resources>
+	<Application.Styles>
+		<themes:ShadTheme />
+	</Application.Styles>
 </Application>

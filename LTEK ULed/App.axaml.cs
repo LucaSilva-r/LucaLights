@@ -5,6 +5,9 @@ using Avalonia.Markup.Xaml;
 using LTEK_ULed.Code;
 using LTEK_ULed.ViewModels;
 using LTEK_ULed.Views;
+using ShadUI.Themes;
+using System;
+using System.Linq;
 
 namespace LTEK_ULed;
 
@@ -17,27 +20,33 @@ public partial class App : Application
 
     public override void OnFrameworkInitializationCompleted()
     {
-        // Line below is needed to remove Avalonia data validation.
-        // Without this line you will get duplicate validations from both Avalonia and CT
-        BindingPlugins.DataValidators.RemoveAt(0);
+        if (ApplicationLifetime is not IClassicDesktopStyleApplicationLifetime desktop) return;
 
+        DisableAvaloniaDataAnnotationValidation();
 
-
-        if (ApplicationLifetime is IClassicDesktopStyleApplicationLifetime desktop)
+        desktop.MainWindow = new MainWindow
         {
-            desktop.MainWindow = new MainWindow
-            {
-                DataContext = new MainViewModel()
-            };
-            desktop.MainWindow.Closed += (sender, e) =>
-            {
-                LightingManager.Stop();
-                PipeManager.Stop();
-                desktop.Shutdown();
-            };
-        }
+            DataContext = new MainViewModel()
+        };
+        desktop.MainWindow.Closed += (sender, e) =>
+        {
+            LightingManager.Stop();
+            PipeManager.Stop();
+            desktop.Shutdown();
+        };
+
 
         base.OnFrameworkInitializationCompleted();
+    }
+
+    private void DisableAvaloniaDataAnnotationValidation()
+    {
+        // Get an array of plugins to remove
+        var dataValidationPluginsToRemove =
+            BindingPlugins.DataValidators.OfType<DataAnnotationsValidationPlugin>().ToArray();
+
+        // remove each entry found
+        foreach (var plugin in dataValidationPluginsToRemove) BindingPlugins.DataValidators.Remove(plugin);
     }
 
 }
