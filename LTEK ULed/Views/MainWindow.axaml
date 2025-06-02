@@ -301,11 +301,6 @@
 									</extensions:ButtonAssist.Icon>
 								</Button>
 							</DockPanel>
-
-							<StackPanel DockPanel.Dock="Bottom"  Orientation="Horizontal">
-								<Button Classes="Primary" Margin="20,0,0,0" DockPanel.Dock="Right" Click="SaveClick">Save</Button>
-								<Button Classes="Destructive" DockPanel.Dock="Right" Click="ReloadClick">Reload</Button>
-							</StackPanel>
 							<ScrollViewer>
 								<StackPanel>
 									<ItemsControl x:DataType="cd:Device"  x:CompileBindings="False" ItemsSource="{Binding Devices}" >

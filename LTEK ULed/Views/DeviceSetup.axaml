@@ -6,13 +6,16 @@
         x:Class="LTEK_ULed.DeviceSetup"
 		CanResize="False"
 		Title="Device Setup"
+		x:Name="deviceSetup"
 		SizeToContent="WidthAndHeight"
 	    xmlns:cd="using:LTEK_ULed.Code"
 		x:DataType="cd:Device"
 		Background="{DynamicResource WindowBackgroundColor}"
 	    xmlns:shadui="clr-namespace:ShadUI.Controls;assembly=ShadUI"
 		xmlns:icons="clr-namespace:LucideAvalonia;assembly=LucideAvalonia"
-
+		WindowStartupLocation="CenterOwner"
+		ExtendClientAreaChromeHints="NoChrome"
+		ExtendClientAreaToDecorationsHint="True"
 		>
 
 	<Border Padding="10" Width="500">
@@ -62,15 +65,16 @@
 										UseFloatingWatermark="True"
 										Watermark="Name"
 										Text="{Binding name}"/>
-									<NumericUpDown
+									<TextBox
 										HorizontalAlignment="Left"
-										Width="60"
+										Width="100"
+										UseFloatingWatermark="True"
 										Watermark="Length"
-										Value="{Binding length}"/>
+										Text="{Binding length}"/>
 									<Button
 										Command="{Binding Path=Tag, RelativeSource={RelativeSource  AncestorType={x:Type ItemsControl}}}}"
 										CommandParameter="{Binding}"
-										Classes="Primary" 
+										Classes="Primary"
 										VerticalAlignment="Bottom"
 										HorizontalAlignment="Right">
 										<icons:Lucide
@@ -88,7 +92,7 @@
 			</ScrollViewer>
 
 			<StackPanel Orientation="Horizontal" Spacing="20" FlowDirection="RightToLeft">
-				<Button Content="Add" Classes="Primary" Command="{Binding SaveDevice}"/>
+				<Button Content="Save" Classes="Primary" Command="{Binding SaveDevice}"/>
 				<Button Content="Cancel" Classes="Secondary" Click="Cancel"/>
 			</StackPanel>
 		</StackPanel>

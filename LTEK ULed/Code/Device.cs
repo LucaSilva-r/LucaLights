@@ -17,6 +17,9 @@ using CommunityToolkit.Mvvm.Input;
 using LTEK_ULed.Validators;
 using LTEK_ULed.ViewModels;
 using System.ComponentModel.DataAnnotations;
+using Avalonia;
+using Avalonia.Controls.ApplicationLifetimes;
+using Avalonia.Controls;
 
 namespace LTEK_ULed.Code
 {
@@ -65,11 +68,21 @@ namespace LTEK_ULed.Code
 
         [RelayCommand]
         [property: JsonIgnore]
-        public void SaveDevice()
+        public void SaveDevice(Window window)
         {
             if (!Settings.Instance!.devices.Contains(this))
             {
                 Settings.Instance.devices.Add(this);
+            }
+            IReadOnlyList<Window> owner = (Application.Current!.ApplicationLifetime as IClassicDesktopStyleApplicationLifetime)!.Windows!;
+
+            for (int i = 0; i < owner.Count; i++)
+            {
+                Window w = owner[i];
+                if (w.Name == "deviceSetup")
+                {
+                    w.Close();
+                }
             }
         }
 
@@ -77,7 +90,13 @@ namespace LTEK_ULed.Code
         [property: JsonIgnore]
         public void EditDevice()
         {
+            Window owner = (Application.Current!.ApplicationLifetime as IClassicDesktopStyleApplicationLifetime)!.MainWindow!;
+            DeviceSetup deviceSetup = new DeviceSetup()
+            {
+                DataContext = this,
+            };
 
+            deviceSetup.ShowDialog(owner);
         }
 
         [RelayCommand]
@@ -243,13 +262,14 @@ namespace LTEK_ULed.Code
             set => SetProperty(ref _name, value, true);
         }
 
+        [NumberValidation]
         public int length
         {
             get => _length;
             set
             {
                 Settings.Instance?.MarkDirty();
-                _length = value;
+                SetProperty(ref _length, value, true);
                 leds = new Color[_length];
             }
         }
