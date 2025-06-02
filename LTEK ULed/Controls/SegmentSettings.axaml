@@ -1,0 +1,41 @@
+<UserControl xmlns="https://github.com/avaloniaui"
+             xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+             xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
+             xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
+			 xmlns:shadui="clr-namespace:ShadUI.Controls;assembly=ShadUI"
+             xmlns:icons="clr-namespace:LucideAvalonia;assembly=LucideAvalonia"
+             xmlns:cd="using:LTEK_ULed.Code"
+
+             x:Class="LTEK_ULed.Controls.SegmentSettings"
+			 x:DataType="cd:Segment">
+	<shadui:Card>
+
+		<StackPanel Orientation="Horizontal" Spacing="20">
+			<TextBox
+				HorizontalAlignment="Left"
+				Width="200"
+				UseFloatingWatermark="True"
+				Watermark="Name"
+				Text="{Binding name}"/>
+			<TextBox
+				HorizontalAlignment="Left"
+				Width="100"
+				UseFloatingWatermark="True"
+				Watermark="Length"
+				Text="{Binding length}"/>
+			<Button
+				Command="{Binding Path=Tag, RelativeSource={RelativeSource  AncestorType={x:Type ItemsControl}}}}"
+				CommandParameter="{Binding}"
+				Classes="Primary"
+				VerticalAlignment="Bottom"
+				HorizontalAlignment="Right">
+				<icons:Lucide
+					Width="10"
+					Height="16"
+					Icon="Minus"
+					StrokeBrush="{DynamicResource PrimaryForegroundColor}"
+					StrokeThickness="3" />
+			</Button>
+		</StackPanel>
+	</shadui:Card>
+</UserControl>
