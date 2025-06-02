@@ -14,27 +14,32 @@ using System.Collections.ObjectModel;
 using CommunityToolkit.Mvvm.ComponentModel;
 using Avalonia.Media;
 using CommunityToolkit.Mvvm.Input;
+using LTEK_ULed.Validators;
+using LTEK_ULed.ViewModels;
+using System.ComponentModel.DataAnnotations;
 
 namespace LTEK_ULed.Code
 {
     [Serializable]
-    public partial class Device : ObservableObject
+    public partial class Device : ViewModelBase
     {
-        private string _name = string.Empty;
+        private string _name = "New Device";
+
+        [NameValidation]
         public string name
         {
-            get
-            {
-                Debug.WriteLine(_name);
-                return _name;
-            }
-            set
-            {
-                Debug.WriteLine(value);
-                _name = value;
-            }
+            get => _name;
+            set => SetProperty(ref _name, value, true);
         }
-        public string ip { get; set; } = string.Empty;
+
+        private string _ip = "192.168.1.1";
+
+        [IpAddressValidation]
+        public string ip
+        {
+            get => _ip;
+            set => SetProperty(ref _ip, value, true);
+        }
 
         [JsonIgnore]
         public int Nsegments { get; set; } = 0;
@@ -91,7 +96,7 @@ namespace LTEK_ULed.Code
         {
             Settings.Instance!.MarkDirty();
 
-            segments.Add(new Segment("New Segment #" + (segments.Count+1), 1, 0,0));
+            segments.Add(new Segment("New Segment #" + (segments.Count + 1), 1, 0, 0));
 
             Recalculate();
         }
@@ -222,15 +227,21 @@ namespace LTEK_ULed.Code
     }
 
     [Serializable]
-    public class Segment : ObservableObject
+    public class Segment : ViewModelBase
     {
         [JsonIgnore]
         public Segment Instance;
         [JsonIgnore]
         public Color[] leds { get; private set; }
 
-        public string name { get; set; } = "Segment";
+        private string _name = "New Device";
 
+        [NameValidation]
+        public string name
+        {
+            get => _name;
+            set => SetProperty(ref _name, value, true);
+        }
 
         public int length
         {
