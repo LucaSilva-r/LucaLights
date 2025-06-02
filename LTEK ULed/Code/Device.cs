@@ -77,11 +77,11 @@ namespace LTEK_ULed.Code
 
         [RelayCommand]
         [property: JsonIgnore]
-        public void RemoveSegment(int index)
+        public void RemoveSegment(Segment segment)
         {
             Settings.Instance!.MarkDirty();
 
-            segments.RemoveAt(index);
+            segments.Remove(segment);
             Recalculate();
         }
 
@@ -91,7 +91,7 @@ namespace LTEK_ULed.Code
         {
             Settings.Instance!.MarkDirty();
 
-            segments.Add(new Segment("New Segment", 1, 0,0));
+            segments.Add(new Segment("New Segment #" + (segments.Count+1), 1, 0,0));
 
             Recalculate();
         }
@@ -113,8 +113,6 @@ namespace LTEK_ULed.Code
             dDPsend?.Dispose();
             dDPsend = new DDPSend(this.ip, data.Length);
         }
-
-
 
         public void Send()
         {

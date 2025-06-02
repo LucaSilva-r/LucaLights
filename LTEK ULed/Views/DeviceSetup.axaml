@@ -42,9 +42,9 @@
 						StrokeThickness="3" />
 				</Button>
 			</DockPanel>
-			
+
 			<ScrollViewer MinHeight="100" MaxHeight="600">
-				<ItemsControl ItemsSource="{Binding segments}">
+				<ItemsControl ItemsSource="{Binding segments}" Tag="{Binding RemoveSegmentCommand}">
 					<ItemsControl.ItemsPanel>
 						<ItemsPanelTemplate>
 							<StackPanel Spacing="20"></StackPanel>
@@ -53,23 +53,35 @@
 					</ItemsControl.ItemsPanel>
 					<ItemsControl.ItemTemplate>
 						<DataTemplate x:DataType="cd:Segment">
-								<shadui:Card>
-		
-									<StackPanel Orientation="Horizontal" Spacing="20">
-										<TextBox
-											HorizontalAlignment="Left"
-											Width="200"
-											UseFloatingWatermark="True"
-											Watermark="Name"
-											Text="{Binding name}"/>
-										<TextBox
-											HorizontalAlignment="Left"
-											Width="60"
-											UseFloatingWatermark="True"
-											Watermark="Length"
-											Text="{Binding length}"/>
-									</StackPanel>
-								</shadui:Card>
+							<shadui:Card>
+
+								<StackPanel Orientation="Horizontal" Spacing="20">
+									<TextBox
+										HorizontalAlignment="Left"
+										Width="200"
+										UseFloatingWatermark="True"
+										Watermark="Name"
+										Text="{Binding name}"/>
+									<NumericUpDown
+										HorizontalAlignment="Left"
+										Width="60"
+										Watermark="Length"
+										Value="{Binding length}"/>
+									<Button
+										Command="{Binding Path=Tag, RelativeSource={RelativeSource  AncestorType={x:Type ItemsControl}}}}"
+										CommandParameter="{Binding}"
+										Classes="Primary" 
+										VerticalAlignment="Bottom"
+										HorizontalAlignment="Right">
+										<icons:Lucide
+											Width="10"
+											Height="16"
+											Icon="Minus"
+											StrokeBrush="{DynamicResource PrimaryForegroundColor}"
+											StrokeThickness="3" />
+									</Button>
+								</StackPanel>
+							</shadui:Card>
 						</DataTemplate>
 					</ItemsControl.ItemTemplate>
 				</ItemsControl>
