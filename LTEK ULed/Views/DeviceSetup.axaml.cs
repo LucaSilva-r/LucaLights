@@ -17,7 +17,7 @@ public partial class DeviceSetup : Window
     {
         InitializeComponent();
         DataContext = device;
-        Closing += (s,e) => Settings.Save();
+        Closing += (s,e) => Settings.Load();
     }
 
     private void TextBox_TextChanged(object? sender, Avalonia.Controls.TextChangedEventArgs e)

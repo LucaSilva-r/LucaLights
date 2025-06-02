@@ -11,7 +11,7 @@
 	    xmlns:shadui="clr-namespace:ShadUI.Controls;assembly=ShadUI"
 		xmlns:icons="clr-namespace:LucideAvalonia;assembly=LucideAvalonia"
 		xmlns:extensions="clr-namespace:ShadUI.Extensions;assembly=ShadUI"
-        xmlns:controls="clr-namespace:LTEK_ULed"
+        xmlns:controls="clr-namespace:LTEK_ULed.Controls"
 		x:Name="Window"
         Icon="/Assets/avalonia-logo.ico"
         Title="Status"
@@ -20,379 +20,386 @@
 		x:DataType="vm:MainViewModel"
 		>
 
-		<Border Padding="10">
+	<Border Padding="10">
+		<Grid>
+			<Grid.ColumnDefinitions>
+				<ColumnDefinition Width="510"></ColumnDefinition>
+				<ColumnDefinition Width="*"></ColumnDefinition>
+			</Grid.ColumnDefinitions>
+
 			<Grid>
-				<Grid.ColumnDefinitions>
-					<ColumnDefinition Width="510"></ColumnDefinition>
-					<ColumnDefinition Width="*"></ColumnDefinition>
-				</Grid.ColumnDefinitions>
+				<Grid.RowDefinitions>
+					<RowDefinition Height="325"></RowDefinition>
+					<RowDefinition Height="*"></RowDefinition>
+				</Grid.RowDefinitions>
+				<!--Status-->
 
-				<Grid>
-					<Grid.RowDefinitions>
-						<RowDefinition Height="*"></RowDefinition>
-						<RowDefinition Height="*"></RowDefinition>
-					</Grid.RowDefinitions>
-					<!--Status-->
+				<shadui:Card Margin="5" HasShadow="True">
+					<shadui:Card.Header>
+						<StackPanel Orientation="Horizontal" Spacing="20">
+							<shadui:CardTitle>
+								ITG Status
+							</shadui:CardTitle>
+							<CheckBox VerticalAlignment="Center" IsChecked="{Binding debug}" >Debug?</CheckBox>
+						</StackPanel>
+					</shadui:Card.Header>
+					<DockPanel>
+						<StackPanel Orientation="Horizontal" DockPanel.Dock="Top">
+						</StackPanel>
+						<StackPanel Orientation="Horizontal" Spacing="20">
+							<!--Cabinet-->
 
-					<shadui:Card Margin="5" HasShadow="True">
-						<shadui:Card.Header>
-							<StackPanel Orientation="Horizontal" Spacing="20">
-								<shadui:CardTitle>
-									Status
-								</shadui:CardTitle>
-								<CheckBox VerticalAlignment="Center" IsChecked="{Binding debug}" >Debug?</CheckBox>
-							</StackPanel>
-						</shadui:Card.Header>
-						<DockPanel>
-							<StackPanel Orientation="Horizontal" DockPanel.Dock="Top">
-							</StackPanel>
-							<StackPanel Orientation="Horizontal" Spacing="20">
-								<!--Cabinet-->
+							<shadui:Card Padding="10" >
+								<StackPanel VerticalAlignment="Center">
+									<TextBlock Text="Cabinet" HorizontalAlignment="Center" FontWeight="Bold">
+									</TextBlock>
+									<Grid HorizontalAlignment="Center">
+										<Grid.ColumnDefinitions>
+											<ColumnDefinition Width="33"/>
+											<ColumnDefinition Width="32"/>
+											<ColumnDefinition Width="32"/>
+											<ColumnDefinition Width="33"/>
+										</Grid.ColumnDefinitions>
+										<Grid.RowDefinitions>
+											<RowDefinition Height="33"/>
+											<RowDefinition Height="32"/>
+											<RowDefinition Height="33"/>
+											<RowDefinition Height="33"/>
+											<RowDefinition Height="33"/>
 
-								<shadui:Card Padding="10" >
-									<StackPanel VerticalAlignment="Center">
-										<TextBlock Text="Cabinet" HorizontalAlignment="Center" FontWeight="Bold">
-										</TextBlock>
-										<Grid HorizontalAlignment="Center">
-											<Grid.ColumnDefinitions>
-												<ColumnDefinition Width="33"/>
-												<ColumnDefinition Width="32"/>
-												<ColumnDefinition Width="32"/>
-												<ColumnDefinition Width="33"/>
-											</Grid.ColumnDefinitions>
-											<Grid.RowDefinitions>
-												<RowDefinition Height="33"/>
-												<RowDefinition Height="32"/>
-												<RowDefinition Height="33"/>
-												<RowDefinition Height="33"/>
-												<RowDefinition Height="33"/>
+										</Grid.RowDefinitions>
 
-											</Grid.RowDefinitions>
+										<Rectangle
+											x:Name="mUpLeft"
+											Grid.Column="0" Grid.Row="0"
+											Fill="Gray"
+											Width="30"
+											Height="30"/>
 
-											<Rectangle
-												x:Name="mUpLeft"
-												Grid.Column="0" Grid.Row="0"
-												Fill="Gray"
-												Width="30"
-												Height="30"/>
-
-											<Rectangle
-												x:Name="mUpRight"
-												Grid.Column="3" Grid.Row="0"
-												Fill="Gray"
-												Width="30"
-												Height="30"/>
-											<Rectangle
-												x:Name="mDownLeft"
-												Grid.Column="0" Grid.Row="2"
-												Fill="Gray"
-												Width="30"
-												Height="30"/>
-											<Rectangle
-												x:Name="mDownRight"
-												Grid.Column="3" Grid.Row="2"
-												Fill="Gray"
-												Width="30"
-												Height="30"/>
-											<Rectangle
-												x:Name="bassLeft"
-												Grid.Column="0" Grid.Row="3" Grid.RowSpan="2"
-												Fill="Gray"
-												Width="30"
-												Height="60"/>
-											<Rectangle
-												x:Name="bassRight"
-												Grid.Column="3" Grid.Row="3" Grid.RowSpan="2"
-												Fill="Gray"
-												Width="30"
-												Height="60"/>
-										</Grid>
-									</StackPanel>
-
-								</shadui:Card>
-
-								<!--Player 1-->
-								<shadui:Card Padding="10" >
-									<StackPanel VerticalAlignment="Center">
-										<TextBlock Text="Player 1" HorizontalAlignment="Center" FontWeight="Bold">
-										</TextBlock>
-										<TextBlock Text="Combo: ">
-											<TextBlock Text="100" FontWeight="Bold"></TextBlock>
-										</TextBlock>
-										<TextBlock Text="Precision: ">
-											<TextBlock Text="100" FontWeight="Bold"></TextBlock>
-											<TextBlock Text="%" FontWeight="Bold"></TextBlock>
-										</TextBlock>
-										<Grid HorizontalAlignment="Center">
-											<Grid.ColumnDefinitions>
-												<ColumnDefinition Width="33"/>
-												<ColumnDefinition Width="32"/>
-												<ColumnDefinition Width="33"/>
-											</Grid.ColumnDefinitions>
-											<Grid.RowDefinitions>
-												<RowDefinition Height="33"/>
-												<RowDefinition Height="32"/>
-												<RowDefinition Height="33"/>
-											</Grid.RowDefinitions>
-
-
-											<Rectangle
-												Grid.Column="0" Grid.Row="0"
-												x:Name="g05"
-												Fill="Gray"
-												Width="30"
-												Height="30"/>
-											<Rectangle
-												Grid.Column="1" Grid.Row="0"
-												x:Name="g03"
-												Fill="Gray"
-												Width="30"
-												Height="30"/>
-											<Rectangle
-												Grid.Column="2" Grid.Row="0"
-												x:Name="g06"
-												Fill="Gray"
-												Width="30"
-												Height="30"/>
-											<Rectangle
-												Grid.Column="0" Grid.Row="1"
-												x:Name="g01"
-												Fill="Gray"
-												Width="30"
-												Height="30"/>
-											<Rectangle
-												Grid.Column="1" Grid.Row="1"
-												x:Name="g07"
-												Fill="Gray"
-												Width="30"
-												Height="30"/>
-											<Rectangle
-												Grid.Column="2" Grid.Row="1"
-												x:Name="g02"
-												Fill="Gray"
-												Width="30"
-												Height="30"/>
-											<Rectangle
-												Grid.Column="0" Grid.Row="2"
-												x:Name="g08"
-												Fill="Gray"
-												Width="30"
-												Height="30"/>
-											<Rectangle
-												Grid.Column="1" Grid.Row="2"
-												x:Name="g04"
-												Fill="Gray"
-												Width="30"
-												Height="30"/>
-											<Rectangle
-												Grid.Column="2" Grid.Row="2"
-												x:Name="g09"
-												Fill="Gray"
-												Width="30"
-												Height="30"/>
-										</Grid>
-									</StackPanel>
-								</shadui:Card>
-
-								<shadui:Card Padding="10" >
-									<!--Player 2-->
-									<StackPanel VerticalAlignment="Center">
-										<TextBlock Text="Player 2" HorizontalAlignment="Center" FontWeight="Bold">
-										</TextBlock>
-										<TextBlock Text="Combo: ">
-											<TextBlock Text="100" FontWeight="Bold"></TextBlock>
-										</TextBlock>
-										<TextBlock Text="Precision: ">
-											<TextBlock Text="100" FontWeight="Bold"></TextBlock>
-											<TextBlock Text="%" FontWeight="Bold"></TextBlock>
-										</TextBlock>
-										<Grid HorizontalAlignment="Center">
-											<Grid.ColumnDefinitions>
-												<ColumnDefinition Width="33"/>
-												<ColumnDefinition Width="32"/>
-												<ColumnDefinition Width="33"/>
-											</Grid.ColumnDefinitions>
-											<Grid.RowDefinitions>
-												<RowDefinition Height="33"/>
-												<RowDefinition Height="32"/>
-												<RowDefinition Height="33"/>
-											</Grid.RowDefinitions>
-
-
-											<Rectangle
-												Grid.Column="0" Grid.Row="0"
-												x:Name="g14"
-												Fill="Gray"
-												Width="30"
-												Height="30"/>
-											<Rectangle
-												Grid.Column="1" Grid.Row="0"
-												x:Name="g12"
-												Fill="Gray"
-												Width="30"
-												Height="30"/>
-											<Rectangle
-												Grid.Column="2" Grid.Row="0"
-												x:Name="g15"
-												Fill="Gray"
-												Width="30"
-												Height="30"/>
-											<Rectangle
-												Grid.Column="0" Grid.Row="1"
-												x:Name="g10"
-												Fill="Gray"
-												Width="30"
-												Height="30"/>
-											<Rectangle
-												Grid.Column="1" Grid.Row="1"
-												x:Name="g16"
-												Fill="Gray"
-												Width="30"
-												Height="30"/>
-											<Rectangle
-												Grid.Column="2" Grid.Row="1"
-												x:Name="g11"
-												Fill="Gray"
-												Width="30"
-												Height="30"/>
-											<Rectangle
-												Grid.Column="0" Grid.Row="2"
-												x:Name="g17"
-												Fill="Gray"
-												Width="30"
-												Height="30"/>
-											<Rectangle
-												Grid.Column="1" Grid.Row="2"
-												x:Name="g13"
-												Fill="Gray"
-												Width="30"
-												Height="30"/>
-											<Rectangle
-												Grid.Column="2" Grid.Row="2"
-												x:Name="g18"
-												Fill="Gray"
-												Width="30"
-												Height="30"/>
-										</Grid>
-									</StackPanel>
-								</shadui:Card>
-
-							</StackPanel>
-						</DockPanel>
-					</shadui:Card>
-
-
-					<!--Devices-->
-					<shadui:Card Grid.Row="1" Margin="5" HasShadow="True">
-						<DockPanel>
-							<DockPanel DockPanel.Dock="Top" LastChildFill="False">
-								<TextBlock DockPanel.Dock="Left" Text="Devices" FontSize="24" FontWeight="Bold"></TextBlock>
-								<Button
-									DockPanel.Dock="Right"
-									Classes="Ghost"
-									Click="AddDevice">
-									<extensions:ButtonAssist.Icon>
-										<icons:Lucide
-											Width="10"
-											Height="16"
-											Icon="Plus"
-											StrokeBrush="{DynamicResource SecondaryForegroundColor}"
-											StrokeThickness="1.5" />
-									</extensions:ButtonAssist.Icon>
-								</Button>
-							</DockPanel>
-							<ScrollViewer>
-								<StackPanel>
-									<ItemsControl x:DataType="cd:Device"  x:CompileBindings="False" ItemsSource="{Binding Devices}" >
-										<ItemsControl.ItemTemplate>
-											<DataTemplate>
-												<shadui:Card Padding="5">
-													<DockPanel LastChildFill="False">
-														<StackPanel DockPanel.Dock="Left">
-															<TextBlock Text="{Binding name}" FontWeight="Bold" FontSize="18"></TextBlock>
-															<StackPanel Orientation="Horizontal" Spacing="10">
-																<StackPanel Orientation="Horizontal">
-																	<TextBlock Text="Ip: " FontSize="14" FontWeight="Bold"></TextBlock>
-																	<TextBlock Text="{Binding ip}" FontSize="14"></TextBlock>
-																</StackPanel>
-																<StackPanel Orientation="Horizontal">
-																	<TextBlock Text="Segments: " FontSize="14" FontWeight="Bold"></TextBlock>
-																	<TextBlock Text="{Binding segments.Count}" FontSize="14"></TextBlock>
-																</StackPanel>
-																<!--<StackPanel Orientation="Horizontal">
-																	<TextBlock Text="Leds: " FontSize="14" FontWeight="Bold"></TextBlock>
-																	<TextBlock Text="{Binding }" FontSize="14"></TextBlock>
-																</StackPanel>-->
-															</StackPanel>
-														</StackPanel>
-														<Button Margin="10,0,10,0" DockPanel.Dock="Right" Command="{Binding EditDevice}" Classes="Secondary">
-															<icons:Lucide
-																Width="16"
-																Height="16"
-																Icon="Settings"
-																StrokeBrush="{DynamicResource ForegroundColor}"
-																StrokeThickness="1.5" />
-														</Button>
-													</DockPanel>
-												</shadui:Card>
-											</DataTemplate>
-										</ItemsControl.ItemTemplate>
-									</ItemsControl>
+										<Rectangle
+											x:Name="mUpRight"
+											Grid.Column="3" Grid.Row="0"
+											Fill="Gray"
+											Width="30"
+											Height="30"/>
+										<Rectangle
+											x:Name="mDownLeft"
+											Grid.Column="0" Grid.Row="2"
+											Fill="Gray"
+											Width="30"
+											Height="30"/>
+										<Rectangle
+											x:Name="mDownRight"
+											Grid.Column="3" Grid.Row="2"
+											Fill="Gray"
+											Width="30"
+											Height="30"/>
+										<Rectangle
+											x:Name="bassLeft"
+											Grid.Column="0" Grid.Row="3" Grid.RowSpan="2"
+											Fill="Gray"
+											Width="30"
+											Height="60"/>
+										<Rectangle
+											x:Name="bassRight"
+											Grid.Column="3" Grid.Row="3" Grid.RowSpan="2"
+											Fill="Gray"
+											Width="30"
+											Height="60"/>
+									</Grid>
 								</StackPanel>
-							</ScrollViewer>
-							
-						</DockPanel>
-					</shadui:Card>
 
-				</Grid>
+							</shadui:Card>
+
+							<!--Player 1-->
+							<shadui:Card Padding="10" >
+								<StackPanel VerticalAlignment="Center">
+									<TextBlock Text="Player 1" HorizontalAlignment="Center" FontWeight="Bold">
+									</TextBlock>
+									<TextBlock Text="Combo: ">
+										<TextBlock Text="100" FontWeight="Bold"></TextBlock>
+									</TextBlock>
+									<TextBlock Text="Precision: ">
+										<TextBlock Text="100" FontWeight="Bold"></TextBlock>
+										<TextBlock Text="%" FontWeight="Bold"></TextBlock>
+									</TextBlock>
+									<Grid HorizontalAlignment="Center">
+										<Grid.ColumnDefinitions>
+											<ColumnDefinition Width="33"/>
+											<ColumnDefinition Width="32"/>
+											<ColumnDefinition Width="33"/>
+										</Grid.ColumnDefinitions>
+										<Grid.RowDefinitions>
+											<RowDefinition Height="33"/>
+											<RowDefinition Height="32"/>
+											<RowDefinition Height="33"/>
+										</Grid.RowDefinitions>
+
+
+										<Rectangle
+											Grid.Column="0" Grid.Row="0"
+											x:Name="g05"
+											Fill="Gray"
+											Width="30"
+											Height="30"/>
+										<Rectangle
+											Grid.Column="1" Grid.Row="0"
+											x:Name="g03"
+											Fill="Gray"
+											Width="30"
+											Height="30"/>
+										<Rectangle
+											Grid.Column="2" Grid.Row="0"
+											x:Name="g06"
+											Fill="Gray"
+											Width="30"
+											Height="30"/>
+										<Rectangle
+											Grid.Column="0" Grid.Row="1"
+											x:Name="g01"
+											Fill="Gray"
+											Width="30"
+											Height="30"/>
+										<Rectangle
+											Grid.Column="1" Grid.Row="1"
+											x:Name="g07"
+											Fill="Gray"
+											Width="30"
+											Height="30"/>
+										<Rectangle
+											Grid.Column="2" Grid.Row="1"
+											x:Name="g02"
+											Fill="Gray"
+											Width="30"
+											Height="30"/>
+										<Rectangle
+											Grid.Column="0" Grid.Row="2"
+											x:Name="g08"
+											Fill="Gray"
+											Width="30"
+											Height="30"/>
+										<Rectangle
+											Grid.Column="1" Grid.Row="2"
+											x:Name="g04"
+											Fill="Gray"
+											Width="30"
+											Height="30"/>
+										<Rectangle
+											Grid.Column="2" Grid.Row="2"
+											x:Name="g09"
+											Fill="Gray"
+											Width="30"
+											Height="30"/>
+									</Grid>
+								</StackPanel>
+							</shadui:Card>
+
+							<shadui:Card Padding="10" >
+								<!--Player 2-->
+								<StackPanel VerticalAlignment="Center">
+									<TextBlock Text="Player 2" HorizontalAlignment="Center" FontWeight="Bold">
+									</TextBlock>
+									<TextBlock Text="Combo: ">
+										<TextBlock Text="100" FontWeight="Bold"></TextBlock>
+									</TextBlock>
+									<TextBlock Text="Precision: ">
+										<TextBlock Text="100" FontWeight="Bold"></TextBlock>
+										<TextBlock Text="%" FontWeight="Bold"></TextBlock>
+									</TextBlock>
+									<Grid HorizontalAlignment="Center">
+										<Grid.ColumnDefinitions>
+											<ColumnDefinition Width="33"/>
+											<ColumnDefinition Width="32"/>
+											<ColumnDefinition Width="33"/>
+										</Grid.ColumnDefinitions>
+										<Grid.RowDefinitions>
+											<RowDefinition Height="33"/>
+											<RowDefinition Height="32"/>
+											<RowDefinition Height="33"/>
+										</Grid.RowDefinitions>
+
+
+										<Rectangle
+											Grid.Column="0" Grid.Row="0"
+											x:Name="g14"
+											Fill="Gray"
+											Width="30"
+											Height="30"/>
+										<Rectangle
+											Grid.Column="1" Grid.Row="0"
+											x:Name="g12"
+											Fill="Gray"
+											Width="30"
+											Height="30"/>
+										<Rectangle
+											Grid.Column="2" Grid.Row="0"
+											x:Name="g15"
+											Fill="Gray"
+											Width="30"
+											Height="30"/>
+										<Rectangle
+											Grid.Column="0" Grid.Row="1"
+											x:Name="g10"
+											Fill="Gray"
+											Width="30"
+											Height="30"/>
+										<Rectangle
+											Grid.Column="1" Grid.Row="1"
+											x:Name="g16"
+											Fill="Gray"
+											Width="30"
+											Height="30"/>
+										<Rectangle
+											Grid.Column="2" Grid.Row="1"
+											x:Name="g11"
+											Fill="Gray"
+											Width="30"
+											Height="30"/>
+										<Rectangle
+											Grid.Column="0" Grid.Row="2"
+											x:Name="g17"
+											Fill="Gray"
+											Width="30"
+											Height="30"/>
+										<Rectangle
+											Grid.Column="1" Grid.Row="2"
+											x:Name="g13"
+											Fill="Gray"
+											Width="30"
+											Height="30"/>
+										<Rectangle
+											Grid.Column="2" Grid.Row="2"
+											x:Name="g18"
+											Fill="Gray"
+											Width="30"
+											Height="30"/>
+									</Grid>
+								</StackPanel>
+							</shadui:Card>
+
+						</StackPanel>
+					</DockPanel>
+				</shadui:Card>
+
 
 				<!--Devices-->
-				<Border Grid.Column="1" BorderThickness="1" Padding="20" BorderBrush="Gray" CornerRadius="10" Margin="10" BoxShadow="0 10 30 0 Gray">
-					<DockPanel>
-						<StackPanel DockPanel.Dock="Top" Orientation="Horizontal">
-							<TextBlock Text="Light Preview" FontSize="24" FontWeight="Bold"></TextBlock>
-							<CheckBox VerticalAlignment="Center" Margin="10,0,0,0" x:CompileBindings="False" IsChecked="{Binding lightOutput}">
-								Enable Light Output?
-							</CheckBox>
-						</StackPanel>
-						<ScrollViewer >
+				<shadui:Card Grid.Row="1" Margin="5" HasShadow="True">
+					<shadui:Card.Header>
 
-							<ItemsControl ItemsSource="{Binding Devices, Mode=OneWay}" >
+
+						<DockPanel DockPanel.Dock="Top" LastChildFill="False">
+							<shadui:CardTitle>
+								Devices
+							</shadui:CardTitle>
+							<Button
+								DockPanel.Dock="Right"
+								Classes="Ghost"
+								Click="AddDevice">
+								<extensions:ButtonAssist.Icon>
+									<icons:Lucide
+										Width="10"
+										Height="16"
+										Icon="Plus"
+										StrokeBrush="{DynamicResource SecondaryForegroundColor}"
+										StrokeThickness="1.5" />
+								</extensions:ButtonAssist.Icon>
+							</Button>
+						</DockPanel>
+
+					</shadui:Card.Header>
+					<ScrollViewer>
+						<StackPanel>
+							<ItemsControl ItemsSource="{Binding devices}" >
 								<ItemsControl.ItemsPanel>
 									<ItemsPanelTemplate>
-										<WrapPanel VerticalAlignment="Top"/>
+										<StackPanel Spacing="10"></StackPanel>
 									</ItemsPanelTemplate>
 								</ItemsControl.ItemsPanel>
 								<ItemsControl.ItemTemplate>
-									<DataTemplate>
-
-										<!--Segments-->
-										<Border BorderThickness="1" Margin="10" CornerRadius="10" BorderBrush="{DynamicResource BackgroundBrush }" Padding="10">
-											<StackPanel>
-												<TextBlock Text="{Binding name}" FontWeight="Bold" FontSize="18"></TextBlock>
-
-												<ItemsControl x:DataType="cd:Device" ItemsSource="{Binding segments}" >
-													<ItemsControl.ItemsPanel>
-														<ItemsPanelTemplate>
-															<WrapPanel VerticalAlignment="Top"/>
-														</ItemsPanelTemplate>
-													</ItemsControl.ItemsPanel>
-													<ItemsControl.ItemTemplate>
-														<DataTemplate x:DataType="cd:Segment">
-
-															<!--Segments-->
-															<controls:SegmentView Leds="{Binding leds}" SegmentName="{Binding name, Mode=OneWay}" SegmentLength="{Binding length, Mode=OneWay}"></controls:SegmentView>
-														</DataTemplate>
-													</ItemsControl.ItemTemplate>
-												</ItemsControl>
-											</StackPanel>
-										</Border>
+									<DataTemplate x:DataType="cd:Device">
+										<shadui:Card Padding="10">
+											<DockPanel LastChildFill="False">
+												<StackPanel DockPanel.Dock="Left">
+													<TextBlock Text="{Binding name}" FontWeight="Bold" FontSize="18"></TextBlock>
+													<StackPanel Orientation="Horizontal" Spacing="10">
+														<StackPanel Orientation="Horizontal">
+															<TextBlock Text="Ip: " FontSize="14" FontWeight="Bold"></TextBlock>
+															<TextBlock Text="{Binding ip}" FontSize="14"></TextBlock>
+														</StackPanel>
+														<StackPanel Orientation="Horizontal">
+															<TextBlock Text="Segments: " FontSize="14" FontWeight="Bold"></TextBlock>
+															<TextBlock Text="{Binding segments.Count}" FontSize="14"></TextBlock>
+														</StackPanel>
+													</StackPanel>
+												</StackPanel>
+												<Button Margin="10,0,10,0" DockPanel.Dock="Right" Command="{Binding EditDevice}" Classes="Secondary">
+													<icons:Lucide
+														Width="16"
+														Height="16"
+														Icon="Settings"
+														StrokeBrush="{DynamicResource ForegroundColor}"
+														StrokeThickness="1.5" />
+												</Button>
+											</DockPanel>
+										</shadui:Card>
 									</DataTemplate>
 								</ItemsControl.ItemTemplate>
 							</ItemsControl>
-						</ScrollViewer>
-					</DockPanel>
-				</Border>
+						</StackPanel>
+					</ScrollViewer>
+				</shadui:Card>
+
 			</Grid>
-		</Border>
+
+			<!--Lighting Preview-->
+			<shadui:Card Grid.Column="1" HasShadow="True" Margin="5">
+
+				<shadui:Card.Header>
+					<StackPanel DockPanel.Dock="Top" Orientation="Horizontal">
+						<TextBlock Text="Light Preview" FontSize="24" FontWeight="Bold"></TextBlock>
+						<CheckBox VerticalAlignment="Center" Margin="10,0,0,0" x:CompileBindings="False" IsChecked="{Binding lightOutput}">
+							Enable Light Output?
+						</CheckBox>
+					</StackPanel>
+				</shadui:Card.Header>
+				<ScrollViewer >
+					<ItemsControl ItemsSource="{Binding devices, Mode=OneWay}" >
+						<ItemsControl.ItemsPanel>
+							<ItemsPanelTemplate>
+								<WrapPanel VerticalAlignment="Top"/>
+							</ItemsPanelTemplate>
+						</ItemsControl.ItemsPanel>
+						<ItemsControl.ItemTemplate>
+							<DataTemplate x:DataType="cd:Device">
+
+								<!--Devices-->
+								<shadui:Card Margin="5">
+									<shadui:Card.Header>
+										<shadui:CardTitle Content="{Binding name}">
+
+										</shadui:CardTitle>
+									</shadui:Card.Header>
+									<StackPanel>
+										<ItemsControl x:DataType="cd:Device" ItemsSource="{Binding segments}" >
+											<ItemsControl.ItemsPanel>
+												<ItemsPanelTemplate>
+													<WrapPanel VerticalAlignment="Top"/>
+												</ItemsPanelTemplate>
+											</ItemsControl.ItemsPanel>
+											<ItemsControl.ItemTemplate>
+												<DataTemplate x:DataType="cd:Segment">
+													<!--Segments-->
+													<controls:SegmentView Leds="{Binding leds}" SegmentName="{Binding name, Mode=OneWay}" SegmentLength="{Binding length, Mode=OneWay}"></controls:SegmentView>
+												</DataTemplate>
+											</ItemsControl.ItemTemplate>
+										</ItemsControl>
+									</StackPanel>
+								</shadui:Card>
+							</DataTemplate>
+						</ItemsControl.ItemTemplate>
+					</ItemsControl>
+				</ScrollViewer>
+			</shadui:Card>
+		</Grid>
+	</Border>
 </Window>

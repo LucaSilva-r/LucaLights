@@ -76,6 +76,8 @@ namespace LTEK_ULed.Code
             }
             IReadOnlyList<Window> owner = (Application.Current!.ApplicationLifetime as IClassicDesktopStyleApplicationLifetime)!.Windows!;
 
+            Settings.Save();
+
             for (int i = 0; i < owner.Count; i++)
             {
                 Window w = owner[i];

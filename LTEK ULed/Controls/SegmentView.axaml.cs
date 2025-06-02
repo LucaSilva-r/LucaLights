@@ -1,13 +1,12 @@
 using Avalonia;
 using Avalonia.Controls;
+using Avalonia.Markup.Xaml.MarkupExtensions;
 using Avalonia.Media;
-using Avalonia.Platform;
-using LTEK_ULed.Code;
 using System.Collections.Generic;
 using System.Diagnostics;
-using Rectangle = Avalonia.Controls.Shapes.Rectangle;
+using Avalonia.Controls.Shapes;
 
-namespace LTEK_ULed;
+namespace LTEK_ULed.Controls;
 
 public partial class SegmentView : UserControl
 {
@@ -28,7 +27,6 @@ public partial class SegmentView : UserControl
         InitializeComponent();
 
         UpdateLength(this.SegmentLength);
-        Debug.WriteLine("Found Container");
 
     }
 
@@ -43,8 +41,12 @@ public partial class SegmentView : UserControl
         {
             for (int i = 0; i < length - ledRects.Count; i++)
             {
-                Rectangle temp = new Rectangle() { Margin = new Thickness(5, 5, 5, 5), Fill = new SolidColorBrush(Color.Parse("Black")), Height = 15, Width = 15 };
-                LedContainer!.Children.Add(temp);
+                Rectangle temp = new Rectangle() { Margin = new Thickness(5, 5, 5, 5), Fill = new SolidColorBrush(Color.Parse("Red")), Height = 15, Width = 15 };
+
+                Border border = new Border() { BorderBrush = (IBrush) new DynamicResourceExtension("PrimaryForegroundColor"), BorderThickness = new Thickness(1), };
+                border.Child = temp;
+
+                LedContainer!.Children.Add(border);
                 ledRects.Add(temp);
             }
         } else if(length < ledRects.Count)
@@ -56,7 +58,7 @@ public partial class SegmentView : UserControl
             }
         }
 
-        Debug.WriteLine("Updating Length " + length);
+        Debug.WriteLine("Updating Length " + length + Leds.Length);
         
     }
 

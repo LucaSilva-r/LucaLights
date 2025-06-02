@@ -16,6 +16,7 @@ using System.Collections.Generic;
 using System.Xml.Serialization;
 using Avalonia.VisualTree;
 using System.Linq;
+using LTEK_ULed.Controls;
 
 namespace LTEK_ULed.Views;
 
