@@ -2,6 +2,7 @@
 using System.Collections.Generic;
 using System.Collections.ObjectModel;
 using System.Diagnostics;
+using System.Diagnostics.Contracts;
 using System.IO;
 using System.Linq;
 using System.Runtime.CompilerServices;
@@ -73,18 +74,29 @@ namespace LTEK_ULed.Code
             Debug.WriteLine(Environment.GetFolderPath(Environment.SpecialFolder.ApplicationData) + "/LtekULED/settings.json");
             if (File.Exists(Environment.GetFolderPath(Environment.SpecialFolder.ApplicationData) + "/LtekULED/settings.json"))
             {
-                if (JsonSerializer.Deserialize<Settings>(File.ReadAllText(file.FullName))!=null)
+                try
                 {
-                   return true;
+                    if (JsonSerializer.Deserialize<Settings>(File.ReadAllText(file.FullName)) != null)
+                    {
+                        return true;
+                    }
+                    else
+                    {
+                        new Settings(new ObservableCollection<Device>());
+                        return false;
+                    }
                 }
-                else
+                catch
                 {
+                    new Settings(new ObservableCollection<Device>());
                     return false;
                 }
+
             }
             else
             {
                 file.Directory?.Create();
+                new Settings(new ObservableCollection<Device>());
                 return false;
             }
         }
@@ -94,11 +106,13 @@ namespace LTEK_ULed.Code
             string file = Environment.GetFolderPath(Environment.SpecialFolder.ApplicationData) + "/LtekULED/settings.json";
             try
             {
-                string json = JsonSerializer.Serialize(Settings.Instance, new JsonSerializerOptions() { WriteIndented = true });
-                File.WriteAllText(file, json);
-                Debug.WriteLine("Saved");
-                Debug.WriteLine(json);
-
+                string? json = JsonSerializer.Serialize(Settings.Instance, new JsonSerializerOptions() { WriteIndented = true });
+                if (json != null)
+                {
+                    File.WriteAllText(file, json);
+                    Debug.WriteLine("Saved");
+                    Debug.WriteLine(json);
+                }
             }
             catch (Exception e)
             {
