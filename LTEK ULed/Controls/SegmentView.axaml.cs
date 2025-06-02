@@ -61,7 +61,7 @@ public partial class SegmentView : UserControl
     }
 
     public static readonly StyledProperty<string> SegmentNameProperty =
-        AvaloniaProperty.Register<DeviceControl, string>(nameof(SegmentName), defaultValue: "Segment Name");
+        AvaloniaProperty.Register<SegmentView, string>(nameof(SegmentName), defaultValue: "Segment Name");
 
     public string SegmentName
     {
@@ -70,7 +70,7 @@ public partial class SegmentView : UserControl
     }
 
     public static readonly StyledProperty<int> SegmentLengthProperty =
-        AvaloniaProperty.Register<DeviceControl, int>(nameof(SegmentLength), defaultValue: 0);
+        AvaloniaProperty.Register<SegmentView, int>(nameof(SegmentLength), defaultValue: 0);
 
     public int SegmentLength
     {
@@ -88,7 +88,7 @@ public partial class SegmentView : UserControl
     }
 
     public static readonly StyledProperty<Color[]> LedsProperty =
-    AvaloniaProperty.Register<DeviceControl, Color[]>(nameof(Leds),defaultValue: []);
+    AvaloniaProperty.Register<SegmentView, Color[]>(nameof(Leds),defaultValue: []);
 
     public Color[] Leds
     {

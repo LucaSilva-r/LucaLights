@@ -7,21 +7,78 @@
 		CanResize="False"
 		Title="Device Setup"
 		SizeToContent="WidthAndHeight"
+	    xmlns:cd="using:LTEK_ULed.Code"
+		x:DataType="cd:Device"
+		Background="{DynamicResource WindowBackgroundColor}"
+	    xmlns:shadui="clr-namespace:ShadUI.Controls;assembly=ShadUI"
+		xmlns:icons="clr-namespace:LucideAvalonia;assembly=LucideAvalonia"
+
 		>
 
-
-
-	<Border Padding="10">
+	<Border Padding="10" Width="500">
 		<StackPanel Spacing="10">
-			<TextBlock FontSize="18" Margin="0,0,0,10" FontWeight="Bold">Settings</TextBlock>
+			<TextBlock FontSize="18" Margin="0,0,0,10" Classes="h4">Device Setup</TextBlock>
+			<TextBox
+				HorizontalAlignment="Left"
+				Width="225"
+				UseFloatingWatermark="True"
+				Watermark="Device Name"
+				Text="{Binding name}"/>
+			<TextBox
+				HorizontalAlignment="Left"
+				Width="225"
+				UseFloatingWatermark="True"
+				Watermark="Device IP"
+				Text="{Binding ip}"/>
 
-			<Grid ColumnDefinitions="Auto,Auto" RowDefinitions="*,*">
-				<TextBlock Grid.Column="0" Grid.Row="0" VerticalAlignment="Center" FontSize="14" FontWeight="Bold">Device Name</TextBlock>
-				<TextBox Grid.Column="1" Grid.Row="0" x:CompileBindings="False" Text="{Binding DeviceName}" Width="200"></TextBox>
+			<DockPanel LastChildFill="False">
+				<TextBlock DockPanel.Dock="Left" Margin="0 5" Classes="h4">Segment setup</TextBlock>
+				<Button ToolTip.Tip="Create Segment" DockPanel.Dock="Right" Content="Add" Classes="Primary" Command="{Binding AddSegment}">
+					<icons:Lucide
+						Width="10"
+						Height="16"
+						Icon="Plus"
+						StrokeBrush="{DynamicResource PrimaryForegroundColor}"
+						StrokeThickness="3" />
+				</Button>
+			</DockPanel>
+			
+			<ScrollViewer MinHeight="100" MaxHeight="600">
+				<ItemsControl ItemsSource="{Binding segments}">
+					<ItemsControl.ItemsPanel>
+						<ItemsPanelTemplate>
+							<StackPanel Spacing="20"></StackPanel>
+						</ItemsPanelTemplate>
 
-				<TextBlock Grid.Column="0" Grid.Row="1" VerticalAlignment="Center" FontSize="14" FontWeight="Bold">Ip Address</TextBlock>
-				<TextBox TextChanged="TextBox_TextChanged" Margin="10"   Grid.Column="1" Grid.Row="1" x:CompileBindings="False" Text="{Binding IpAddress}" Width="200"></TextBox>
-			</Grid>
+					</ItemsControl.ItemsPanel>
+					<ItemsControl.ItemTemplate>
+						<DataTemplate x:DataType="cd:Segment">
+								<shadui:Card>
+		
+									<StackPanel Orientation="Horizontal" Spacing="20">
+										<TextBox
+											HorizontalAlignment="Left"
+											Width="200"
+											UseFloatingWatermark="True"
+											Watermark="Name"
+											Text="{Binding name}"/>
+										<TextBox
+											HorizontalAlignment="Left"
+											Width="60"
+											UseFloatingWatermark="True"
+											Watermark="Length"
+											Text="{Binding length}"/>
+									</StackPanel>
+								</shadui:Card>
+						</DataTemplate>
+					</ItemsControl.ItemTemplate>
+				</ItemsControl>
+			</ScrollViewer>
+
+			<StackPanel Orientation="Horizontal" Spacing="20" FlowDirection="RightToLeft">
+				<Button Content="Add" Classes="Primary" Command="{Binding SaveDevice}"/>
+				<Button Content="Cancel" Classes="Secondary" Click="Cancel"/>
+			</StackPanel>
 		</StackPanel>
 	</Border>
 </Window>

@@ -13,11 +13,12 @@ using System.Diagnostics;
 using System.Collections.ObjectModel;
 using CommunityToolkit.Mvvm.ComponentModel;
 using Avalonia.Media;
+using CommunityToolkit.Mvvm.Input;
 
 namespace LTEK_ULed.Code
 {
     [Serializable]
-    public class Device : ObservableObject
+    public partial class Device : ObservableObject
     {
         private string _name = string.Empty;
         public string name
@@ -57,6 +58,44 @@ namespace LTEK_ULed.Code
 
         }
 
+        [RelayCommand]
+        [property: JsonIgnore]
+        public void SaveDevice()
+        {
+            if (!Settings.Instance!.devices.Contains(this))
+            {
+                Settings.Instance.devices.Add(this);
+            }
+        }
+
+        [RelayCommand]
+        [property: JsonIgnore]
+        public void EditDevice()
+        {
+
+        }
+
+        [RelayCommand]
+        [property: JsonIgnore]
+        public void RemoveSegment(int index)
+        {
+            Settings.Instance!.MarkDirty();
+
+            segments.RemoveAt(index);
+            Recalculate();
+        }
+
+        [RelayCommand]
+        [property: JsonIgnore]
+        public void AddSegment()
+        {
+            Settings.Instance!.MarkDirty();
+
+            segments.Add(new Segment("New Segment", 1, 0,0));
+
+            Recalculate();
+        }
+
         public void Recalculate()
         {
             int counter = 0;
@@ -75,22 +114,7 @@ namespace LTEK_ULed.Code
             dDPsend = new DDPSend(this.ip, data.Length);
         }
 
-        public void RemoveSegment(int index)
-        {
-            Settings.Instance!.MarkDirty();
 
-            segments.RemoveAt(index);
-            Recalculate();
-        }
-
-        public void AddSegment(Segment segment)
-        {
-            Settings.Instance!.MarkDirty();
-
-            segments.Add(segment);
-
-            Recalculate();
-        }
 
         public void Send()
         {

@@ -19,7 +19,7 @@ using System.Linq;
 
 namespace LTEK_ULed.Views;
 
-public partial class MainWindow : Window
+public partial class MainWindow : ShadUI.Controls.Window
 {
     GameState gameState = GameState.gameState;
 
@@ -53,7 +53,7 @@ public partial class MainWindow : Window
             rect!.PointerExited += Rectangle_PointerExited;
 
         }
-
+        
         this.GetVisualDescendants().OfType<SegmentView>().ToList();
     }
 
@@ -77,7 +77,7 @@ public partial class MainWindow : Window
     }
     public void UpdateLeds(bool reset = false)
     {
-        if (Settings.Instance!.Dirty || segmentViews.Count == 0 || reset )
+        if (Settings.Instance!.Dirty || segmentViews.Count == 0 || reset)
         {
             segmentViews = this.GetVisualDescendants().OfType<SegmentView>().ToList();
         }
@@ -156,5 +156,13 @@ public partial class MainWindow : Window
     private void ReloadClick(object? sender, Avalonia.Interactivity.RoutedEventArgs e)
     {
         Settings.Load();
+    }
+
+    private void AddDevice(object? sender, Avalonia.Interactivity.RoutedEventArgs e)
+    {
+
+        Window setup = new DeviceSetup();
+        
+        setup.ShowDialog(this);
     }
 }
