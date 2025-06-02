@@ -4,13 +4,14 @@
              xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
              mc:Ignorable="d"
              x:Class="LTEK_ULed.Controls.SegmentView"
-             xmlns:shadui="clr-namespace:ShadUI.Controls;assembly=ShadUI">
+             xmlns:shadui="clr-namespace:ShadUI.Controls;assembly=ShadUI"
+			 x:Name="Segment">
 	<shadui:Card Padding="10" BorderBrush="{DynamicResource BackgroundBrush}" BorderThickness="1" CornerRadius="10" Margin="5">
 
 		<shadui:Card.Header>
-			<StackPanel Orientation="Horizontal">
-				<shadui:CardTitle x:CompileBindings="False" Content="{Binding $parent[2].SegmentName}"/>
-				<shadui:CardTitle x:CompileBindings="False" Content="{Binding $parent[2].SegmentLength}"/>
+			<StackPanel Orientation="Horizontal" Spacing="10">
+				<shadui:CardTitle x:CompileBindings="False" Content="{Binding SegmentName, ElementName=Segment}"/>
+				<shadui:CardTitle x:CompileBindings="False" Content="{Binding SegmentLength, ElementName=Segment, StringFormat='Leds: {0}'}"/>
 			</StackPanel>
 
 		</shadui:Card.Header>

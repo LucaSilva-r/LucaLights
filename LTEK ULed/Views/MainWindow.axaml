@@ -373,7 +373,7 @@
 							<DataTemplate x:DataType="cd:Device">
 
 								<!--Devices-->
-								<shadui:Card Margin="5">
+								<shadui:Card Margin="5" Padding="10">
 									<shadui:Card.Header>
 										<shadui:CardTitle Content="{Binding name}">
 
@@ -389,7 +389,7 @@
 											<ItemsControl.ItemTemplate>
 												<DataTemplate x:DataType="cd:Segment">
 													<!--Segments-->
-													<controls:SegmentView Leds="{Binding leds}" SegmentName="{Binding name, Mode=OneWay}" SegmentLength="{Binding length, Mode=OneWay}"></controls:SegmentView>
+													<controls:SegmentView Leds="{Binding leds}" SegmentName="{Binding name}" SegmentLength="{Binding length}"></controls:SegmentView>
 												</DataTemplate>
 											</ItemsControl.ItemTemplate>
 										</ItemsControl>

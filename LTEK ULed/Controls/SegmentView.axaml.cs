@@ -5,6 +5,7 @@ using Avalonia.Media;
 using System.Collections.Generic;
 using System.Diagnostics;
 using Avalonia.Controls.Shapes;
+using LTEK_ULed.Code;
 
 namespace LTEK_ULed.Controls;
 
@@ -13,12 +14,14 @@ public partial class SegmentView : UserControl
 
     private List<Rectangle> ledRects = new List<Rectangle>();
 
+    Segment? segment;
+
     public void UpdateLeds()
     {
 
-        for (int i = 0; i < ledRects.Count && i < Leds.Length; i++)
+        for (int i = 0; i < ledRects.Count && i < segment!.leds.Length; i++)
         {
-            (ledRects[i].Fill as SolidColorBrush)!.Color = Leds[i];
+            (ledRects[i].Fill as SolidColorBrush)!.Color = segment!.leds[i];
         }
     }
 
@@ -26,8 +29,14 @@ public partial class SegmentView : UserControl
     {
         InitializeComponent();
 
-        UpdateLength(this.SegmentLength);
-
+        DataContextChanged += (e, s) =>
+        {
+            segment = DataContext as Segment;
+            if (segment != null)
+            {
+                UpdateLength(segment!.length);
+            }
+        };
     }
 
     private void UpdateLength(int length)
@@ -39,31 +48,35 @@ public partial class SegmentView : UserControl
         }
         if (length > ledRects.Count)
         {
-            for (int i = 0; i < length - ledRects.Count; i++)
+            int difference = length - ledRects.Count;
+            for (int i = 0; i < difference; i++)
             {
-                Rectangle temp = new Rectangle() { Margin = new Thickness(5, 5, 5, 5), Fill = new SolidColorBrush(Color.Parse("Red")), Height = 15, Width = 15 };
+                Rectangle temp = new Rectangle() {Name = i.ToString(),  Margin = new Thickness(5, 5, 5, 5), Fill = new SolidColorBrush(Color.Parse("Red")), Height = 15, Width = 15 };
 
-                Border border = new Border() { BorderBrush = (IBrush) new DynamicResourceExtension("PrimaryForegroundColor"), BorderThickness = new Thickness(1), };
+                Border border = new Border() { BorderThickness = new Thickness(1), };
+                border.Bind(BorderBrushProperty, new DynamicResourceExtension("PrimaryForegroundColor"));
                 border.Child = temp;
 
                 LedContainer!.Children.Add(border);
                 ledRects.Add(temp);
+
             }
-        } else if(length < ledRects.Count)
+
+        }
+        else if (length < ledRects.Count)
         {
-            for (int i = 0; i < ledRects.Count - length; i++)
+            int difference = ledRects.Count - length;
+
+            for (int i = 0; i < difference; i++)
             {
                 ledRects.RemoveAt(ledRects.Count - 1);
                 LedContainer!.Children.RemoveAt(ledRects.Count);
             }
         }
-
-        Debug.WriteLine("Updating Length " + length + Leds.Length);
-        
     }
 
     public static readonly StyledProperty<string> SegmentNameProperty =
-        AvaloniaProperty.Register<SegmentView, string>(nameof(SegmentName), defaultValue: "Segment Name");
+        AvaloniaProperty.Register<SegmentView, string>(nameof(SegmentName), defaultValue: "Segment Name", defaultBindingMode: Avalonia.Data.BindingMode.OneWay);
 
     public string SegmentName
     {
@@ -72,7 +85,7 @@ public partial class SegmentView : UserControl
     }
 
     public static readonly StyledProperty<int> SegmentLengthProperty =
-        AvaloniaProperty.Register<SegmentView, int>(nameof(SegmentLength), defaultValue: 0);
+        AvaloniaProperty.Register<SegmentView, int>(nameof(SegmentLength), defaultBindingMode: Avalonia.Data.BindingMode.OneWay);
 
     public int SegmentLength
     {
@@ -90,7 +103,7 @@ public partial class SegmentView : UserControl
     }
 
     public static readonly StyledProperty<Color[]> LedsProperty =
-    AvaloniaProperty.Register<SegmentView, Color[]>(nameof(Leds),defaultValue: []);
+    AvaloniaProperty.Register<SegmentView, Color[]>(nameof(Leds), defaultValue: [], defaultBindingMode: Avalonia.Data.BindingMode.OneWay);
 
     public Color[] Leds
     {
