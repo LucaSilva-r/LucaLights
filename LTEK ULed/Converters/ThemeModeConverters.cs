@@ -5,7 +5,7 @@ using LucideAvalonia;
 using LucideAvalonia.Enum;
 using ShadUI.Themes;
 
-namespace ShadUI.Demo.Converters;
+namespace LTEK_ULed.Converters;
 
 public static class ThemeModeConverters
 {
