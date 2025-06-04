@@ -20,7 +20,7 @@ public partial class EnumButton : UserControl
     {
         InitializeComponent();
         menu.ItemsSource = menuItems;
-        //buttonLabel.Text = ButtonLabel;
+        buttonLabel.Text = ButtonLabel;
     }
 
 
@@ -93,7 +93,7 @@ public partial class EnumButton : UserControl
     private void Menuitem_Click(object? sender, RoutedEventArgs e)
     {
         //Check?.Invoke(sender, e); //Call any added Check handler.
-                                  // Update EnumValue
+        // Update EnumValue
         var item = sender as MenuItem;
         SetValue(EnumValueProperty, item!.IsChecked ? EnumValue | (int)item!.Tag! : EnumValue & ~(int)item.Tag!);
         // Update label
@@ -137,7 +137,7 @@ public partial class EnumButton : UserControl
 
 
     public static readonly StyledProperty<ButtonLabelStyles> ButtonLabelStyleProperty =
-        AvaloniaProperty.Register<EnumButton, ButtonLabelStyles>(nameof(ButtonLabelStyle),defaultValue: ButtonLabelStyles.Indexes, defaultBindingMode: Avalonia.Data.BindingMode.OneWay);
+        AvaloniaProperty.Register<EnumButton, ButtonLabelStyles>(nameof(ButtonLabelStyle), defaultValue: ButtonLabelStyles.Indexes, defaultBindingMode: Avalonia.Data.BindingMode.OneWay);
 
     public ButtonLabelStyles ButtonLabelStyle
     {
@@ -158,8 +158,21 @@ public partial class EnumButton : UserControl
         set { SetValue(EmptySelectionLabelProperty, value); }
     }
 
+
+    public static readonly StyledProperty<string> ButtonLabelProperty =
+    AvaloniaProperty.Register<EnumButton, string>(nameof(ButtonLabel), defaultValue: "Button", defaultBindingMode: Avalonia.Data.BindingMode.OneWay);
+
+    public string ButtonLabel
+    {
+        get { return (string)GetValue(ButtonLabelProperty); }
+        set
+        {
+            buttonLabel.Text = value;
+            SetValue(ButtonLabelProperty, value);
+        }
+    }
+
     private readonly ObservableCollection<MenuItem> menuItems = new ObservableCollection<MenuItem>();
-    private string fixedButtonLabel = "Button";
 
 
 }

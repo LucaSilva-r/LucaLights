@@ -31,13 +31,7 @@
 					Watermark="Length"
 					Text="{Binding length}"/>
 
-				<Button Classes="Outline" VerticalAlignment="Bottom">
-					<Button.ContextMenu>
-						<ContextMenu x:Name="menu" Closed="ContextMenu_Closed" />
-					</Button.ContextMenu>
-					Cabinet Mapping
-				</Button>
-				<controls:EnumButton ChoicesSource="cd:CabinetLight" EnumValue="{Binding cabinetMapping, Mode=TwoWay, Converter={StaticResource FlagsIntConverter}}" >
+				<controls:EnumButton ButtonLabel="Cabinet Lights" VerticalAlignment="Bottom" ChoicesSource="cd:CabinetLight" EnumValue="{Binding cabinetMapping, Mode=TwoWay, Converter={StaticResource FlagsIntConverter}}" >
 				</controls:EnumButton>
 				<!--<Border
 					VerticalAlignment="Bottom"

@@ -12,6 +12,9 @@
 		<Button.ContextMenu>
 			<ContextMenu x:Name="menu" Closed="Menu_Closed" />
 		</Button.ContextMenu>
+		<Button.Content>
+			<TextBlock x:Name="buttonLabel" TextWrapping="Wrap" x:CompileBindings="False"/>
+		</Button.Content>
 	</Button>
 
 </UserControl>
