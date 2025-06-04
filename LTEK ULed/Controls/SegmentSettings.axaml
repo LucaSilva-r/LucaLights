@@ -3,32 +3,81 @@
              xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
              xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
 			 xmlns:shadui="clr-namespace:ShadUI.Controls;assembly=ShadUI"
+			 xmlns:extensions="clr-namespace:ShadUI.Extensions;assembly=ShadUI"
              xmlns:icons="clr-namespace:LucideAvalonia;assembly=LucideAvalonia"
+	         xmlns:controls="clr-namespace:LTEK_ULed.Controls"
              xmlns:cd="using:LTEK_ULed.Code"
-
+			 xmlns:local="clr-namespace:LTEK_ULed.Converters;assembly=LTEK ULed"
              x:Class="LTEK_ULed.Controls.SegmentSettings"
 			 x:DataType="cd:Segment">
+	<UserControl.Resources>
+		<local:FlagsIntConverter x:Key="FlagsIntConverter"/>
+
+	</UserControl.Resources>
 	<shadui:Card>
 
-		<StackPanel Orientation="Horizontal" Spacing="20">
-			<TextBox
-				HorizontalAlignment="Left"
-				Width="200"
-				UseFloatingWatermark="True"
-				Watermark="Name"
-				Text="{Binding name}"/>
-			<TextBox
-				HorizontalAlignment="Left"
-				Width="100"
-				UseFloatingWatermark="True"
-				Watermark="Length"
-				Text="{Binding length}"/>
+		<StackPanel Orientation="Horizontal">
+			<StackPanel DockPanel.Dock="Left" Orientation="Horizontal" Spacing="20">
+				<TextBox
+					HorizontalAlignment="Left"
+					Width="200"
+					UseFloatingWatermark="True"
+					Watermark="Name"
+					Text="{Binding name}"/>
+				<TextBox
+					HorizontalAlignment="Left"
+					Width="100"
+					UseFloatingWatermark="True"
+					Watermark="Length"
+					Text="{Binding length}"/>
+
+				<Button Classes="Outline" VerticalAlignment="Bottom">
+					<Button.ContextMenu>
+						<ContextMenu x:Name="menu" Closed="ContextMenu_Closed" />
+					</Button.ContextMenu>
+					Cabinet Mapping
+				</Button>
+				<controls:EnumButton ChoicesSource="cd:CabinetLight" EnumValue="{Binding cabinetMapping, Mode=TwoWay, Converter={StaticResource FlagsIntConverter}}" >
+				</controls:EnumButton>
+				<!--<Border
+					VerticalAlignment="Bottom"
+					Height="36"
+					Padding="4"
+					HorizontalAlignment="Center"
+					BorderBrush="{DynamicResource BorderColor}"
+					BorderThickness="1"
+					BoxShadow="{DynamicResource Shadow}"
+					CornerRadius="{DynamicResource LgCornerRadius}">
+					<Menu>
+						<MenuItem x:Name="CabinetMapping" Header="Cabinet Mapping"/>
+					</Menu>
+
+				</Border>
+				<Border
+					VerticalAlignment="Bottom"
+					Height="36"
+					Padding="4"
+					HorizontalAlignment="Center"
+					BorderBrush="{DynamicResource BorderColor}"
+					BorderThickness="1"
+					BoxShadow="{DynamicResource Shadow}"
+					CornerRadius="{DynamicResource LgCornerRadius}">
+					<Menu>
+						<MenuItem x:Name="ButtonMapping" Header="Button Mapping"/>
+				
+					</Menu>
+				</Border>-->
+			</StackPanel>
 			<Button
-				Command="{Binding Path=Tag, RelativeSource={RelativeSource  AncestorType={x:Type ItemsControl}}}}"
-				CommandParameter="{Binding}"
-				Classes="Primary"
-				VerticalAlignment="Bottom"
-				HorizontalAlignment="Right">
+					
+					Margin="20,0,25,0"
+					DockPanel.Dock="Right"
+					ToolTip.Tip="Delete Segment"
+					Command="{Binding Path=Tag, RelativeSource={RelativeSource  AncestorType={x:Type ItemsControl}}}}"
+					CommandParameter="{Binding}"
+					Classes="Primary"
+					VerticalAlignment="Bottom"
+					HorizontalAlignment="Right">
 				<icons:Lucide
 					Width="10"
 					Height="16"
@@ -37,5 +86,6 @@
 					StrokeThickness="3" />
 			</Button>
 		</StackPanel>
+
 	</shadui:Card>
 </UserControl>

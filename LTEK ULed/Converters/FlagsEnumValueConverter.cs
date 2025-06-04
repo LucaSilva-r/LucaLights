@@ -1,4 +1,5 @@
-﻿using Avalonia.Data.Converters;
+﻿using Avalonia.Data;
+using Avalonia.Data.Converters;
 using System;
 using System.Collections.Generic;
 using System.Globalization;
@@ -22,7 +23,7 @@ namespace LTEK_ULed.Converters
         public object? ConvertBack(object? value, Type targetType, object? parameter, CultureInfo culture)
         {
             this.targetValue ^= (int)parameter!;
-            return Enum.Parse(targetType, this.targetValue.ToString());
+            return Enum.ToObject(targetType, this.targetValue.ToString());
         }
 
     }

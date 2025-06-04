@@ -154,6 +154,7 @@ namespace LTEK_ULed.Code
     [Flags]
     public enum GameButton
     {
+        NONE = 0,
         GAME_BUTTON_MENULEFT = 1, /**< Navigate the menus to the left. */
         GAME_BUTTON_MENURIGHT = 2, /**< Navigate the menus to the right. */
         GAME_BUTTON_MENUUP = 4, /**< Navigate the menus to the top. */
