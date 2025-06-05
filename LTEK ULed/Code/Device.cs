@@ -278,8 +278,8 @@ namespace LTEK_ULed.Code
 
         private int _length;
 
-        public GameButton buttonMapping { get; private set; }
-        public CabinetLight cabinetMapping { get; private set; }
+        public GameButton buttonMapping { get; set; }
+        public CabinetLight cabinetMapping { get; set; }
 
         public Segment(string name, int length, GameButton buttonMapping, CabinetLight cabinetMapping)
         {
