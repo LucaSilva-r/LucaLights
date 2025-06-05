@@ -31,36 +31,9 @@
 					Watermark="Length"
 					Text="{Binding length}"/>
 
-				<controls:EnumButton ButtonLabel="Cabinet Lights" VerticalAlignment="Bottom" ChoicesSource="cd:CabinetLight" EnumValue="{Binding cabinetMapping, Mode=TwoWay, Converter={StaticResource FlagsIntConverter}}" >
-				</controls:EnumButton>
-				<!--<Border
-					VerticalAlignment="Bottom"
-					Height="36"
-					Padding="4"
-					HorizontalAlignment="Center"
-					BorderBrush="{DynamicResource BorderColor}"
-					BorderThickness="1"
-					BoxShadow="{DynamicResource Shadow}"
-					CornerRadius="{DynamicResource LgCornerRadius}">
-					<Menu>
-						<MenuItem x:Name="CabinetMapping" Header="Cabinet Mapping"/>
-					</Menu>
+				<controls:EnumButton ButtonLabel="Cabinet Lights" VerticalAlignment="Bottom" ChoicesSource="cd:CabinetLight" EnumValue="{Binding cabinetMapping, Mode=TwoWay, Converter={StaticResource FlagsIntConverter}}" />
+				<controls:EnumButton ButtonLabel="Button Lights" VerticalAlignment="Bottom" ChoicesSource="cd:GameButton" EnumValue="{Binding buttonMapping, Mode=TwoWay, Converter={StaticResource FlagsIntConverter}}" />
 
-				</Border>
-				<Border
-					VerticalAlignment="Bottom"
-					Height="36"
-					Padding="4"
-					HorizontalAlignment="Center"
-					BorderBrush="{DynamicResource BorderColor}"
-					BorderThickness="1"
-					BoxShadow="{DynamicResource Shadow}"
-					CornerRadius="{DynamicResource LgCornerRadius}">
-					<Menu>
-						<MenuItem x:Name="ButtonMapping" Header="Button Mapping"/>
-				
-					</Menu>
-				</Border>-->
 			</StackPanel>
 			<Button
 					

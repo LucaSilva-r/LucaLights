@@ -3,12 +3,16 @@ using Avalonia.Controls;
 using Avalonia.Interactivity;
 using Avalonia.Markup.Xaml;
 using LTEK_ULed.Code;
+using LucideAvalonia;
 using System;
 using System.Collections.Generic;
 using System.Collections.ObjectModel;
 using System.Diagnostics;
 using System.Linq;
-
+using LucideAvalonia.Enum;
+using Avalonia.Data;
+using Avalonia.Markup.Xaml.MarkupExtensions;
+using Avalonia.Media;
 namespace LTEK_ULed.Controls;
 
 public partial class EnumButton : UserControl
@@ -33,8 +37,13 @@ public partial class EnumButton : UserControl
     private void Button_Click(object? sender, RoutedEventArgs e)
     {
         // IsOpen will always be false here, but IsVisible will give us the menu state at the time the button was clicked.
-        if (!menu.IsVisible) menu.Open();
-        Debug.WriteLine("Open Menu");
+        if (!menu.IsOpen)
+        {
+            menu.Open();
+            foreach (var item in menuItems) //This is redundant when item.Click triggered it and no overlapping values exist.
+                item.IsChecked = (EnumValue & (int)item.Tag) == (int)item.Tag;
+        }
+
     }
 
 
@@ -51,7 +60,6 @@ public partial class EnumButton : UserControl
             SetValue(EnumValueProperty, value);
             foreach (var item in menuItems) //This is redundant when item.Click triggered it and no overlapping values exist.
                 item.IsChecked = (value & (int)item.Tag) == (int)item.Tag;
-            //buttonLabel.Text = ButtonLabel;
         }
     }
 
@@ -70,15 +78,30 @@ public partial class EnumButton : UserControl
                 // Create a MenuItem for each defined value of the enum
                 foreach (var val in Enum.GetValues(value))
                 {
-                    var menuitem = new MenuItem()
+                    if ((int)val != 0)
                     {
-                        Header = ((Enum)val).GetDescription(),
-                        IsEnabled = true,
-                        StaysOpenOnClick = true,
-                        Tag = Enum.ToObject(value, val)
-                    };
-                    menuitem.Click += Menuitem_Click;
-                    menuItems.Add(menuitem);
+                        var menuitem = new MenuItem()
+                        {
+                            Header = ((Enum)val).GetDescription(),
+                            IsEnabled = true,
+                            StaysOpenOnClick = true,
+                            Tag = Enum.ToObject(value, val),
+                            IsChecked = (EnumValue & (1 << (int)val)) != 0
+                        };
+
+                        Lucide icon = new Lucide()
+                        {
+                            Icon = LucideIconNames.Check,
+                            Width = 16,
+                            Height = 16,
+                        };
+                        icon.Bind(Lucide.StrokeBrushProperty, new DynamicResourceExtension("SecondaryForegroundColor"));
+                        icon.Bind(Lucide.IsVisibleProperty, menuitem.GetObservable(MenuItem.IsCheckedProperty));
+                        menuitem.Icon = icon;
+                        menuitem.Click += Menuitem_Click;
+                        menuItems.Add(menuitem);
+                    }
+
                 }
                 // In an expandable grid row, EnumValue gets set before ChoicesSource is set.
                 // Repeat the assignment now to get the new menuItems appropriately checked and the button label updated.
@@ -94,46 +117,15 @@ public partial class EnumButton : UserControl
     {
         //Check?.Invoke(sender, e); //Call any added Check handler.
         // Update EnumValue
-        var item = sender as MenuItem;
-        SetValue(EnumValueProperty, item!.IsChecked ? EnumValue | (int)item!.Tag! : EnumValue & ~(int)item.Tag!);
-        // Update label
-        //buttonLabel.Text = ButtonLabel;
+        if (sender is not MenuItem item)
+        {
+            throw new InvalidOperationException();
+        }
+        item.IsChecked = !item.IsChecked;
+        EnumValue =  item!.IsChecked ? EnumValue | (int)item!.Tag! : EnumValue & ~(int)item.Tag!;
+
         e.Handled = true;
     }
-
-    //public string ButtonLabel
-    //{
-    //    get
-    //    {
-    //        var checkedItems = menuItems.Where(x => x.IsChecked);
-    //        if (checkedItems.Count() == 0)
-    //            return EmptySelectionLabel;
-    //        if (ButtonLabelStyle == ButtonLabelStyles.FixedText)
-    //            return fixedButtonLabel;
-    //        {
-    //            IEnumerable<string> terms;
-    //            var delim = ", ";
-    //            switch (ButtonLabelStyle)
-    //            {
-    //                case ButtonLabelStyles.Values:
-    //                    terms = checkedItems.Select(y => ((int)y.Tag).ToString());
-    //                    break;
-    //                case ButtonLabelStyles.Names:
-    //                    terms = checkedItems.Select(y => ((Enum)y.Tag).GetDescription());
-    //                    delim = Environment.NewLine;
-    //                    break;
-    //                default: //"Indexes" is the default
-    //                    terms = checkedItems.Select(y => (menuItems.IndexOf(y) + 1).ToString());
-    //                    break;
-    //            }
-    //            return string.Join(delim, terms);
-    //        }
-    //    }
-    //    set
-    //    {
-    //        fixedButtonLabel = value;
-    //    }
-    //}
 
 
     public static readonly StyledProperty<ButtonLabelStyles> ButtonLabelStyleProperty =
@@ -147,15 +139,6 @@ public partial class EnumButton : UserControl
             SetValue(ButtonLabelStyleProperty, value);
             //buttonLabel.Text = ButtonLabel;
         }
-    }
-
-    public static readonly StyledProperty<string> EmptySelectionLabelProperty =
-        AvaloniaProperty.Register<EnumButton, string>(nameof(EmptySelectionLabel), defaultBindingMode: Avalonia.Data.BindingMode.OneWay);
-
-    public string EmptySelectionLabel
-    {
-        get { return (string)GetValue(EmptySelectionLabelProperty); }
-        set { SetValue(EmptySelectionLabelProperty, value); }
     }
 
 
