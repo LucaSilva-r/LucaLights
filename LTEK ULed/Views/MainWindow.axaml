@@ -9,7 +9,6 @@
         xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
         xmlns:views="clr-namespace:LTEK_ULed.Views"
 	    xmlns:shadui="clr-namespace:ShadUI.Controls;assembly=ShadUI"
-		xmlns:icons="clr-namespace:LucideAvalonia;assembly=LucideAvalonia"
 		xmlns:extensions="clr-namespace:ShadUI.Extensions;assembly=ShadUI"
         xmlns:controls="clr-namespace:LTEK_ULed.Controls"
 		x:Name="Window"
@@ -294,15 +293,8 @@
 							<Button
 								DockPanel.Dock="Right"
 								Classes="Ghost"
-								Click="AddDevice">
-								<extensions:ButtonAssist.Icon>
-									<icons:Lucide
-										Width="10"
-										Height="16"
-										Icon="Plus"
-										StrokeBrush="{DynamicResource SecondaryForegroundColor}"
-										StrokeThickness="1.5" />
-								</extensions:ButtonAssist.Icon>
+								Click="AddDevice"
+								Content="Add">
 							</Button>
 						</DockPanel>
 
@@ -332,14 +324,7 @@
 														</StackPanel>
 													</StackPanel>
 												</StackPanel>
-												<Button Margin="10,0,10,0" DockPanel.Dock="Right" Command="{Binding EditDevice}" Classes="Secondary">
-													<icons:Lucide
-														Width="16"
-														Height="16"
-														Icon="Settings"
-														StrokeBrush="{DynamicResource ForegroundColor}"
-														StrokeThickness="1.5" />
-												</Button>
+												<Button Margin="10,0,10,0" DockPanel.Dock="Right" Command="{Binding EditDevice}" Classes="Secondary" Content="Setup"/>
 											</DockPanel>
 										</shadui:Card>
 									</DataTemplate>

@@ -11,17 +11,17 @@ namespace LTEK_ULed;
 public partial class DeviceSetup : Window
 {
 
-    Device? device = new Device("New Device", "192.168.1.1", new());
+    //Device? device = new Device("New Device", "192.168.1.1", new());
 
     public DeviceSetup()
     {
         InitializeComponent();
-        DataContext = device;
-        DataContextChanged += (s, e) =>
-        {
-            device = null;
-        };
-        Closing += (s,e) => Settings.Load();
+    //    DataContext = device;
+    ////    DataContextChanged += (s, e) =>
+    //    {
+    //        device = null;
+    //    };
+    //    Closing += (s,e) => Settings.Load();
     }
 
     private void TextBox_TextChanged(object? sender, Avalonia.Controls.TextChangedEventArgs e)

@@ -3,13 +3,11 @@ using Avalonia.Controls;
 using Avalonia.Interactivity;
 using Avalonia.Markup.Xaml;
 using LTEK_ULed.Code;
-using LucideAvalonia;
 using System;
 using System.Collections.Generic;
 using System.Collections.ObjectModel;
 using System.Diagnostics;
 using System.Linq;
-using LucideAvalonia.Enum;
 using Avalonia.Data;
 using Avalonia.Markup.Xaml.MarkupExtensions;
 using Avalonia.Media;
@@ -89,15 +87,15 @@ public partial class EnumButton : UserControl
                             IsChecked = (EnumValue & (1 << (int)val)) != 0
                         };
 
-                        Lucide icon = new Lucide()
-                        {
-                            Icon = LucideIconNames.Check,
-                            Width = 16,
-                            Height = 16,
-                        };
-                        icon.Bind(Lucide.StrokeBrushProperty, new DynamicResourceExtension("SecondaryForegroundColor"));
-                        icon.Bind(Lucide.IsVisibleProperty, menuitem.GetObservable(MenuItem.IsCheckedProperty));
-                        menuitem.Icon = icon;
+                        //Lucide icon = new Lucide()
+                        //{
+                        //    Icon = LucideIconNames.Check,
+                        //    Width = 16,
+                        //    Height = 16,
+                        //};
+                        //icon.Bind(Lucide.StrokeBrushProperty, new DynamicResourceExtension("SecondaryForegroundColor"));
+                        //icon.Bind(Lucide.IsVisibleProperty, menuitem.GetObservable(MenuItem.IsCheckedProperty));
+                        //menuitem.Icon = icon;
                         menuitem.Click += Menuitem_Click;
                         menuItems.Add(menuitem);
                     }

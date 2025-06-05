@@ -3,10 +3,6 @@
              x:Class="LTEK_ULed.App"
 			 xmlns:themes="clr-namespace:ShadUI.Themes;assembly=ShadUI"
 			 RequestedThemeVariant="Default">
-	
-	<Application.Resources>
-		<FontFamily x:Key="BootstrapIcons">avares://LTEK ULed/Assets#bootstrap-icons</FontFamily>
-	</Application.Resources>
 
 	<Application.Resources>
 		<ResourceDictionary>

@@ -11,8 +11,8 @@
   </PropertyGroup>
 
   <ItemGroup>
-    <PackageReference Include="Avalonia.Desktop" Version="11.3.0" />
-    <PackageReference Include="ShadUI" Version="0.0.5" />
+    <PackageReference Include="Avalonia.Desktop" Version="11.3.1" />
+    <PackageReference Include="ShadUI" Version="0.0.6" />
     <PackageReference Include="System.IO.Ports" Version="9.0.5" />
   </ItemGroup>
 

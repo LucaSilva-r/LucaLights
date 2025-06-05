@@ -4,7 +4,6 @@
              xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
 			 xmlns:shadui="clr-namespace:ShadUI.Controls;assembly=ShadUI"
 			 xmlns:extensions="clr-namespace:ShadUI.Extensions;assembly=ShadUI"
-             xmlns:icons="clr-namespace:LucideAvalonia;assembly=LucideAvalonia"
 	         xmlns:controls="clr-namespace:LTEK_ULed.Controls"
              xmlns:cd="using:LTEK_ULed.Code"
 			 xmlns:local="clr-namespace:LTEK_ULed.Converters;assembly=LTEK ULed"
@@ -44,13 +43,7 @@
 					CommandParameter="{Binding}"
 					Classes="Primary"
 					VerticalAlignment="Bottom"
-					HorizontalAlignment="Right">
-				<icons:Lucide
-					Width="10"
-					Height="16"
-					Icon="Minus"
-					StrokeBrush="{DynamicResource PrimaryForegroundColor}"
-					StrokeThickness="3" />
+					HorizontalAlignment="Right" Content="-">
 			</Button>
 		</StackPanel>
 

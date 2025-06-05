@@ -38,13 +38,7 @@
 
 			<DockPanel LastChildFill="False">
 				<TextBlock DockPanel.Dock="Left" Margin="0 5" Classes="h4">Segment setup</TextBlock>
-				<Button ToolTip.Tip="Create Segment" DockPanel.Dock="Right" Content="Add" Classes="Primary" Command="{Binding AddSegment}">
-					<icons:Lucide
-						Width="10"
-						Height="16"
-						Icon="Plus"
-						StrokeBrush="{DynamicResource PrimaryForegroundColor}"
-						StrokeThickness="3" />
+				<Button ToolTip.Tip="Create Segment" DockPanel.Dock="Right" Content="+" Classes="Primary" Command="{Binding AddSegment}">
 				</Button>
 			</DockPanel>
 
