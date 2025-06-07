@@ -1,26 +1,17 @@
-﻿using Avalonia.Controls;
-using Avalonia.Interactivity;
-using Avalonia.Threading;
-using LTEK_ULed.Code;
-using System;
-using System.IO;
-using System.IO.Ports;
-using System.Text.RegularExpressions;
-using System.Text.Json;
-using System.Text.Json.Serialization;
+﻿using System;
 using System.Diagnostics;
 using Avalonia.Media;
+using Avalonia.Controls;
 using Avalonia.Controls.Shapes;
-using System.Security.Cryptography;
-using System.Collections.Generic;
-using System.Xml.Serialization;
 using Avalonia.VisualTree;
-using System.Linq;
 using LTEK_ULed.Controls;
+using LTEK_ULed.Code;
+using System.Linq;
+using System.Collections.Generic;
 
 namespace LTEK_ULed.Views;
 
-public partial class MainWindow : ShadUI.Controls.Window
+public partial class MainWindow : Window
 {
     GameState gameState = GameState.gameState;
 
@@ -54,7 +45,7 @@ public partial class MainWindow : ShadUI.Controls.Window
             rect!.PointerExited += Rectangle_PointerExited;
 
         }
-        
+
         this.GetVisualDescendants().OfType<SegmentView>().ToList();
     }
 
@@ -163,7 +154,8 @@ public partial class MainWindow : ShadUI.Controls.Window
     {
 
         Window setup = new DeviceSetup();
-        
+        setup.DataContext = new Device("New Device", "192.168.1.1", new());
         setup.ShowDialog(this);
+
     }
 }

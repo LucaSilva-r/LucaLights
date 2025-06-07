@@ -1,9 +1,13 @@
 using Avalonia;
 using Avalonia.Controls;
+using Avalonia.Data.Core;
+using Avalonia.Data;
 using Avalonia.Markup.Xaml;
 using Avalonia.Markup.Xaml.MarkupExtensions;
 using Avalonia.Media;
 using LTEK_ULed.Code;
+using LTEK_ULed.Converters;
+using System;
 
 namespace LTEK_ULed.Controls;
 
@@ -13,14 +17,6 @@ public partial class SegmentSettings : UserControl
     public SegmentSettings()
     {
         InitializeComponent();
-
-        DataContextChanged += (e, s) =>
-        {
-            segment = DataContext as Segment;
-            if (segment != null)
-            {
-            }
-        };
     }
     
     public static readonly StyledProperty<string> SegmentNameProperty =
@@ -39,5 +35,9 @@ public partial class SegmentSettings : UserControl
     {
         get => GetValue(SegmentLengthProperty);
         set => SetValue(SegmentLengthProperty, value);
+    }
+
+    private void ContextMenu_Closed(object? sender, Avalonia.Interactivity.RoutedEventArgs e)
+    {
     }
 }

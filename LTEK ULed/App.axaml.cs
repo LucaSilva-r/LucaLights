@@ -8,6 +8,7 @@ using LTEK_ULed.Views;
 using ShadUI.Themes;
 using System;
 using System.Linq;
+using System.Runtime;
 
 namespace LTEK_ULed;
 
@@ -35,8 +36,9 @@ public partial class App : Application
             desktop.Shutdown();
         };
 
-
+        GCSettings.LatencyMode = GCLatencyMode.LowLatency;
         base.OnFrameworkInitializationCompleted();
+        
     }
 
     private void DisableAvaloniaDataAnnotationValidation()

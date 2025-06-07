@@ -19,10 +19,14 @@ public partial class SegmentView : UserControl
     public void UpdateLeds()
     {
 
-        for (int i = 0; i < ledRects.Count && i < segment!.leds.Length; i++)
+        if (segment!= null)
         {
-            (ledRects[i].Fill as SolidColorBrush)!.Color = segment!.leds[i];
+            for (int i = 0; i < ledRects.Count && i < segment?.leds.Length; i++)
+            {
+                (ledRects[i].Fill as SolidColorBrush)!.Color = segment!.leds[i];
+            }
         }
+
     }
 
     public SegmentView()
