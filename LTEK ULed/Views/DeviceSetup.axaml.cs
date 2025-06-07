@@ -16,12 +16,12 @@ public partial class DeviceSetup : Window
     public DeviceSetup()
     {
         InitializeComponent();
-    //    DataContext = device;
-    ////    DataContextChanged += (s, e) =>
-    //    {
-    //        device = null;
-    //    };
-    //    Closing += (s,e) => Settings.Load();
+        //    DataContext = device;
+        ////    DataContextChanged += (s, e) =>
+        //    {
+        //        device = null;
+        //    };
+        Closing += (s, e) => Settings.Load();
     }
 
     private void TextBox_TextChanged(object? sender, Avalonia.Controls.TextChangedEventArgs e)

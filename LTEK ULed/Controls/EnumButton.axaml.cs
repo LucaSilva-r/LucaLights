@@ -87,6 +87,14 @@ public partial class EnumButton : UserControl
                             IsChecked = (EnumValue & (1 << (int)val)) != 0
                         };
 
+                        TextBlock textBlock = new TextBlock()
+                        {
+                            Text = "V",
+                            FontSize = 12,
+                            Width=16,
+                            Height=16,
+                            FontWeight = FontWeight.Bold,
+                        };
                         //Lucide icon = new Lucide()
                         //{
                         //    Icon = LucideIconNames.Check,
@@ -94,8 +102,8 @@ public partial class EnumButton : UserControl
                         //    Height = 16,
                         //};
                         //icon.Bind(Lucide.StrokeBrushProperty, new DynamicResourceExtension("SecondaryForegroundColor"));
-                        //icon.Bind(Lucide.IsVisibleProperty, menuitem.GetObservable(MenuItem.IsCheckedProperty));
-                        //menuitem.Icon = icon;
+                        textBlock.Bind(TextBlock.IsVisibleProperty, menuitem.GetObservable(MenuItem.IsCheckedProperty));
+                        menuitem.Icon = textBlock;
                         menuitem.Click += Menuitem_Click;
                         menuItems.Add(menuitem);
                     }
@@ -120,7 +128,7 @@ public partial class EnumButton : UserControl
             throw new InvalidOperationException();
         }
         item.IsChecked = !item.IsChecked;
-        EnumValue =  item!.IsChecked ? EnumValue | (int)item!.Tag! : EnumValue & ~(int)item.Tag!;
+        EnumValue = item!.IsChecked ? EnumValue | (int)item!.Tag! : EnumValue & ~(int)item.Tag!;
 
         e.Handled = true;
     }
