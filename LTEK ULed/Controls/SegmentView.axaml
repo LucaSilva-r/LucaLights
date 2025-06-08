@@ -6,19 +6,17 @@
              x:Class="LTEK_ULed.Controls.SegmentView"
              xmlns:shadui="clr-namespace:ShadUI.Controls;assembly=ShadUI"
 			 x:Name="Segment">
-	<shadui:Card Padding="10" BorderBrush="{DynamicResource BackgroundBrush}" BorderThickness="1" CornerRadius="10" Margin="5">
-
-		<shadui:Card.Header>
-			<StackPanel Orientation="Horizontal" Spacing="10">
-				<shadui:CardTitle x:CompileBindings="False" Content="{Binding SegmentName, ElementName=Segment}"/>
-				<shadui:CardTitle x:CompileBindings="False" Content="{Binding SegmentLength, ElementName=Segment, StringFormat='Leds: {0}'}"/>
+	<Border Padding="10" BorderThickness="1" CornerRadius="10" Margin="5">
+		<DockPanel>
+			<StackPanel DockPanel.Dock="Top" Orientation="Horizontal" Spacing="10">
+				<TextBlock x:CompileBindings="False" Text="{Binding SegmentName, ElementName=Segment}"/>
+				<TextBlock x:CompileBindings="False" Text="{Binding SegmentLength, ElementName=Segment, StringFormat='Leds: {0}'}"/>
 			</StackPanel>
 
-		</shadui:Card.Header>
-		<StackPanel>
-			<WrapPanel x:Name="LedContainer">
-
-			</WrapPanel>
-		</StackPanel>
-	</shadui:Card>
+			<StackPanel>
+				<WrapPanel x:Name="LedContainer">
+				</WrapPanel>
+			</StackPanel>
+		</DockPanel>
+	</Border>
 </UserControl>

@@ -5,7 +5,6 @@ using Avalonia.Markup.Xaml;
 using LTEK_ULed.Code;
 using LTEK_ULed.ViewModels;
 using LTEK_ULed.Views;
-using ShadUI.Themes;
 using System;
 using System.Linq;
 using System.Runtime;

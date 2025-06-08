@@ -20,6 +20,7 @@ using System.ComponentModel.DataAnnotations;
 using Avalonia;
 using Avalonia.Controls.ApplicationLifetimes;
 using Avalonia.Controls;
+using LTEK_ULed.Views;
 
 namespace LTEK_ULed.Code
 {
@@ -90,7 +91,7 @@ namespace LTEK_ULed.Code
 
         [RelayCommand]
         [property: JsonIgnore]
-        public void EditDevice()
+        public void DeleteDevice()
         {
             Window owner = (Application.Current!.ApplicationLifetime as IClassicDesktopStyleApplicationLifetime)!.MainWindow!;
             DeviceSetup deviceSetup = new DeviceSetup()
@@ -99,6 +100,13 @@ namespace LTEK_ULed.Code
             };
 
             deviceSetup.ShowDialog(owner);
+        }
+
+        [RelayCommand]
+        [property: JsonIgnore]
+        public void EditDevice()
+        {
+            MainWindow.Instance!.EditDevice(this);
         }
 
         [RelayCommand]

@@ -35,12 +35,8 @@ namespace LTEK_ULed.Code
             {
                 lock (Settings.Instance!)
                 {
-                    Settings.Instance.devices.Clear();
+                    Settings.Instance.devices = devices;
                     Settings.Instance.Dirty = true;
-                    foreach (Device device in this.devices)
-                    {
-                        Settings.Instance.devices.Add(device);
-                    }
                 }
             }
         }

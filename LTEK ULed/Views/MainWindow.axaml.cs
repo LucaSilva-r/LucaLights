@@ -24,6 +24,8 @@ public partial class MainWindow : Window
     Dictionary<GameButton, Rectangle> GBToRect = new Dictionary<GameButton, Rectangle>();
     List<SegmentView> segmentViews = new List<SegmentView>();
 
+    public Window? setup;
+
     public MainWindow()
     {
 
@@ -152,10 +154,23 @@ public partial class MainWindow : Window
 
     private void AddDevice(object? sender, Avalonia.Interactivity.RoutedEventArgs e)
     {
+        EditDevice(new Device("New Device", "192.168.1.1", new()));
+    }
 
-        Window setup = new DeviceSetup();
-        setup.DataContext = new Device("New Device", "192.168.1.1", new());
+    public void EditDevice(Device device)
+    {
+        if (setup == null)
+        {
+            setup = new DeviceSetup();
+            setup.Closing += (s, e) =>
+            {
+                ((Window)s!).Hide();
+                e.Cancel = true;
+                Settings.Load();
+            };
+        }
+
+        setup.DataContext = device;
         setup.ShowDialog(this);
-
     }
 }

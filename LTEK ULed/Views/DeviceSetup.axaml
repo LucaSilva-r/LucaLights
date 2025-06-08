@@ -22,24 +22,34 @@
 
 	<Border Padding="10" Width="770">
 		<StackPanel Spacing="10">
+
 			<TextBlock FontSize="18" Margin="0,0,0,10" Classes="h4">Device Setup</TextBlock>
-			<TextBox
-				HorizontalAlignment="Left"
-				Width="225"
-				UseFloatingWatermark="True"
-				Watermark="Device Name"
-				Text="{Binding name}"/>
-			<TextBox
-				HorizontalAlignment="Left"
-				Width="225"
-				UseFloatingWatermark="True"
-				Watermark="Device IP"
-				Text="{Binding ip}"/>
+			<StackPanel Spacing="5">
+				<Label>
+					Name
+				</Label>
+				<TextBox
+					HorizontalAlignment="Left"
+					Width="200"
+					Watermark="Name"
+					Text="{Binding name}"/>
+			</StackPanel>
+			<StackPanel Spacing="5">
+				<Label>
+					IP Address
+				</Label>
+				<TextBox
+					HorizontalAlignment="Left"
+					Width="200"
+					Watermark="IP Address"
+					Text="{Binding ip}"/>
+			</StackPanel>
 
 			<DockPanel LastChildFill="False">
 				<TextBlock DockPanel.Dock="Left" Margin="0 5" Classes="h4">Segment setup</TextBlock>
 				<Button ToolTip.Tip="Create Segment" DockPanel.Dock="Right" Content="+" Classes="Primary" Command="{Binding AddSegment}">
 				</Button>
+
 			</DockPanel>
 
 			<ScrollViewer MinHeight="100" MaxHeight="600">
