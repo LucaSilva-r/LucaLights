@@ -14,6 +14,7 @@
 		MinHeight="540"
 		MinWidth="960"
 		x:DataType="vm:MainViewModel"
+        xmlns:dialogHost="clr-namespace:DialogHostAvalonia;assembly=DialogHost.Avalonia"
 		>
 
 	<Border Padding="10">
@@ -29,6 +30,12 @@
 					<RowDefinition Height="*"></RowDefinition>
 				</Grid.RowDefinitions>
 				<!--Status-->
+				<dialogHost:DialogHost CloseOnClickAway="False" Grid.ColumnSpan="2" Grid.RowSpan="2">
+					<dialogHost:DialogHost.DialogContent>
+						<!-- put your dialog content here-->
+					</dialogHost:DialogHost.DialogContent>
+					<!-- put the content over which the dialog is shown here (e.g. your main window grid)-->
+				</dialogHost:DialogHost>
 
 				<Border Theme="{StaticResource CardBorder}" Classes="Shadow" Margin="5">
 					<DockPanel >
@@ -319,7 +326,7 @@
 															</StackPanel>
 														</StackPanel>
 													</StackPanel>
-													<Button Margin="10,0,10,0" DockPanel.Dock="Right" Command="{Binding EditDevice}" Classes="Danger" Content="Delete"/>
+													<Button Margin="10,0,10,0" DockPanel.Dock="Right" Command="{Binding DeleteDevice}" Classes="Danger" Content="Delete"/>
 													<Button Margin="10,0,10,0" DockPanel.Dock="Right" Command="{Binding EditDevice}" Classes="Secondary" Content="Setup"/>
 												</DockPanel>
 											</Border>
@@ -355,23 +362,22 @@
 									<Border Theme="{StaticResource CardBorder}" Margin="5" Padding="10" Classes="Shadow">
 										<DockPanel>
 											<TextBlock DockPanel.Dock="Top" Text="{Binding name}"/>
-												<ItemsControl x:DataType="cd:Device" ItemsSource="{Binding segments}" >
-													<ItemsControl.ItemsPanel>
-														<ItemsPanelTemplate>
-															<WrapPanel VerticalAlignment="Top"/>
-														</ItemsPanelTemplate>
-													</ItemsControl.ItemsPanel>
-													<ItemsControl.ItemTemplate>
-														<DataTemplate x:DataType="cd:Segment">
-															<!--Segments-->
-															<Border Theme="{StaticResource CardBorder}" Margin="5" Padding="0">
-																<controls:SegmentView Leds="{Binding leds}" SegmentName="{Binding name}" SegmentLength="{Binding length}"></controls:SegmentView>
-															</Border>
-														</DataTemplate>
-													</ItemsControl.ItemTemplate>
-												</ItemsControl>
-
-									</DockPanel>
+											<ItemsControl x:DataType="cd:Device" ItemsSource="{Binding segments}" >
+												<ItemsControl.ItemsPanel>
+													<ItemsPanelTemplate>
+														<WrapPanel VerticalAlignment="Top"/>
+													</ItemsPanelTemplate>
+												</ItemsControl.ItemsPanel>
+												<ItemsControl.ItemTemplate>
+													<DataTemplate x:DataType="cd:Segment">
+														<!--Segments-->
+														<Border Theme="{StaticResource CardBorder}" Margin="5" Padding="0">
+															<controls:SegmentView Leds="{Binding leds}" SegmentName="{Binding name}" SegmentLength="{Binding length}"></controls:SegmentView>
+														</Border>
+													</DataTemplate>
+												</ItemsControl.ItemTemplate>
+											</ItemsControl>
+										</DockPanel>
 									</Border>
 								</DataTemplate>
 							</ItemsControl.ItemTemplate>
