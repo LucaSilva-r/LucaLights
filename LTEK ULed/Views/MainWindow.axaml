@@ -17,6 +17,7 @@
         xmlns:dialogHost="clr-namespace:DialogHostAvalonia;assembly=DialogHost.Avalonia"
 		>
 
+
 	<Border Padding="10">
 		<Grid>
 			<Grid.ColumnDefinitions>
@@ -36,6 +37,9 @@
 					</dialogHost:DialogHost.DialogContent>
 					<!-- put the content over which the dialog is shown here (e.g. your main window grid)-->
 				</dialogHost:DialogHost>
+
+
+
 
 				<Border Theme="{StaticResource CardBorder}" Classes="Shadow" Margin="5">
 					<DockPanel >
@@ -385,6 +389,11 @@
 					</ScrollViewer>
 				</DockPanel>
 			</Border>
+
+			<dialogHost:DialogHost Background="Transparent" Identifier="Dialog" Grid.ColumnSpan="2" Grid.RowSpan="2" CloseOnClickAway="True">
+				<dialogHost:DialogHost.DialogContent>
+				</dialogHost:DialogHost.DialogContent>
+			</dialogHost:DialogHost>
 
 		</Grid>
 	</Border>

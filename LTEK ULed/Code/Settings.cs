@@ -19,13 +19,14 @@ namespace LTEK_ULed.Code
         public static Settings? Instance;
 
         public ObservableCollection<Device> devices { get; set; } = new();
-
+        
 
         [JsonIgnore]
         public bool Dirty { get; private set; } = true;
 
         public Settings(ObservableCollection<Device> devices)
         {
+           
             this.devices = devices;
 
             if(Settings.Instance == null)

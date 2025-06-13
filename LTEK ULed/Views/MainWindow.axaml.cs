@@ -24,10 +24,13 @@ public partial class MainWindow : Window
     Dictionary<GameButton, Rectangle> GBToRect = new Dictionary<GameButton, Rectangle>();
     List<SegmentView> segmentViews = new List<SegmentView>();
 
+
+
     public Window? setup;
 
     public MainWindow()
     {
+            
 
         InitializeComponent();
 

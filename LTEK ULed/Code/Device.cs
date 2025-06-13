@@ -21,6 +21,7 @@ using Avalonia;
 using Avalonia.Controls.ApplicationLifetimes;
 using Avalonia.Controls;
 using LTEK_ULed.Views;
+using DialogHostAvalonia;
 
 namespace LTEK_ULed.Code
 {
@@ -93,13 +94,20 @@ namespace LTEK_ULed.Code
         [property: JsonIgnore]
         public void DeleteDevice()
         {
-            Window owner = (Application.Current!.ApplicationLifetime as IClassicDesktopStyleApplicationLifetime)!.MainWindow!;
-            DeviceSetup deviceSetup = new DeviceSetup()
-            {
-                DataContext = this,
-            };
+            //Settings.Instance!.devices.Remove(this);
+            //Settings.Instance.MarkDirty();
+            //Settings.Save();
 
-            deviceSetup.ShowDialog(owner);
+            
+
+            DialogHost.Show(new ConfirmationDialog() { Description="Are you sure you want to delete device " + name},"Dialog");
+        }
+
+        [RelayCommand]
+        [property: JsonIgnore]
+        public void ConfirmDeletion()
+        {
+
         }
 
         [RelayCommand]

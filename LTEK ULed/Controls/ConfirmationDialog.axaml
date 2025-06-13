@@ -1,0 +1,23 @@
+<UserControl xmlns="https://github.com/avaloniaui"
+             xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+             xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
+             xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
+             x:Class="LTEK_ULed.ConfirmationDialog"
+			 MinWidth="300">
+
+	<UserControl.Template>
+		<ControlTemplate>
+			<Border Theme="{StaticResource CardBorder}" Classes="Shadow" Margin="5" Padding="5">
+				<DockPanel>
+					<TextBlock Classes="Title" DockPanel.Dock="Top" FontSize="18" Margin="40" Text="{TemplateBinding Description}"/>
+					<StackPanel DockPanel.Dock="Bottom" Orientation="Horizontal" HorizontalAlignment="Right" Margin="5">
+						<Button Classes="Secondary" Content="No" Margin="5" Width="75" />
+						<Button Classes="Danger" Name="btnYes" Content="Yes" Margin="5" Width="75" />
+					</StackPanel>
+				</DockPanel>
+			</Border>
+		</ControlTemplate>
+
+	</UserControl.Template>
+
+</UserControl>
