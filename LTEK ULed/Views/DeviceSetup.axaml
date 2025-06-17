@@ -31,7 +31,7 @@
 					HorizontalAlignment="Left"
 					Width="200"
 					Watermark="Name"
-					Text="{Binding name}"/>
+					Text="{Binding Name}"/>
 			</StackPanel>
 			<StackPanel Spacing="5">
 				<Label>
@@ -41,7 +41,7 @@
 					HorizontalAlignment="Left"
 					Width="200"
 					Watermark="IP Address"
-					Text="{Binding ip}"/>
+					Text="{Binding Ip}"/>
 			</StackPanel>
 
 			<DockPanel LastChildFill="False">
@@ -52,7 +52,7 @@
 			</DockPanel>
 
 			<ScrollViewer MinHeight="100" MaxHeight="600">
-				<ItemsControl ItemsSource="{Binding segments}" Tag="{Binding RemoveSegmentCommand}">
+				<ItemsControl ItemsSource="{Binding Segments}" Tag="{Binding RemoveSegmentCommand}">
 					<ItemsControl.ItemsPanel>
 						<ItemsPanelTemplate>
 							<StackPanel Spacing="20"></StackPanel>
@@ -61,7 +61,7 @@
 					</ItemsControl.ItemsPanel>
 					<ItemsControl.ItemTemplate>
 						<DataTemplate x:DataType="cd:Segment">
-							<controls:SegmentSettings SegmentName="{Binding name}" SegmentLength="{Binding length}"></controls:SegmentSettings>
+							<controls:SegmentSettings SegmentName="{Binding Name}" SegmentLength="{Binding Length}"></controls:SegmentSettings>
 						</DataTemplate>
 					</ItemsControl.ItemTemplate>
 				</ItemsControl>

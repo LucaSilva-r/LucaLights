@@ -21,36 +21,43 @@ using Avalonia.Controls;
 using LTEK_ULed.Views;
 using DialogHostAvalonia;
 using LTEK_ULed.Controls;
+using CommunityToolkit.Mvvm.ComponentModel;
 
 namespace LTEK_ULed.Code
 {
     [Serializable]
-    public partial class Device : ViewModelBase
+    public partial class Device : ObservableObject
     {
+        [ObservableProperty]
+        [property: JsonPropertyName("name"), NameValidation]
         private string _name = "New Device";
 
-        [NameValidation]
-        public string name
-        {
-            get => _name;
-            set => SetProperty(ref _name, value, true);
-        }
+        //[NameValidation]
+        //public string name
+        //{
+        //    get => _name;
+        //    set => SetProperty(ref _name, value, true);
+        //}
 
+        [ObservableProperty]
+        [property: JsonPropertyName("ip"), IpAddressValidation]
         private string _ip = "192.168.1.1";
 
-        [IpAddressValidation]
-        public string ip
-        {
-            get => _ip;
-            set => SetProperty(ref _ip, value, true);
-        }
+        //[IpAddressValidation]
+        //public string ip
+        //{
+        //    get => _ip;
+        //    set => SetProperty(ref _ip, value, true);
+        //}
 
         [JsonIgnore]
         public int Nsegments { get; set; } = 0;
         [JsonIgnore]
         public int Nleds { get; set; } = 0;
 
-        public ObservableCollection<Segment> segments { get; set; } = new ObservableCollection<Segment>();
+        [ObservableProperty]
+        [property: JsonPropertyName("segments")]
+        private ObservableCollection<Segment> _segments = new ObservableCollection<Segment>();
 
         private Color[] data = new Color[0];
 
@@ -58,10 +65,10 @@ namespace LTEK_ULed.Code
 
         public Device(string name, string ip, ObservableCollection<Segment> segments)
         {
-            this.name = name;
+            this.Name = name;
 
-            this.ip = ip;
-            this.segments = segments;
+            this.Ip = ip;
+            this.Segments = segments;
 
             Recalculate();
 
@@ -93,7 +100,7 @@ namespace LTEK_ULed.Code
         [property: JsonIgnore]
         public void DeleteDevice()
         {
-            DialogHost.Show(new ConfirmationDialog() { Command = DeletionConfirmedCommand, Description="Are you sure you want to delete device " + name},"Dialog");
+            DialogHost.Show(new ConfirmationDialog() { Command = DeletionConfirmedCommand, Description="Are you sure you want to delete device " + Name},"Dialog");
         }
 
         [RelayCommand]
@@ -119,7 +126,7 @@ namespace LTEK_ULed.Code
         {
             Settings.Instance!.MarkDirty();
 
-            segments.Remove(segment);
+            Segments.Remove(segment);
             Recalculate();
         }
 
@@ -129,7 +136,7 @@ namespace LTEK_ULed.Code
         {
             Settings.Instance!.MarkDirty();
 
-            segments.Add(new Segment("New Segment #" + (segments.Count + 1), 1, 0, 0));
+            Segments.Add(new Segment("New Segment #" + (Segments.Count + 1), 1, 0, 0));
 
             Recalculate();
         }
@@ -138,7 +145,7 @@ namespace LTEK_ULed.Code
         {
             int counter = 0;
 
-            foreach (Segment item in segments)
+            foreach (Segment item in Segments)
             {
                 counter += item.leds.Length;
             }
@@ -146,19 +153,19 @@ namespace LTEK_ULed.Code
             data = new Color[counter];
 
             Nleds = counter;
-            Nsegments = segments.Count;
+            Nsegments = Segments.Count;
 
             dDPsend?.Dispose();
-            dDPsend = new DDPSend(this.ip, data.Length);
+            dDPsend = new DDPSend(this.Ip, data.Length);
         }
 
         public void Send()
         {
             int counter = 0;
 
-            for (int i = 0; i < segments.Count; i++)
+            for (int i = 0; i < Segments.Count; i++)
             {
-                Segment segment = segments[i];
+                Segment segment = Segments[i];
                 Array.Copy(segment.leds, 0, data, counter, segment.leds.Length);
                 counter += segment.leds.Length;
             }

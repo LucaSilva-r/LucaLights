@@ -8,6 +8,8 @@ using LTEK_ULed.Controls;
 using LTEK_ULed.Code;
 using System.Linq;
 using System.Collections.Generic;
+using System.Text.Json.Serialization;
+using System.Text.Json;
 
 namespace LTEK_ULed.Views;
 
@@ -24,13 +26,9 @@ public partial class MainWindow : Window
     Dictionary<GameButton, Rectangle> GBToRect = new Dictionary<GameButton, Rectangle>();
     List<SegmentView> segmentViews = new List<SegmentView>();
 
-
-
-    public Window? setup;
-
     public MainWindow()
     {
-            
+
 
         InitializeComponent();
 
@@ -160,20 +158,17 @@ public partial class MainWindow : Window
         EditDevice(new Device("New Device", "192.168.1.1", new()));
     }
 
-    public void EditDevice(Device device)
+    public async void EditDevice(Device device)
     {
-        if (setup == null)
-        {
-            setup = new DeviceSetup();
-            setup.Closing += (s, e) =>
-            {
-                ((Window)s!).Hide();
-                e.Cancel = true;
-                Settings.Load();
-            };
-        }
+        var newDeviceJson = JsonSerializer.Serialize(device);
 
-        setup.DataContext = device;
-        setup.ShowDialog(this);
+        Device newDevice = JsonSerializer.Deserialize<Device>(newDeviceJson);
+
+        Window? setup = new DeviceSetup(newDevice!);
+
+        //setup.DataContext = device.Clone();
+        await setup.ShowDialog<Device?>(this);
+
+        setup = null;
     }
 }

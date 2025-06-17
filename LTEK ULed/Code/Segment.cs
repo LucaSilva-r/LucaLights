@@ -3,41 +3,31 @@ using System.Collections.Generic;
 using System.Collections.ObjectModel;
 using System.Text.Json.Serialization;
 using Avalonia.Media;
+using CommunityToolkit.Mvvm.ComponentModel;
 using LTEK_ULed.Validators;
 using LTEK_ULed.ViewModels;
 
 namespace LTEK_ULed.Code
 {
     [Serializable]
-    public class Segment : ViewModelBase
+    public partial class Segment : ObservableObject
     {
         [JsonIgnore]
         public Segment Instance;
         [JsonIgnore]
         public Color[] leds { get; private set; }
 
-        private string _name = "New Device";
-        public ObservableCollection<int> groupIds { get; private set; } = new();
+        [ObservableProperty]
+        [property: JsonPropertyName("name"), NameValidation]
+        private string _name = "New Segment";
 
-        [NameValidation]
-        public string name
-        {
-            get => _name;
-            set => SetProperty(ref _name, value, true);
-        }
+        [ObservableProperty]
+        [property: JsonPropertyName("groupIds"), IpAddressValidation]
+        private ObservableCollection<int> _groupIds = new();
 
-        [NumberValidation]
-        public int length
-        {
-            get => _length;
-            set
-            {
-                Settings.Instance?.MarkDirty();
-                SetProperty(ref _length, value, true);
-                leds = new Color[_length];
-            }
-        }
 
+        [ObservableProperty]
+        [property: JsonPropertyName("length")]
         private int _length;
 
         public GameButton buttonMapping { get; set; }
@@ -46,13 +36,13 @@ namespace LTEK_ULed.Code
         public Segment(string name, int length, GameButton buttonMapping, CabinetLight cabinetMapping, ObservableCollection<int>? groupIds = null)
         {
             if (groupIds != null)
-                this.groupIds = groupIds;
+                this.GroupIds = groupIds;
             
-            this.length = length;
+            this.Length = length;
             leds = new Color[length];
             this.buttonMapping = buttonMapping;
             this.cabinetMapping = cabinetMapping;
-            this.name = name;
+            this.Name = name;
             Instance = this;
         }
     }

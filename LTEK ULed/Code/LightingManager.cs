@@ -82,9 +82,9 @@ namespace LTEK_ULed.Code
                 foreach (Device device in Settings.Instance!.devices)
                 {
                     device.Recalculate();
-                    totalSegments += device.segments.Count();
+                    totalSegments += device.Segments.Count();
 
-                    foreach (Segment segment in device.segments)
+                    foreach (Segment segment in device.Segments)
                     {
                         foreach (GameButton i in Enum.GetValues(typeof(GameButton)))
                         {

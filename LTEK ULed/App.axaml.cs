@@ -22,7 +22,7 @@ public partial class App : Application
     {
         if (ApplicationLifetime is not IClassicDesktopStyleApplicationLifetime desktop) return;
 
-        DisableAvaloniaDataAnnotationValidation();
+        //DisableAvaloniaDataAnnotationValidation();
 
         desktop.MainWindow = new MainWindow
         {

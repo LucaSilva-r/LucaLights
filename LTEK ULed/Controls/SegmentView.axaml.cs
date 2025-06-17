@@ -38,7 +38,7 @@ public partial class SegmentView : UserControl
             segment = DataContext as Segment;
             if (segment != null)
             {
-                UpdateLength(segment!.length);
+                UpdateLength(segment!.Length);
             }
         };
     }

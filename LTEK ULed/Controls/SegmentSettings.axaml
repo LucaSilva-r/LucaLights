@@ -26,7 +26,7 @@
 						Width="200"
 						UseFloatingWatermark="True"
 						Watermark="Name"
-						Text="{Binding name}"/>
+						Text="{Binding Name}"/>
 				</StackPanel>
 
 				<StackPanel Spacing="5">
@@ -37,7 +37,7 @@
 						HorizontalAlignment="Left"
 						Width="100"
 						Watermark="Length"
-						Value="{Binding length}" 
+						Value="{Binding Length}" 
 						Increment="1" 
 						Minimum="1"/>
 				</StackPanel>
