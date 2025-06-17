@@ -1,9 +1,4 @@
-﻿using Avalonia.Controls.Shapes;
-using Avalonia.Media;
-using LTEK_ULed.Code;
-using LTEK_ULed.Views;
-using System;
-using System.Collections.Generic;
+﻿using LTEK_ULed.Code;
 using System.Collections.ObjectModel;
 
 namespace LTEK_ULed.ViewModels;
@@ -17,6 +12,7 @@ public partial class MainViewModel : ViewModelBase
     public bool lightOutput { get; set; } = true;
 
     public ObservableCollection<Device> devices => Settings.Instance!.devices;
+    public ObservableCollection<Effect> effects => Settings.Instance!.effects;
 
     public MainViewModel() {
 

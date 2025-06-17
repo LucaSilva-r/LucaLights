@@ -19,24 +19,36 @@ namespace LTEK_ULed.Code
         public static Settings? Instance;
 
         public ObservableCollection<Device> devices { get; set; } = new();
-        
+        public ObservableCollection<Effect> effects { get; set; } = new();
 
         [JsonIgnore]
         public bool Dirty { get; private set; } = true;
 
-        public Settings(ObservableCollection<Device> devices)
-        {
-           
-            this.devices = devices;
 
-            if(Settings.Instance == null)
+        public Settings()
+        {
+            if (Settings.Instance == null)
             {
                 Settings.Instance = this;
-            } else
+            }
+        }
+
+        [JsonConstructor]
+        public Settings(ObservableCollection<Device> devices, ObservableCollection<Effect> effects)
+        {
+
+            this.devices = devices;
+
+            if (Settings.Instance == null)
+            {
+                Settings.Instance = this;
+            }
+            else
             {
                 lock (Settings.Instance!)
                 {
                     Settings.Instance.devices = devices;
+                    Settings.Instance.effects = effects;
                     Settings.Instance.Dirty = true;
                 }
             }
@@ -66,26 +78,26 @@ namespace LTEK_ULed.Code
 
         public static bool Load()
         {
-            
+
             var file = new FileInfo(Environment.GetFolderPath(Environment.SpecialFolder.ApplicationData) + "/LtekULED/settings.json");
             Debug.WriteLine(Environment.GetFolderPath(Environment.SpecialFolder.ApplicationData) + "/LtekULED/settings.json");
             if (File.Exists(Environment.GetFolderPath(Environment.SpecialFolder.ApplicationData) + "/LtekULED/settings.json"))
             {
                 try
                 {
-                    if (JsonSerializer.Deserialize<Settings>(File.ReadAllText(file.FullName)) != null)
+                    if (JsonSerializer.Deserialize<Settings>(File.ReadAllText(file.FullName)!) != null)
                     {
                         return true;
                     }
                     else
                     {
-                        new Settings(new ObservableCollection<Device>());
+                        new Settings();
                         return false;
                     }
                 }
                 catch
                 {
-                    new Settings(new ObservableCollection<Device>());
+                    new Settings();
                     return false;
                 }
 
@@ -93,7 +105,7 @@ namespace LTEK_ULed.Code
             else
             {
                 file.Directory?.Create();
-                new Settings(new ObservableCollection<Device>());
+                new Settings();
                 return false;
             }
         }
