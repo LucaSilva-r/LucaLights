@@ -11,17 +11,16 @@ using System.Threading;
 using System.Text.Json.Serialization;
 using System.Diagnostics;
 using System.Collections.ObjectModel;
-using CommunityToolkit.Mvvm.ComponentModel;
 using Avalonia.Media;
 using CommunityToolkit.Mvvm.Input;
 using LTEK_ULed.Validators;
 using LTEK_ULed.ViewModels;
-using System.ComponentModel.DataAnnotations;
 using Avalonia;
 using Avalonia.Controls.ApplicationLifetimes;
 using Avalonia.Controls;
 using LTEK_ULed.Views;
 using DialogHostAvalonia;
+using LTEK_ULed.Controls;
 
 namespace LTEK_ULed.Code
 {
@@ -51,7 +50,7 @@ namespace LTEK_ULed.Code
         [JsonIgnore]
         public int Nleds { get; set; } = 0;
 
-        public ObservableCollection<Segment> segments { get; private set; } = new ObservableCollection<Segment>();
+        public ObservableCollection<Segment> segments { get; set; } = new ObservableCollection<Segment>();
 
         private Color[] data = new Color[0];
 
@@ -94,20 +93,17 @@ namespace LTEK_ULed.Code
         [property: JsonIgnore]
         public void DeleteDevice()
         {
-            //Settings.Instance!.devices.Remove(this);
-            //Settings.Instance.MarkDirty();
-            //Settings.Save();
-
-            
-
-            DialogHost.Show(new ConfirmationDialog() { Description="Are you sure you want to delete device " + name},"Dialog");
+            DialogHost.Show(new ConfirmationDialog() { Command = DeletionConfirmedCommand, Description="Are you sure you want to delete device " + name},"Dialog");
         }
 
         [RelayCommand]
         [property: JsonIgnore]
-        public void ConfirmDeletion()
+        public void DeletionConfirmed()
         {
+            bool debug = Settings.Instance!.devices.Remove(this);
 
+            Settings.Instance.MarkDirty();
+            Settings.Save();
         }
 
         [RelayCommand]
@@ -260,51 +256,6 @@ namespace LTEK_ULed.Code
             {
                 client.Dispose();
             }
-        }
-    }
-
-    [Serializable]
-    public class Segment : ViewModelBase
-    {
-        [JsonIgnore]
-        public Segment Instance;
-        [JsonIgnore]
-        public Color[] leds { get; private set; }
-
-        private string _name = "New Device";
-
-        [NameValidation]
-        public string name
-        {
-            get => _name;
-            set => SetProperty(ref _name, value, true);
-        }
-
-        [NumberValidation]
-        public int length
-        {
-            get => _length;
-            set
-            {
-                Settings.Instance?.MarkDirty();
-                SetProperty(ref _length, value, true);
-                leds = new Color[_length];
-            }
-        }
-
-        private int _length;
-
-        public GameButton buttonMapping { get; set; }
-        public CabinetLight cabinetMapping { get; set; }
-
-        public Segment(string name, int length, GameButton buttonMapping, CabinetLight cabinetMapping)
-        {
-            this.length = length;
-            leds = new Color[length];
-            this.buttonMapping = buttonMapping;
-            this.cabinetMapping = cabinetMapping;
-            this.name = name;
-            Instance = this;
         }
     }
 }

@@ -30,17 +30,6 @@
 					<RowDefinition Height="325"></RowDefinition>
 					<RowDefinition Height="*"></RowDefinition>
 				</Grid.RowDefinitions>
-				<!--Status-->
-				<dialogHost:DialogHost CloseOnClickAway="False" Grid.ColumnSpan="2" Grid.RowSpan="2">
-					<dialogHost:DialogHost.DialogContent>
-						<!-- put your dialog content here-->
-					</dialogHost:DialogHost.DialogContent>
-					<!-- put the content over which the dialog is shown here (e.g. your main window grid)-->
-				</dialogHost:DialogHost>
-
-
-
-
 				<Border Theme="{StaticResource CardBorder}" Classes="Shadow" Margin="5">
 					<DockPanel >
 						<StackPanel DockPanel.Dock="Top" Orientation="Horizontal" Spacing="20">
