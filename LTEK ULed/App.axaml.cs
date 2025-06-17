@@ -35,7 +35,7 @@ public partial class App : Application
             desktop.Shutdown();
         };
 
-        GCSettings.LatencyMode = GCLatencyMode.LowLatency;
+        GCSettings.LatencyMode = GCLatencyMode.Interactive;
         base.OnFrameworkInitializationCompleted();
         
     }

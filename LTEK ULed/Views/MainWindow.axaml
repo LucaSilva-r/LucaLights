@@ -292,6 +292,12 @@
 								Command="{Binding AddDevice}"
 								Content="Add">
 							</Button>
+							<Button
+								DockPanel.Dock="Right"
+								Classes="Ghost"
+								Content="GC" Margin="0,0,10,0"
+								Click="Button_Click_1">
+							</Button>
 						</DockPanel>
 
 						<ScrollViewer>
@@ -340,6 +346,7 @@
 						<CheckBox VerticalAlignment="Center" Margin="10,0,0,0" x:CompileBindings="False" IsChecked="{Binding lightOutput}">
 							Enable Light Output?
 						</CheckBox>
+						
 						<Button DockPanel.Dock="Right">
 							Add
 						</Button>
@@ -385,7 +392,7 @@
 				<dialogHost:DialogHost.DialogContent>
 				</dialogHost:DialogHost.DialogContent>
 			</dialogHost:DialogHost>
-
+				
 		</Grid>
 	</Border>
 </Window>

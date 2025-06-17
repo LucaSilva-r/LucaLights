@@ -19,7 +19,7 @@ using System.Threading.Tasks;
 namespace LTEK_ULed.Code
 {
     [Serializable]
-    public partial class Device : ObservableObject
+    public partial class Device : ObservableObject, IDisposable
     {
         [ObservableProperty]
         [property: JsonPropertyName("name"), NameValidation]
@@ -29,13 +29,13 @@ namespace LTEK_ULed.Code
         [property: JsonPropertyName("ip"), IpAddressValidation]
         private string _ip = "192.168.1.1";
 
-        
+
         [ObservableProperty]
-        [property:JsonIgnore]
+        [property: JsonIgnore]
         public int _nsegments = 0;
 
         [ObservableProperty]
-        [property:JsonIgnore]
+        [property: JsonIgnore]
         public int _nleds = 0;
 
         [ObservableProperty]
@@ -45,6 +45,7 @@ namespace LTEK_ULed.Code
         private Color[] data = new Color[0];
 
         DDPSend? dDPsend;
+        private bool _disposed = false; // To detect redundant calls
 
         public Device(string name, string ip, ObservableCollection<Segment> segments)
         {
@@ -134,21 +135,21 @@ namespace LTEK_ULed.Code
         {
 
             string json = JsonSerializer.Serialize(this);
-            Device dev = JsonSerializer.Deserialize<Device>(json);
-
-            object? obj = await DialogHost.Show(new DeviceSetup(dev!));
-
-            if (obj != null)
+            using (Device dev = JsonSerializer.Deserialize<Device>(json))
             {
-                Name = dev!.Name;
-                Ip = dev!.Ip;
-                Segments = dev!.Segments;
-                Segments.Clear();
-                foreach(Segment segment in dev.Segments)
+                object? obj = await DialogHost.Show(new DeviceSetup(dev!));
+
+                if (obj != null)
                 {
-                    Segments.Add(segment);
+                    Name = dev!.Name;
+                    Ip = dev!.Ip;
+                    Segments.Clear();
+                    foreach (Segment segment in dev.Segments)
+                    {
+                        Segments.Add(segment);
+                    }
+                    Recalculate();
                 }
-                Recalculate();
             }
         }
 
@@ -173,5 +174,32 @@ namespace LTEK_ULed.Code
             Recalculate();
         }
 
+
+        public void Dispose()
+        {
+            Dispose(true);
+            GC.SuppressFinalize(this);
+        }
+
+        protected virtual void Dispose(bool disposing)
+        {
+            if (_disposed) return;
+
+            if (disposing)
+            {
+                // Dispose managed state (managed objects).
+                dDPsend?.Dispose();
+            }
+
+            // Free unmanaged resources (unmanaged objects) and override a finalizer below.
+            // Set large fields to null.
+            _disposed = true;
+        }
+
+        // Add a finalizer in case Dispose() is not called
+        ~Device()
+        {
+            Dispose(false);
+        }
     }
 }
