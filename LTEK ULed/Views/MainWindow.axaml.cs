@@ -1,15 +1,20 @@
-﻿using System;
-using System.Diagnostics;
-using Avalonia.Media;
+﻿using Avalonia;
 using Avalonia.Controls;
 using Avalonia.Controls.Shapes;
+using Avalonia.Media;
 using Avalonia.VisualTree;
-using LTEK_ULed.Controls;
+using CommunityToolkit.Mvvm.Input;
+using DialogHostAvalonia;
+using DynamicData;
 using LTEK_ULed.Code;
-using System.Linq;
+using LTEK_ULed.Controls;
+using System;
 using System.Collections.Generic;
-using System.Text.Json.Serialization;
+using System.Diagnostics;
+using System.Linq;
 using System.Text.Json;
+using System.Text.Json.Serialization;
+using System.Threading.Tasks;
 
 namespace LTEK_ULed.Views;
 
@@ -153,22 +158,5 @@ public partial class MainWindow : Window
         Settings.Load();
     }
 
-    private void AddDevice(object? sender, Avalonia.Interactivity.RoutedEventArgs e)
-    {
-        EditDevice(new Device("New Device", "192.168.1.1", new()));
-    }
 
-    public async void EditDevice(Device device)
-    {
-        var newDeviceJson = JsonSerializer.Serialize(device);
-
-        Device newDevice = JsonSerializer.Deserialize<Device>(newDeviceJson);
-
-        Window? setup = new DeviceSetup(newDevice!);
-
-        //setup.DataContext = device.Clone();
-        await setup.ShowDialog<Device?>(this);
-
-        setup = null;
-    }
 }

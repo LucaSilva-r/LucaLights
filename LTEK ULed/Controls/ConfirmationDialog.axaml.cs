@@ -34,26 +34,17 @@ public partial class ConfirmationDialog : UserControl
         }
     }
 
-    /// <summary>
-    /// Defines the <see cref="Command"/> property.
-    /// </summary>
-    public static readonly StyledProperty<ICommand?> CommandProperty =
-        AvaloniaProperty.Register<Button, ICommand?>(nameof(Command), enableDataValidation: true);
-
-    /// <summary>
-    /// Gets or sets an <see cref="ICommand"/> to be invoked when the button is clicked.
-    /// </summary>
-    public ICommand? Command
+    private void Cancel(object? sender, Avalonia.Interactivity.RoutedEventArgs e)
     {
-        get => GetValue(CommandProperty);
-        set => SetValue(CommandProperty, value);
+        string name = this.GetLogicalParent()!.GetLogicalParent()!.GetLogicalParent<DialogHost>()!.Identifier!;
+        DialogHost.Close(name, false);
     }
 
-    private void Button_Click(object? sender, Avalonia.Interactivity.RoutedEventArgs e)
+    private void Confirm(object? sender, Avalonia.Interactivity.RoutedEventArgs e)
     {
 
         string name = this.GetLogicalParent()!.GetLogicalParent()!.GetLogicalParent<DialogHost>()!.Identifier!;
-        DialogHost.Close(name);
+        DialogHost.Close(name, true);
 
     }
 }

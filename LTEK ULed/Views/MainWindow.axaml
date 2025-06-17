@@ -289,7 +289,7 @@
 							<Button
 								DockPanel.Dock="Right"
 								Classes="Ghost"
-								Click="AddDevice"
+								Command="{Binding AddDevice}"
 								Content="Add">
 							</Button>
 						</DockPanel>

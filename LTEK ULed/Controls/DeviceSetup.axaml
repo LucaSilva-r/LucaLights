@@ -1,25 +1,17 @@
-<Window xmlns="https://github.com/avaloniaui"
+<UserControl xmlns="https://github.com/avaloniaui"
         xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
         xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
         xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
         mc:Ignorable="d"
-        x:Class="LTEK_ULed.DeviceSetup"
-		CanResize="False"
-		Title="Device Setup"
-		x:Name="deviceSetup"
-		SizeToContent="WidthAndHeight"
 	    xmlns:cd="using:LTEK_ULed.Code"
 		x:DataType="cd:Device"
 		Background="{DynamicResource WindowBackgroundColor}"
 		xmlns:icons="clr-namespace:LucideAvalonia;assembly=LucideAvalonia"
         xmlns:controls="clr-namespace:LTEK_ULed.Controls"
-
-		WindowStartupLocation="CenterOwner"
-		ExtendClientAreaChromeHints="NoChrome"
-		ExtendClientAreaToDecorationsHint="True"
+        x:Class="LTEK_ULed.Controls.DeviceSetup"
 		>
 
-	<Border Padding="10" Width="770">
+	<Border Theme="{StaticResource CardBorder}" Classes="Shadow" Padding="10" Width="770">
 		<StackPanel Spacing="10">
 
 			<TextBlock FontSize="18" Margin="0,0,0,10" Classes="h4">Device Setup</TextBlock>
@@ -68,9 +60,9 @@
 			</ScrollViewer>
 
 			<StackPanel Orientation="Horizontal" Spacing="20" FlowDirection="RightToLeft">
-				<Button Content="Save" Classes="Primary" Command="{Binding SaveDevice}"/>
+				<Button Content="Save" Classes="Primary" Click="Confirm"/>
 				<Button Content="Cancel" Classes="Secondary" Click="Cancel"/>
 			</StackPanel>
 		</StackPanel>
 	</Border>
-</Window>
+</UserControl>

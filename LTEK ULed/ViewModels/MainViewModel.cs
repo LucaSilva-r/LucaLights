@@ -1,5 +1,9 @@
-﻿using LTEK_ULed.Code;
+﻿using CommunityToolkit.Mvvm.Input;
+using DialogHostAvalonia;
+using LTEK_ULed.Code;
+using LTEK_ULed.Controls;
 using System.Collections.ObjectModel;
+using System.Threading.Tasks;
 
 namespace LTEK_ULed.ViewModels;
 
@@ -26,4 +30,16 @@ public partial class MainViewModel : ViewModelBase
 
     }
 
+    [RelayCommand]
+    public async Task AddDevice()
+    {
+        object? newDevice = await DialogHost.Show(new DeviceSetup(new Device("New Device", "192.168.1.1", new())));
+
+        if (newDevice != null)
+        {
+            Settings.Instance!.AddDevice((Device)newDevice);
+        }
+    }
 }
+
+

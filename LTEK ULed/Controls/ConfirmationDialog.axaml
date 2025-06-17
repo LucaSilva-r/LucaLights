@@ -12,8 +12,8 @@
 				<DockPanel>
 					<TextBlock Classes="Title" DockPanel.Dock="Top" FontSize="18" Margin="40" Text="{TemplateBinding Description}"/>
 					<StackPanel DockPanel.Dock="Bottom" Orientation="Horizontal" HorizontalAlignment="Right" Margin="5">
-						<Button Click="Button_Click" Classes="Secondary" Content="No" Margin="5" Width="75" />
-						<Button Command="{Binding $parent[controls:ConfirmationDialog].Command}" Click="Button_Click" Classes="Danger" Name="btnYes" Content="Yes" Margin="5" Width="75" />
+						<Button Click="Cancel" Classes="Secondary" Content="No" Margin="5" Width="75" />
+						<Button Click="Confirm" Classes="Danger" Name="btnYes" Content="Yes" Margin="5" Width="75" />
 					</StackPanel>
 				</DockPanel>
 			</Border>

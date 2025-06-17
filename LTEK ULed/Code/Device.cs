@@ -12,7 +12,9 @@ using LTEK_ULed.Views;
 using System;
 using System.Collections.Generic;
 using System.Collections.ObjectModel;
+using System.Text.Json;
 using System.Text.Json.Serialization;
+using System.Threading.Tasks;
 
 namespace LTEK_ULed.Code
 {
@@ -27,10 +29,14 @@ namespace LTEK_ULed.Code
         [property: JsonPropertyName("ip"), IpAddressValidation]
         private string _ip = "192.168.1.1";
 
-        [JsonIgnore]
-        public int Nsegments { get; set; } = 0;
-        [JsonIgnore]
-        public int Nleds { get; set; } = 0;
+        
+        [ObservableProperty]
+        [property:JsonIgnore]
+        public int _nsegments = 0;
+
+        [ObservableProperty]
+        [property:JsonIgnore]
+        public int _nleds = 0;
 
         [ObservableProperty]
         [property: JsonPropertyName("segments")]
@@ -49,73 +55,6 @@ namespace LTEK_ULed.Code
 
             Recalculate();
 
-        }
-
-        [RelayCommand]
-        [property: JsonIgnore]
-        public void SaveDevice(Window window)
-        {
-            if (!Settings.Instance!.Devices.Contains(this))
-            {
-                Settings.Instance.Devices.Add(this);
-            }
-            IReadOnlyList<Window> owner = (Application.Current!.ApplicationLifetime as IClassicDesktopStyleApplicationLifetime)!.Windows!;
-
-            Settings.Save();
-
-            for (int i = 0; i < owner.Count; i++)
-            {
-                Window w = owner[i];
-                if (w.Name == "deviceSetup")
-                {
-                    w.Close();
-                }
-            }
-        }
-
-        [RelayCommand]
-        [property: JsonIgnore]
-        public void DeleteDevice()
-        {
-            DialogHost.Show(new ConfirmationDialog() { Command = DeletionConfirmedCommand, Description="Are you sure you want to delete device " + Name},"Dialog");
-        }
-
-        [RelayCommand]
-        [property: JsonIgnore]
-        public void DeletionConfirmed()
-        {
-            bool debug = Settings.Instance!.Devices.Remove(this);
-
-            Settings.Instance.MarkDirty();
-            Settings.Save();
-        }
-
-        [RelayCommand]
-        [property: JsonIgnore]
-        public void EditDevice()
-        {
-            MainWindow.Instance!.EditDevice(this);
-        }
-
-        [RelayCommand]
-        [property: JsonIgnore]
-        public void RemoveSegment(Segment segment)
-        {
-            Settings.Instance!.MarkDirty();
-
-            Segments.Remove(segment);
-            Recalculate();
-        }
-
-        [RelayCommand]
-        [property: JsonIgnore]
-        public void AddSegment()
-        {
-            Settings.Instance!.MarkDirty();
-
-            Segments.Add(new Segment("New Segment #" + (Segments.Count + 1), 1, 0, 0));
-
-            Recalculate();
         }
 
         public void Recalculate()
@@ -150,5 +89,89 @@ namespace LTEK_ULed.Code
             dDPsend?.send(data);
 
         }
+
+
+        [RelayCommand]
+        [property: JsonIgnore]
+        public void SaveDevice(Window window)
+        {
+            if (!Settings.Instance!.Devices.Contains(this))
+            {
+                Settings.Instance.Devices.Add(this);
+            }
+            IReadOnlyList<Window> owner = (Application.Current!.ApplicationLifetime as IClassicDesktopStyleApplicationLifetime)!.Windows!;
+
+            Settings.Save();
+
+            for (int i = 0; i < owner.Count; i++)
+            {
+                Window w = owner[i];
+                if (w.Name == "deviceSetup")
+                {
+                    w.Close();
+                }
+            }
+        }
+
+        [RelayCommand]
+        [property: JsonIgnore]
+        public async Task DeleteDevice()
+        {
+            object? result = await DialogHost.Show(new ConfirmationDialog() { Description = "Are you sure you want to delete device " + Name }, "Dialog");
+            if (result != null && (bool)result)
+            {
+                Settings.Instance!.Devices.Remove(this);
+
+                Settings.Instance.MarkDirty();
+                Settings.Save();
+            }
+
+        }
+
+        [RelayCommand]
+        [property: JsonIgnore]
+        public async Task EditDevice()
+        {
+
+            string json = JsonSerializer.Serialize(this);
+            Device dev = JsonSerializer.Deserialize<Device>(json);
+
+            object? obj = await DialogHost.Show(new DeviceSetup(dev!));
+
+            if (obj != null)
+            {
+                Name = dev!.Name;
+                Ip = dev!.Ip;
+                Segments = dev!.Segments;
+                Segments.Clear();
+                foreach(Segment segment in dev.Segments)
+                {
+                    Segments.Add(segment);
+                }
+                Recalculate();
+            }
+        }
+
+        [RelayCommand]
+        [property: JsonIgnore]
+        public void RemoveSegment(Segment segment)
+        {
+            Settings.Instance!.MarkDirty();
+
+            Segments.Remove(segment);
+            Recalculate();
+        }
+
+        [RelayCommand]
+        [property: JsonIgnore]
+        public void AddSegment()
+        {
+            Settings.Instance!.MarkDirty();
+
+            Segments.Add(new Segment("New Segment #" + (Segments.Count + 1), 1, 0, 0));
+
+            Recalculate();
+        }
+
     }
 }
