@@ -11,7 +11,6 @@
 	    xmlns:cd="using:LTEK_ULed.Code"
 		x:DataType="cd:Device"
 		Background="{DynamicResource WindowBackgroundColor}"
-	    xmlns:shadui="clr-namespace:ShadUI.Controls;assembly=ShadUI"
 		xmlns:icons="clr-namespace:LucideAvalonia;assembly=LucideAvalonia"
         xmlns:controls="clr-namespace:LTEK_ULed.Controls"
 
