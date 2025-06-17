@@ -1,11 +1,6 @@
 ﻿using Avalonia.Threading;
 using LTEK_ULed.Views;
 using System;
-using System.Collections.Generic;
-using System.Diagnostics;
-using System.Linq;
-using System.Text;
-using System.Threading.Tasks;
 
 namespace LTEK_ULed.Code
 {

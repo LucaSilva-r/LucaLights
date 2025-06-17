@@ -1,21 +1,14 @@
-﻿using Avalonia.Controls.Documents;
+﻿using Avalonia.Media;
+using Avalonia.Threading;
+using ColorMine.ColorSpaces;
+using Extensions;
+using LTEK_ULed.ViewModels;
+using LTEK_ULed.Views;
 using System;
 using System.Collections.Generic;
 using System.Diagnostics;
 using System.Linq;
-using System.Runtime.InteropServices;
-using System.Text;
 using System.Threading;
-using System.Threading.Tasks;
-using ColorMine;
-using ColorMine.ColorSpaces;
-using Extensions;
-using System.Xml.Serialization;
-using System.Text.Json;
-using LTEK_ULed.Views;
-using LTEK_ULed.ViewModels;
-using Avalonia.Media;
-using Avalonia.Threading;
 
 namespace LTEK_ULed.Code
 {
@@ -79,7 +72,7 @@ namespace LTEK_ULed.Code
                 cabinetMappings = new();
 
                 int totalSegments = 0;
-                foreach (Device device in Settings.Instance!.devices)
+                foreach (Device device in Settings.Instance!.Devices)
                 {
                     device.Recalculate();
                     totalSegments += device.Segments.Count();
@@ -175,7 +168,7 @@ namespace LTEK_ULed.Code
                         }
                         if (MainViewModel.Instance!.lightOutput)
                         {
-                            foreach (Device device in Settings.Instance!.devices)
+                            foreach (Device device in Settings.Instance!.Devices)
                             {
                                 device.Send();
                             }

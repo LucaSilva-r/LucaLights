@@ -6,7 +6,7 @@ using System.IO.Ports;
 using System.Runtime.InteropServices;
 using System.Threading;
 
-namespace LTEK_ULed.Code;
+namespace LTEK_ULed.Code.Utils;
 
 public static class SerialManager
 {

@@ -1,27 +1,18 @@
-﻿using System;
-using System.Buffers.Binary;
-using System.Collections.Generic;
-using System.Linq;
-using System.Net.Sockets;
-using System.Net;
-using System.Text;
-using System.Threading.Tasks;
-using static System.Runtime.InteropServices.JavaScript.JSType;
-using System.Threading;
-using System.Text.Json.Serialization;
-using System.Diagnostics;
-using System.Collections.ObjectModel;
-using Avalonia.Media;
-using CommunityToolkit.Mvvm.Input;
-using LTEK_ULed.Validators;
-using LTEK_ULed.ViewModels;
-using Avalonia;
-using Avalonia.Controls.ApplicationLifetimes;
+﻿using Avalonia;
 using Avalonia.Controls;
-using LTEK_ULed.Views;
-using DialogHostAvalonia;
-using LTEK_ULed.Controls;
+using Avalonia.Controls.ApplicationLifetimes;
+using Avalonia.Media;
 using CommunityToolkit.Mvvm.ComponentModel;
+using CommunityToolkit.Mvvm.Input;
+using DialogHostAvalonia;
+using LTEK_ULed.Code.Utils;
+using LTEK_ULed.Controls;
+using LTEK_ULed.Validators;
+using LTEK_ULed.Views;
+using System;
+using System.Collections.Generic;
+using System.Collections.ObjectModel;
+using System.Text.Json.Serialization;
 
 namespace LTEK_ULed.Code
 {
@@ -32,23 +23,9 @@ namespace LTEK_ULed.Code
         [property: JsonPropertyName("name"), NameValidation]
         private string _name = "New Device";
 
-        //[NameValidation]
-        //public string name
-        //{
-        //    get => _name;
-        //    set => SetProperty(ref _name, value, true);
-        //}
-
         [ObservableProperty]
         [property: JsonPropertyName("ip"), IpAddressValidation]
         private string _ip = "192.168.1.1";
-
-        //[IpAddressValidation]
-        //public string ip
-        //{
-        //    get => _ip;
-        //    set => SetProperty(ref _ip, value, true);
-        //}
 
         [JsonIgnore]
         public int Nsegments { get; set; } = 0;
@@ -78,9 +55,9 @@ namespace LTEK_ULed.Code
         [property: JsonIgnore]
         public void SaveDevice(Window window)
         {
-            if (!Settings.Instance!.devices.Contains(this))
+            if (!Settings.Instance!.Devices.Contains(this))
             {
-                Settings.Instance.devices.Add(this);
+                Settings.Instance.Devices.Add(this);
             }
             IReadOnlyList<Window> owner = (Application.Current!.ApplicationLifetime as IClassicDesktopStyleApplicationLifetime)!.Windows!;
 
@@ -107,7 +84,7 @@ namespace LTEK_ULed.Code
         [property: JsonIgnore]
         public void DeletionConfirmed()
         {
-            bool debug = Settings.Instance!.devices.Remove(this);
+            bool debug = Settings.Instance!.Devices.Remove(this);
 
             Settings.Instance.MarkDirty();
             Settings.Save();
@@ -172,97 +149,6 @@ namespace LTEK_ULed.Code
 
             dDPsend?.send(data);
 
-        }
-
-        private class DDPSend : IDisposable
-        {
-
-            private const int DDP_PORT = 4048;
-
-            private const byte DDP_HEADER_LEN = 10;
-            private const int DDP_MAX_DATALEN = (480 * 3);   // fits nicely in an ethernet packet
-
-            private const byte DDP_FLAGS1_VER = 0xc0;   // version mask
-            private const byte DDP_FLAGS1_VER1 = 0x40;   // version=1
-            private const byte DDP_FLAGS1_PUSH = 0x01;
-            private const byte DDP_FLAGS1_QUERY = 0x02;
-            private const byte DDP_FLAGS1_REPLY = 0x04;
-            private const byte DDP_FLAGS1_STORAGE = 0x08;
-            private const byte DDP_FLAGS1_TIME = 0x10;
-
-            private const byte DDP_ID_DISPLAY = 1;
-            private const byte DDP_ID_CONFIG = 250;
-            private const byte DDP_ID_STATUS = 251;
-
-
-            struct ddp_hdr_struct
-            {
-                public short flags;
-                public byte type;
-                public byte id;
-                public int offset;  // MSB
-                public short len;     // MSB
-            };
-
-            ddp_hdr_struct dh = new ddp_hdr_struct();
-
-            UdpClient client;
-            IPEndPoint endPoint;
-            byte[] data;
-
-            public DDPSend(string ip, int nLeds)
-            {
-                dh.flags = DDP_FLAGS1_VER1 | DDP_FLAGS1_PUSH;
-                dh.offset = 0;
-                dh.type = 1;
-                dh.len = BinaryPrimitives.ReverseEndianness((short)(nLeds * 3));
-                dh.id = DDP_ID_DISPLAY;
-
-                endPoint = new IPEndPoint(IPAddress.Parse(ip), DDP_PORT);
-
-                client = new UdpClient();
-                data = new byte[DDP_HEADER_LEN + nLeds * 3];
-
-                byte[] array = StructureToByteArray(dh);
-                for (int i = 0; i < array.Length; i++)
-                {
-                    data[i] = array[i];
-                }
-            }
-
-            byte counter = 0;
-
-            public void send(Color[] leds)
-            {
-                data[1] = (byte)((counter % 15) + 1);
-                counter++;
-                for (int i = 0; i < leds.Length; i++)
-                {
-                    data[DDP_HEADER_LEN + i * 3] = leds[i].R;
-                    data[DDP_HEADER_LEN + i * 3 + 1] = leds[i].G;
-                    data[DDP_HEADER_LEN + i * 3 + 2] = leds[i].B;
-                }
-
-                client.SendAsync(data, data.Length, endPoint);
-            }
-
-            private static byte[] StructureToByteArray(ddp_hdr_struct obj)
-            {
-
-                List<byte> data = new List<byte>();
-
-                data.AddRange(BitConverter.GetBytes(obj.flags));
-                data.Add(obj.type);
-                data.Add(obj.id);
-                data.AddRange(BitConverter.GetBytes(obj.offset));
-                data.AddRange(BitConverter.GetBytes(obj.len));
-                return data.ToArray();
-            }
-
-            public void Dispose()
-            {
-                client.Dispose();
-            }
         }
     }
 }

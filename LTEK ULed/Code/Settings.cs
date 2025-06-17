@@ -1,25 +1,25 @@
-﻿using System;
-using System.Collections.Generic;
+﻿using CommunityToolkit.Mvvm.ComponentModel;
+using System;
 using System.Collections.ObjectModel;
 using System.Diagnostics;
-using System.Diagnostics.Contracts;
 using System.IO;
-using System.Linq;
-using System.Runtime.CompilerServices;
-using System.Text;
 using System.Text.Json;
 using System.Text.Json.Serialization;
-using System.Threading.Tasks;
 
 namespace LTEK_ULed.Code
 {
     [Serializable]
-    internal class Settings
+    internal partial class Settings: ObservableObject
     {
         public static Settings? Instance;
 
-        public ObservableCollection<Device> devices { get; set; } = new();
-        public ObservableCollection<Effect> effects { get; set; } = new();
+        [ObservableProperty]
+        [property: JsonPropertyName("devices")]
+        public ObservableCollection<Device> _devices = new();
+
+        [ObservableProperty]
+        [property: JsonPropertyName("effects")]
+        public ObservableCollection<Effect> _effects = new();
 
         [JsonIgnore]
         public bool Dirty { get; private set; } = true;
@@ -37,7 +37,7 @@ namespace LTEK_ULed.Code
         public Settings(ObservableCollection<Device> devices, ObservableCollection<Effect> effects)
         {
 
-            this.devices = devices;
+            this.Devices = devices;
 
             if (Settings.Instance == null)
             {
@@ -47,8 +47,8 @@ namespace LTEK_ULed.Code
             {
                 lock (Settings.Instance!)
                 {
-                    Settings.Instance.devices = devices;
-                    Settings.Instance.effects = effects;
+                    Settings.Instance.Devices = devices;
+                    Settings.Instance.Effects = effects;
                     Settings.Instance.Dirty = true;
                 }
             }
@@ -57,13 +57,13 @@ namespace LTEK_ULed.Code
         public void RemoveDevice(int index)
         {
             Dirty = true;
-            devices.RemoveAt(index);
+            Devices.RemoveAt(index);
         }
 
         public void AddDevice(Device device)
         {
             Dirty = true;
-            devices.Add(device);
+            Devices.Add(device);
         }
 
         public void ClearDirty()
@@ -85,27 +85,27 @@ namespace LTEK_ULed.Code
             {
                 try
                 {
-                    if (JsonSerializer.Deserialize<Settings>(File.ReadAllText(file.FullName)!) != null)
+                    Settings? settings = JsonSerializer.Deserialize<Settings>(File.ReadAllText(file.FullName));
+                    if (settings != null)
                     {
+                        Settings.Instance = settings;
                         return true;
-                    }
-                    else
+                    } else
                     {
-                        new Settings();
+                        Settings.Instance = new ();
                         return false;
                     }
                 }
                 catch
                 {
-                    new Settings();
+                    Settings.Instance = new();
                     return false;
                 }
-
             }
             else
             {
                 file.Directory?.Create();
-                new Settings();
+                Settings.Instance = new();
                 return false;
             }
         }

@@ -11,8 +11,8 @@ public partial class MainViewModel : ViewModelBase
     public bool debug { get; set; }
     public bool lightOutput { get; set; } = true;
 
-    public ObservableCollection<Device> devices => Settings.Instance!.devices;
-    public ObservableCollection<Effect> effects => Settings.Instance!.effects;
+    public ObservableCollection<Device> devices => Settings.Instance!.Devices;
+    public ObservableCollection<Effect> effects => Settings.Instance!.Effects;
 
     public MainViewModel() {
 
