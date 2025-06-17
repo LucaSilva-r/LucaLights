@@ -9,7 +9,7 @@ using System.Text.Json.Serialization;
 namespace LTEK_ULed.Code
 {
     [Serializable]
-    internal partial class Settings: ObservableObject
+    public partial class Settings: ObservableObject
     {
         public static Settings? Instance;
 
@@ -27,9 +27,9 @@ namespace LTEK_ULed.Code
 
         public Settings()
         {
-            if (Settings.Instance == null)
+            if (Instance == null)
             {
-                Settings.Instance = this;
+                Instance = this;
             }
         }
 
@@ -38,20 +38,7 @@ namespace LTEK_ULed.Code
         {
 
             this.Devices = devices;
-
-            if (Settings.Instance == null)
-            {
-                Settings.Instance = this;
-            }
-            else
-            {
-                lock (Settings.Instance!)
-                {
-                    Settings.Instance.Devices = devices;
-                    Settings.Instance.Effects = effects;
-                    Settings.Instance.Dirty = true;
-                }
-            }
+            this.Effects = effects;
         }
 
         public void RemoveDevice(int index)
@@ -88,24 +75,24 @@ namespace LTEK_ULed.Code
                     Settings? settings = JsonSerializer.Deserialize<Settings>(File.ReadAllText(file.FullName));
                     if (settings != null)
                     {
-                        Settings.Instance = settings;
+                        Instance = settings;
                         return true;
                     } else
                     {
-                        Settings.Instance = new ();
+                        Instance = new ();
                         return false;
                     }
                 }
                 catch
                 {
-                    Settings.Instance = new();
+                    Instance = new();
                     return false;
                 }
             }
             else
             {
                 file.Directory?.Create();
-                Settings.Instance = new();
+                Instance = new();
                 return false;
             }
         }
@@ -115,7 +102,7 @@ namespace LTEK_ULed.Code
             string file = Environment.GetFolderPath(Environment.SpecialFolder.ApplicationData) + "/LtekULED/settings.json";
             try
             {
-                string? json = JsonSerializer.Serialize(Settings.Instance, new JsonSerializerOptions() { WriteIndented = true });
+                string? json = JsonSerializer.Serialize(Instance, new JsonSerializerOptions() { WriteIndented = true });
                 if (json != null)
                 {
                     File.WriteAllText(file, json);

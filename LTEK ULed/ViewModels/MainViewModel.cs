@@ -14,12 +14,13 @@ public partial class MainViewModel : ViewModelBase
     public ObservableCollection<Device> devices => Settings.Instance!.Devices;
     public ObservableCollection<Effect> effects => Settings.Instance!.Effects;
 
+    public Settings settings => Settings.Instance!;
+
     public MainViewModel() {
 
         Instance = this;
 
         Settings.Load();
-        Settings.Save();
         PipeManager.Start();
         LightingManager.Start();
 

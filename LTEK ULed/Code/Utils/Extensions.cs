@@ -1,4 +1,4 @@
-﻿namespace LTEK_ULed.Code
+﻿namespace LTEK_ULed.Code.Utils
 {
     internal class Extensions
     {

@@ -4,6 +4,7 @@ using Avalonia.Markup.Xaml;
 using CommunityToolkit.Mvvm.Input;
 using DynamicData;
 using LTEK_ULed.Code;
+using LTEK_ULed.Code.Utils;
 using System;
 using System.Collections.ObjectModel;
 using System.Diagnostics;
