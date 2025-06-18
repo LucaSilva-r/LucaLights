@@ -33,11 +33,25 @@ public partial class MainViewModel : ViewModelBase
     [RelayCommand]
     public async Task AddDevice()
     {
-        object? newDevice = await DialogHost.Show(new DeviceSetup(new Device("New Device", "192.168.1.1", new())));
+        object? newDevice = await DialogHost.Show(new DeviceSetup());
 
         if (newDevice != null)
         {
             Settings.Instance!.AddDevice((Device)newDevice);
+            Settings.Save();
+        }
+    }
+
+
+    [RelayCommand]
+    public async Task AddEffect()
+    {
+        object? newEffect = await DialogHost.Show(new EffectSetup());
+
+        if (newEffect != null)
+        {
+            Settings.Instance!.AddEffect((Effect)newEffect);
+            Settings.Save();
         }
     }
 }

@@ -9,7 +9,7 @@ using System.Text.Json.Serialization;
 namespace LTEK_ULed.Code
 {
     [Serializable]
-    public partial class Settings: ObservableObject
+    public partial class Settings : ObservableObject
     {
         public static Settings? Instance;
 
@@ -41,16 +41,48 @@ namespace LTEK_ULed.Code
             this.Effects = effects;
         }
 
-        public void RemoveDevice(int index)
+        //Devices
+        public void RemoveDevice(Device device)
+        {
+            Dirty = true;
+            Devices.Remove(device);
+            Save();
+        }
+
+        public void RemoveDeviceAt(int index)
         {
             Dirty = true;
             Devices.RemoveAt(index);
+            Save();
         }
 
         public void AddDevice(Device device)
         {
             Dirty = true;
             Devices.Add(device);
+            Save();
+        }
+
+        //Effects
+        public void RemoveEffect(Effect effect)
+        {
+            Dirty = true;
+            Effects.Remove(effect);
+            Save();
+        }
+
+        public void RemoveEffectAt(int index)
+        {
+            Dirty = true;
+            Effects.RemoveAt(index);
+            Save();
+        }
+
+        public void AddEffect(Effect effect)
+        {
+            Dirty = true;
+            Effects.Add(effect);
+            Save();
         }
 
         public void ClearDirty()
@@ -76,21 +108,28 @@ namespace LTEK_ULed.Code
                     if (settings != null)
                     {
                         Instance = settings;
+                        Debug.WriteLine("Settings Loaded Succesfully");
+
                         return true;
-                    } else
+                    }
+                    else
                     {
-                        Instance = new ();
+                        Debug.WriteLine("Settings Loaded Unsuccesfully");
+                        Instance = new();
                         return false;
                     }
                 }
-                catch
+                catch (Exception e)
                 {
+                    Debug.WriteLine(e.Message);
                     Instance = new();
                     return false;
                 }
             }
             else
             {
+                Debug.WriteLine("Created new settings file");
+
                 file.Directory?.Create();
                 Instance = new();
                 return false;

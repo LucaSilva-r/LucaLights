@@ -121,12 +121,8 @@ namespace LTEK_ULed.Code
             object? result = await DialogHost.Show(new ConfirmationDialog() { Description = "Are you sure you want to delete device " + Name }, "Dialog");
             if (result != null && (bool)result)
             {
-                Settings.Instance!.Devices.Remove(this);
-
-                Settings.Instance.MarkDirty();
-                Settings.Save();
+                Settings.Instance!.RemoveDevice(this);
             }
-
         }
 
         [RelayCommand]
@@ -149,6 +145,9 @@ namespace LTEK_ULed.Code
                         Segments.Add(segment);
                     }
                     Recalculate();
+
+                    Settings.Save();
+
                 }
             }
         }
@@ -169,7 +168,7 @@ namespace LTEK_ULed.Code
         {
             Settings.Instance!.MarkDirty();
 
-            Segments.Add(new Segment("New Segment #" + (Segments.Count + 1), 1, 0, 0));
+            Segments.Add(new Segment("New Segment #" + (Segments.Count + 1), new()));
 
             Recalculate();
         }

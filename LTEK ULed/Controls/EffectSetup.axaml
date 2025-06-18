@@ -1,0 +1,48 @@
+<UserControl xmlns="https://github.com/avaloniaui"
+        xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+        xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
+        xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
+        mc:Ignorable="d"
+	    xmlns:cd="using:LTEK_ULed.Code"
+		x:DataType="cd:Effect"
+		Background="{DynamicResource WindowBackgroundColor}"
+        xmlns:controls="clr-namespace:LTEK_ULed.Controls"
+        x:Class="LTEK_ULed.Controls.EffectSetup"
+		 xmlns:local="clr-namespace:LTEK_ULed.Converters;assembly=LTEK ULed"
+		>
+
+	<UserControl.Resources>
+		<local:FlagsIntConverter x:Key="FlagsIntConverter"/>
+	</UserControl.Resources>
+	<Border Theme="{StaticResource CardBorder}" Classes="Shadow" Padding="10" Width="770">
+		<StackPanel Spacing="10">
+
+			<TextBlock FontSize="18" Margin="0,0,0,10" Classes="h4">Device Setup</TextBlock>
+			<StackPanel Orientation="Horizontal" Spacing="20" HorizontalAlignment="Left">
+				<StackPanel Spacing="5">
+					<Label>
+						Name
+					</Label>
+					<TextBox
+						HorizontalAlignment="Left"
+						Width="200"
+						Watermark="Name"
+						Text="{Binding Name}"/>
+				</StackPanel>
+				<controls:EnumButton ButtonLabel="Cabinet Lights Mapping" ToolTip.Tip="What Cabinet light trigger the effect, multiple can be selected." VerticalAlignment="Bottom" ChoicesSource="cd:CabinetLight" EnumValue="{Binding LightMapping, Mode=TwoWay, Converter={StaticResource FlagsIntConverter}}" />
+				<controls:EnumButton ButtonLabel="Button Lights Mapping" ToolTip.Tip="What player button triggers the effect, multiple can be selected." VerticalAlignment="Bottom" ChoicesSource="cd:GameButton" EnumValue="{Binding ButtonMapping, Mode=TwoWay, Converter={StaticResource FlagsIntConverter}}" />
+
+			</StackPanel>
+			
+			<DockPanel LastChildFill="False">
+				<TextBlock DockPanel.Dock="Left" Margin="0 5" Classes="h4">Segment setup</TextBlock>
+
+			</DockPanel>
+
+			<StackPanel Orientation="Horizontal" Spacing="20" FlowDirection="RightToLeft">
+				<Button Content="Save" Classes="Primary" Click="Confirm"/>
+				<Button Content="Cancel" Classes="Secondary" Click="Cancel"/>
+			</StackPanel>
+		</StackPanel>
+	</Border>
+</UserControl>

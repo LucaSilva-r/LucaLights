@@ -292,12 +292,6 @@
 								Command="{Binding AddDevice}"
 								Content="Add">
 							</Button>
-							<Button
-								DockPanel.Dock="Right"
-								Classes="Ghost"
-								Content="GC" Margin="0,0,10,0"
-								Click="Button_Click_1">
-							</Button>
 						</DockPanel>
 
 						<ScrollViewer>
@@ -347,19 +341,19 @@
 							Enable Light Output?
 						</CheckBox>
 						
-						<Button DockPanel.Dock="Right">
+						<Button DockPanel.Dock="Right" Command="{Binding AddEffect}">
 							Add
 						</Button>
 					</DockPanel>
 					<ScrollViewer >
-						<ItemsControl ItemsSource="{Binding devices, Mode=OneWay}" >
+						<ItemsControl ItemsSource="{Binding effects, Mode=OneWay}" >
 							<ItemsControl.ItemsPanel>
 								<ItemsPanelTemplate>
 									<WrapPanel VerticalAlignment="Top"/>
 								</ItemsPanelTemplate>
 							</ItemsControl.ItemsPanel>
 							<ItemsControl.ItemTemplate>
-								<DataTemplate x:DataType="cd:Device">
+								<DataTemplate x:DataType="cd:Effect">
 									
 									<Border Theme="{StaticResource CardBorder}" Margin="5" Padding="10" Classes="Shadow">
 										<DockPanel>

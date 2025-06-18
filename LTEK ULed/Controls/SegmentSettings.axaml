@@ -9,57 +9,58 @@
 			 xmlns:local="clr-namespace:LTEK_ULed.Converters;assembly=LTEK ULed"
              x:Class="LTEK_ULed.Controls.SegmentSettings"
 			 x:DataType="cd:Segment"
-			 MinWidth="750">
+			 MinWidth="600">
 	<UserControl.Resources>
 		<local:FlagsIntConverter x:Key="FlagsIntConverter"/>
 	</UserControl.Resources>
 
-	<Border Theme="{StaticResource CardBorder}">
-		<Grid>
-			<StackPanel Orientation="Horizontal" Spacing="20" HorizontalAlignment="Left">
-				<StackPanel Spacing="5">
-					<Label>
-						Name
-					</Label>
-					<TextBox
-						HorizontalAlignment="Left"
-						Width="200"
-						UseFloatingWatermark="True"
-						Watermark="Name"
-						Text="{Binding Name}"/>
+	<Panel>
+		<Border Theme="{StaticResource CardBorder}">
+			<Grid>
+				<StackPanel Orientation="Horizontal" Spacing="20" HorizontalAlignment="Left">
+					<StackPanel Spacing="5">
+						<Label>
+							Name
+						</Label>
+						<TextBox
+							HorizontalAlignment="Left"
+							Width="200"
+							UseFloatingWatermark="True"
+							Watermark="Name"
+							Text="{Binding Name}"/>
+					</StackPanel>
+
+					<StackPanel Spacing="5">
+						<Label>
+							Length
+						</Label>
+						<NumericUpDown
+							HorizontalAlignment="Left"
+							Width="100"
+							Watermark="Length"
+							Value="{Binding Length}"
+							Increment="1"
+							Minimum="1"/>
+					</StackPanel>
+
+					<!--<controls:EnumButton ButtonLabel="Cabinet Lights" VerticalAlignment="Bottom" ChoicesSource="cd:CabinetLight" EnumValue="{Binding cabinetMapping, Mode=TwoWay, Converter={StaticResource FlagsIntConverter}}" />
+				<controls:EnumButton ButtonLabel="Button Lights" VerticalAlignment="Bottom" ChoicesSource="cd:GameButton" EnumValue="{Binding buttonMapping, Mode=TwoWay, Converter={StaticResource FlagsIntConverter}}" />-->
+
 				</StackPanel>
+				<Button
+					Margin="0,0,0,0"
+					ToolTip.Tip="Delete Segment"
+					Command="{Binding Path=Tag, RelativeSource={RelativeSource  AncestorType={x:Type ItemsControl}}}}"
+					CommandParameter="{Binding}"
+					Classes="Danger"
+					HorizontalAlignment="Right"
+					VerticalAlignment="Bottom"
+					Content="Delete">
+				</Button>
+			</Grid>
+		</Border>
+	</Panel>
 
-				<StackPanel Spacing="5">
-					<Label>
-						Length
-					</Label>
-					<NumericUpDown
-						HorizontalAlignment="Left"
-						Width="100"
-						Watermark="Length"
-						Value="{Binding Length}" 
-						Increment="1" 
-						Minimum="1"/>
-				</StackPanel>
-
-				<controls:EnumButton ButtonLabel="Cabinet Lights" VerticalAlignment="Bottom" ChoicesSource="cd:CabinetLight" EnumValue="{Binding cabinetMapping, Mode=TwoWay, Converter={StaticResource FlagsIntConverter}}" />
-				<controls:EnumButton ButtonLabel="Button Lights" VerticalAlignment="Bottom" ChoicesSource="cd:GameButton" EnumValue="{Binding buttonMapping, Mode=TwoWay, Converter={StaticResource FlagsIntConverter}}" />
-
-
-
-			</StackPanel>
-			<Button
-				Margin="0,0,0,0"
-				ToolTip.Tip="Delete Segment"
-				Command="{Binding Path=Tag, RelativeSource={RelativeSource  AncestorType={x:Type ItemsControl}}}}"
-				CommandParameter="{Binding}"
-				Classes="Danger"
-				HorizontalAlignment="Right"
-				VerticalAlignment="Bottom"
-				Content="Delete">
-			</Button>
-		</Grid>
-	</Border>
 
 
 

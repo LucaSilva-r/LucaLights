@@ -72,40 +72,40 @@ namespace LTEK_ULed.Code
                 cabinetMappings = new();
 
                 int totalSegments = 0;
-                foreach (Device device in Settings.Instance!.Devices)
-                {
-                    device.Recalculate();
-                    totalSegments += device.Segments.Count();
+                //foreach (Device device in Settings.Instance!.Devices)
+                //{
+                //    device.Recalculate();
+                //    totalSegments += device.Segments.Count();
 
-                    foreach (Segment segment in device.Segments)
-                    {
-                        foreach (GameButton i in Enum.GetValues(typeof(GameButton)))
-                        {
-                            if (segment.buttonMapping.HasFlag(i) && i != 0)
-                            {
-                                if (!buttonMappings.ContainsKey(i))
-                                {
-                                    buttonMappings.Add(i, new List<Segment>());
-                                }
-                                if (!buttonMappings[i].Contains(segment))
-                                {
-                                    buttonMappings[i].Add(segment);
-                                }
-                            }
-                        }
-                        foreach (CabinetLight i in Enum.GetValues(typeof(CabinetLight)))
-                        {
-                            if (segment.cabinetMapping.HasFlag(i) && i != 0)
-                            {
-                                if (!cabinetMappings.ContainsKey(i))
-                                {
-                                    cabinetMappings.Add(i, new List<Segment>());
-                                }
-                                cabinetMappings[i].Add(segment);
-                            }
-                        }
-                    }
-                }
+                //    foreach (Segment segment in device.Segments)
+                //    {
+                //        foreach (GameButton i in Enum.GetValues(typeof(GameButton)))
+                //        {
+                //            if (segment.buttonMapping.HasFlag(i) && i != 0)
+                //            {
+                //                if (!buttonMappings.ContainsKey(i))
+                //                {
+                //                    buttonMappings.Add(i, new List<Segment>());
+                //                }
+                //                if (!buttonMappings[i].Contains(segment))
+                //                {
+                //                    buttonMappings[i].Add(segment);
+                //                }
+                //            }
+                //        }
+                //        foreach (CabinetLight i in Enum.GetValues(typeof(CabinetLight)))
+                //        {
+                //            if (segment.cabinetMapping.HasFlag(i) && i != 0)
+                //            {
+                //                if (!cabinetMappings.ContainsKey(i))
+                //                {
+                //                    cabinetMappings.Add(i, new List<Segment>());
+                //                }
+                //                cabinetMappings[i].Add(segment);
+                //            }
+                //        }
+                //    }
+                //}
 
                 inputTimers = new float[totalSegments];
                 visualTimers = new float[totalSegments];

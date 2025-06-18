@@ -15,25 +15,26 @@ namespace LTEK_ULed.Code
 
 
         [ObservableProperty]
-        [property: JsonPropertyName("button")]
-        private GameButton _button;
+        [property: JsonPropertyName("buttonMapping")]
+        private GameButton _buttonMapping;
 
         [ObservableProperty]
-        [property: JsonPropertyName("light")]
-        private CabinetLight _light;
+        [property: JsonPropertyName("lightMapping")]
+        private CabinetLight _lightMapping;
 
         [ObservableProperty]
         [property: JsonPropertyName("groupId")]
         private int _groupId;
 
-        [JsonIgnore]
-        public ObservableCollection<Segment> segments { get; private set; } = new();
+        [ObservableProperty]
+        [property: JsonIgnore]
+        public ObservableCollection<Segment> segments = new();
     
-        public Effect(string name, GameButton button, CabinetLight light, int groupId)
+        public Effect(string name, GameButton buttonMapping, CabinetLight lightMapping, int groupId)
         {
             this.Name = name;
-            this.Button = button;
-            this.Light = light;
+            this.ButtonMapping = buttonMapping;
+            this.LightMapping = lightMapping;
             this.GroupId = groupId;
         }
 

@@ -28,18 +28,13 @@ namespace LTEK_ULed.Code
         [property: JsonPropertyName("length")]
         private int _length;
 
-        public GameButton buttonMapping { get; set; }
-        public CabinetLight cabinetMapping { get; set; }
-
-        public Segment(string name, int length, GameButton buttonMapping, CabinetLight cabinetMapping, ObservableCollection<int>? groupIds = null)
+        public Segment(string name, int length, ObservableCollection<int>? groupIds = null)
         {
             if (groupIds != null)
                 this.GroupIds = groupIds;
             
             this.Length = length;
             leds = new Color[length];
-            this.buttonMapping = buttonMapping;
-            this.cabinetMapping = cabinetMapping;
             this.Name = name;
             Instance = this;
         }

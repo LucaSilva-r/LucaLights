@@ -158,10 +158,4 @@ public partial class MainWindow : Window
         Settings.Load();
     }
 
-    private void Button_Click_1(object? sender, Avalonia.Interactivity.RoutedEventArgs e)
-    {
-        GC.Collect();
-        GC.WaitForPendingFinalizers();
-        GC.Collect();
-    }
 }

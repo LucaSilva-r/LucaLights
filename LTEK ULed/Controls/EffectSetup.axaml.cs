@@ -3,28 +3,36 @@ using Avalonia.LogicalTree;
 using DialogHostAvalonia;
 using LTEK_ULed.Code;
 using LTEK_ULed.Code.Utils;
-using System.Collections.ObjectModel;
+using System;
+using System.Linq;
 
 namespace LTEK_ULed.Controls;
 
-public partial class DeviceSetup : UserControl
+public partial class EffectSetup : UserControl
 {
 
-    public DeviceSetup()
+    //Device? device = new Device("New Device", "192.168.1.1", new());
+    public EffectSetup()
     {
-        string deviceName = "New Device";
 
+        int randomNumber = Random.Shared.Next();
         if (Settings.Instance != null)
         {
-            deviceName = "New Device #" + Settings.Instance.Devices.Count;
+            while (Settings.Instance.Effects.FirstOrDefault(n => n!.GroupId == randomNumber,null) != null)
+            {
+                randomNumber = Random.Shared.Next();
+            }
         }
-        DataContext = new Device(deviceName, "192.168.1.1", new ObservableCollection<Segment>());
+
+        DataContext = new Effect("New Effect", 0, 0, randomNumber);
+        
         InitializeComponent();
     }
 
-    public DeviceSetup(Device device)
+    public EffectSetup(Effect effect)
     {
-        DataContext = device;
+        DataContext = effect;
+
         InitializeComponent();
 
     }

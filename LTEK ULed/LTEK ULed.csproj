@@ -34,4 +34,10 @@
     <PackageReference Include="System.Configuration.ConfigurationManager" Version="9.0.6" />
     <PackageReference Include="System.IO.Ports" Version="9.0.6" />
   </ItemGroup>
+
+  <ItemGroup>
+    <Compile Update="Controls\EffectSetup.axaml.cs">
+      <DependentUpon>EffectSetup.axaml</DependentUpon>
+    </Compile>
+  </ItemGroup>
 </Project>
