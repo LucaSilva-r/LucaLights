@@ -60,20 +60,24 @@ namespace LTEK_ULed.Code
 
         public void Recalculate()
         {
-            int counter = 0;
-
-            foreach (Segment item in Segments)
+            lock (Settings.Lock)
             {
-                counter += item.leds.Length;
+                int counter = 0;
+
+                foreach (Segment item in Segments)
+                {
+                    counter += item.leds.Length;
+                }
+
+                data = new Color[counter];
+
+                Nleds = counter;
+                Nsegments = Segments.Count;
+
+                dDPsend?.Dispose();
+                dDPsend = new DDPSend(this.Ip, data.Length);
             }
 
-            data = new Color[counter];
-
-            Nleds = counter;
-            Nsegments = Segments.Count;
-
-            dDPsend?.Dispose();
-            dDPsend = new DDPSend(this.Ip, data.Length);
         }
 
         public void Send()
@@ -89,29 +93,6 @@ namespace LTEK_ULed.Code
 
             dDPsend?.send(data);
 
-        }
-
-
-        [RelayCommand]
-        [property: JsonIgnore]
-        public void SaveDevice(Window window)
-        {
-            if (!Settings.Instance!.Devices.Contains(this))
-            {
-                Settings.Instance.Devices.Add(this);
-            }
-            IReadOnlyList<Window> owner = (Application.Current!.ApplicationLifetime as IClassicDesktopStyleApplicationLifetime)!.Windows!;
-
-            Settings.Save();
-
-            for (int i = 0; i < owner.Count; i++)
-            {
-                Window w = owner[i];
-                if (w.Name == "deviceSetup")
-                {
-                    w.Close();
-                }
-            }
         }
 
         [RelayCommand]
@@ -137,17 +118,19 @@ namespace LTEK_ULed.Code
 
                 if (obj != null)
                 {
-                    Name = dev!.Name;
-                    Ip = dev!.Ip;
-                    Segments.Clear();
-                    foreach (Segment segment in dev.Segments)
+                    lock (Settings.Lock)
                     {
-                        Segments.Add(segment);
+                        Name = dev!.Name;
+                        Ip = dev!.Ip;
+                        Segments.Clear();
+                        foreach (Segment segment in dev.Segments)
+                        {
+                            Segments.Add(segment);
+                        }
+                        Recalculate();
+
+                        Settings.Save();
                     }
-                    Recalculate();
-
-                    Settings.Save();
-
                 }
             }
         }

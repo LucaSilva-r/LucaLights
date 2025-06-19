@@ -17,376 +17,394 @@
         xmlns:dialogHost="clr-namespace:DialogHostAvalonia;assembly=DialogHost.Avalonia"
 		>
 
-
-	<Border Padding="10">
-		<Grid>
-			<Grid.ColumnDefinitions>
-				<ColumnDefinition Width="510"></ColumnDefinition>
-				<ColumnDefinition Width="*"></ColumnDefinition>
-			</Grid.ColumnDefinitions>
-
+	<Panel>
+		<Border Padding="10">
 			<Grid>
-				<Grid.RowDefinitions>
-					<RowDefinition Height="325"></RowDefinition>
-					<RowDefinition Height="*"></RowDefinition>
-				</Grid.RowDefinitions>
-				<Border Theme="{StaticResource CardBorder}" Classes="Shadow" Margin="5">
-					<DockPanel >
-						<StackPanel DockPanel.Dock="Top" Orientation="Horizontal" Spacing="20">
-							<TextBlock Text="ITG Status"/>
+				<Grid.ColumnDefinitions>
+					<ColumnDefinition Width="510"></ColumnDefinition>
+					<ColumnDefinition Width="*"></ColumnDefinition>
+				</Grid.ColumnDefinitions>
 
-							<CheckBox VerticalAlignment="Center" IsChecked="{Binding debug}" >Debug?</CheckBox>
-						</StackPanel>
+				<Grid>
+					<Grid.RowDefinitions>
+						<RowDefinition Height="325"></RowDefinition>
+						<RowDefinition Height="*"></RowDefinition>
+					</Grid.RowDefinitions>
+					<Border Theme="{StaticResource CardBorder}" Classes="Shadow" Margin="5">
+						<DockPanel >
+							<StackPanel DockPanel.Dock="Top" Orientation="Horizontal" Spacing="20">
+								<TextBlock Text="ITG Status"/>
+
+								<CheckBox VerticalAlignment="Center" IsChecked="{Binding debug}" >Debug?</CheckBox>
+							</StackPanel>
+							<DockPanel>
+								<StackPanel Orientation="Horizontal" DockPanel.Dock="Top">
+								</StackPanel>
+								<StackPanel Orientation="Horizontal" Spacing="20">
+									<!--Cabinet-->
+
+									<Border Padding="10" >
+										<StackPanel VerticalAlignment="Center">
+											<TextBlock Text="Cabinet" HorizontalAlignment="Center" FontWeight="Bold">
+											</TextBlock>
+											<Grid HorizontalAlignment="Center">
+												<Grid.ColumnDefinitions>
+													<ColumnDefinition Width="33"/>
+													<ColumnDefinition Width="32"/>
+													<ColumnDefinition Width="32"/>
+													<ColumnDefinition Width="33"/>
+												</Grid.ColumnDefinitions>
+												<Grid.RowDefinitions>
+													<RowDefinition Height="33"/>
+													<RowDefinition Height="32"/>
+													<RowDefinition Height="33"/>
+													<RowDefinition Height="33"/>
+													<RowDefinition Height="33"/>
+
+												</Grid.RowDefinitions>
+
+												<Rectangle
+													x:Name="mUpLeft"
+													Grid.Column="0" Grid.Row="0"
+													Fill="Gray"
+													Width="30"
+													Height="30"/>
+
+												<Rectangle
+													x:Name="mUpRight"
+													Grid.Column="3" Grid.Row="0"
+													Fill="Gray"
+													Width="30"
+													Height="30"/>
+												<Rectangle
+													x:Name="mDownLeft"
+													Grid.Column="0" Grid.Row="2"
+													Fill="Gray"
+													Width="30"
+													Height="30"/>
+												<Rectangle
+													x:Name="mDownRight"
+													Grid.Column="3" Grid.Row="2"
+													Fill="Gray"
+													Width="30"
+													Height="30"/>
+												<Rectangle
+													x:Name="bassLeft"
+													Grid.Column="0" Grid.Row="3" Grid.RowSpan="2"
+													Fill="Gray"
+													Width="30"
+													Height="60"/>
+												<Rectangle
+													x:Name="bassRight"
+													Grid.Column="3" Grid.Row="3" Grid.RowSpan="2"
+													Fill="Gray"
+													Width="30"
+													Height="60"/>
+											</Grid>
+										</StackPanel>
+
+									</Border>
+
+									<!--Player 1-->
+									<Border Padding="10" >
+										<StackPanel VerticalAlignment="Center">
+											<TextBlock Text="Player 1" HorizontalAlignment="Center" FontWeight="Bold">
+											</TextBlock>
+											<TextBlock Text="Combo: ">
+												<TextBlock Text="100" FontWeight="Bold"></TextBlock>
+											</TextBlock>
+											<TextBlock Text="Precision: ">
+												<TextBlock Text="100" FontWeight="Bold"></TextBlock>
+												<TextBlock Text="%" FontWeight="Bold"></TextBlock>
+											</TextBlock>
+											<Grid HorizontalAlignment="Center">
+												<Grid.ColumnDefinitions>
+													<ColumnDefinition Width="33"/>
+													<ColumnDefinition Width="32"/>
+													<ColumnDefinition Width="33"/>
+												</Grid.ColumnDefinitions>
+												<Grid.RowDefinitions>
+													<RowDefinition Height="33"/>
+													<RowDefinition Height="32"/>
+													<RowDefinition Height="33"/>
+												</Grid.RowDefinitions>
+
+
+												<Rectangle
+													Grid.Column="0" Grid.Row="0"
+													x:Name="g05"
+													Fill="Gray"
+													Width="30"
+													Height="30"/>
+												<Rectangle
+													Grid.Column="1" Grid.Row="0"
+													x:Name="g03"
+													Fill="Gray"
+													Width="30"
+													Height="30"/>
+												<Rectangle
+													Grid.Column="2" Grid.Row="0"
+													x:Name="g06"
+													Fill="Gray"
+													Width="30"
+													Height="30"/>
+												<Rectangle
+													Grid.Column="0" Grid.Row="1"
+													x:Name="g01"
+													Fill="Gray"
+													Width="30"
+													Height="30"/>
+												<Rectangle
+													Grid.Column="1" Grid.Row="1"
+													x:Name="g07"
+													Fill="Gray"
+													Width="30"
+													Height="30"/>
+												<Rectangle
+													Grid.Column="2" Grid.Row="1"
+													x:Name="g02"
+													Fill="Gray"
+													Width="30"
+													Height="30"/>
+												<Rectangle
+													Grid.Column="0" Grid.Row="2"
+													x:Name="g08"
+													Fill="Gray"
+													Width="30"
+													Height="30"/>
+												<Rectangle
+													Grid.Column="1" Grid.Row="2"
+													x:Name="g04"
+													Fill="Gray"
+													Width="30"
+													Height="30"/>
+												<Rectangle
+													Grid.Column="2" Grid.Row="2"
+													x:Name="g09"
+													Fill="Gray"
+													Width="30"
+													Height="30"/>
+											</Grid>
+										</StackPanel>
+									</Border>
+
+									<Border Padding="10" >
+										<!--Player 2-->
+										<StackPanel VerticalAlignment="Center">
+											<TextBlock Text="Player 2" HorizontalAlignment="Center" FontWeight="Bold">
+											</TextBlock>
+											<TextBlock Text="Combo: ">
+												<TextBlock Text="100" FontWeight="Bold"></TextBlock>
+											</TextBlock>
+											<TextBlock Text="Precision: ">
+												<TextBlock Text="100" FontWeight="Bold"></TextBlock>
+												<TextBlock Text="%" FontWeight="Bold"></TextBlock>
+											</TextBlock>
+											<Grid HorizontalAlignment="Center">
+												<Grid.ColumnDefinitions>
+													<ColumnDefinition Width="33"/>
+													<ColumnDefinition Width="32"/>
+													<ColumnDefinition Width="33"/>
+												</Grid.ColumnDefinitions>
+												<Grid.RowDefinitions>
+													<RowDefinition Height="33"/>
+													<RowDefinition Height="32"/>
+													<RowDefinition Height="33"/>
+												</Grid.RowDefinitions>
+
+
+												<Rectangle
+													Grid.Column="0" Grid.Row="0"
+													x:Name="g14"
+													Fill="Gray"
+													Width="30"
+													Height="30"/>
+												<Rectangle
+													Grid.Column="1" Grid.Row="0"
+													x:Name="g12"
+													Fill="Gray"
+													Width="30"
+													Height="30"/>
+												<Rectangle
+													Grid.Column="2" Grid.Row="0"
+													x:Name="g15"
+													Fill="Gray"
+													Width="30"
+													Height="30"/>
+												<Rectangle
+													Grid.Column="0" Grid.Row="1"
+													x:Name="g10"
+													Fill="Gray"
+													Width="30"
+													Height="30"/>
+												<Rectangle
+													Grid.Column="1" Grid.Row="1"
+													x:Name="g16"
+													Fill="Gray"
+													Width="30"
+													Height="30"/>
+												<Rectangle
+													Grid.Column="2" Grid.Row="1"
+													x:Name="g11"
+													Fill="Gray"
+													Width="30"
+													Height="30"/>
+												<Rectangle
+													Grid.Column="0" Grid.Row="2"
+													x:Name="g17"
+													Fill="Gray"
+													Width="30"
+													Height="30"/>
+												<Rectangle
+													Grid.Column="1" Grid.Row="2"
+													x:Name="g13"
+													Fill="Gray"
+													Width="30"
+													Height="30"/>
+												<Rectangle
+													Grid.Column="2" Grid.Row="2"
+													x:Name="g18"
+													Fill="Gray"
+													Width="30"
+													Height="30"/>
+											</Grid>
+										</StackPanel>
+									</Border>
+
+								</StackPanel>
+							</DockPanel>
+						</DockPanel>
+					</Border>
+
+					<!--Devices-->
+					<Border Classes="Shadow" Grid.Row="1" Theme="{StaticResource CardBorder}" Margin="5">
+
 						<DockPanel>
-							<StackPanel Orientation="Horizontal" DockPanel.Dock="Top">
-							</StackPanel>
-							<StackPanel Orientation="Horizontal" Spacing="20">
-								<!--Cabinet-->
-
-								<Border Padding="10" >
-									<StackPanel VerticalAlignment="Center">
-										<TextBlock Text="Cabinet" HorizontalAlignment="Center" FontWeight="Bold">
-										</TextBlock>
-										<Grid HorizontalAlignment="Center">
-											<Grid.ColumnDefinitions>
-												<ColumnDefinition Width="33"/>
-												<ColumnDefinition Width="32"/>
-												<ColumnDefinition Width="32"/>
-												<ColumnDefinition Width="33"/>
-											</Grid.ColumnDefinitions>
-											<Grid.RowDefinitions>
-												<RowDefinition Height="33"/>
-												<RowDefinition Height="32"/>
-												<RowDefinition Height="33"/>
-												<RowDefinition Height="33"/>
-												<RowDefinition Height="33"/>
-
-											</Grid.RowDefinitions>
-
-											<Rectangle
-												x:Name="mUpLeft"
-												Grid.Column="0" Grid.Row="0"
-												Fill="Gray"
-												Width="30"
-												Height="30"/>
-
-											<Rectangle
-												x:Name="mUpRight"
-												Grid.Column="3" Grid.Row="0"
-												Fill="Gray"
-												Width="30"
-												Height="30"/>
-											<Rectangle
-												x:Name="mDownLeft"
-												Grid.Column="0" Grid.Row="2"
-												Fill="Gray"
-												Width="30"
-												Height="30"/>
-											<Rectangle
-												x:Name="mDownRight"
-												Grid.Column="3" Grid.Row="2"
-												Fill="Gray"
-												Width="30"
-												Height="30"/>
-											<Rectangle
-												x:Name="bassLeft"
-												Grid.Column="0" Grid.Row="3" Grid.RowSpan="2"
-												Fill="Gray"
-												Width="30"
-												Height="60"/>
-											<Rectangle
-												x:Name="bassRight"
-												Grid.Column="3" Grid.Row="3" Grid.RowSpan="2"
-												Fill="Gray"
-												Width="30"
-												Height="60"/>
-										</Grid>
-									</StackPanel>
-
-								</Border>
-
-								<!--Player 1-->
-								<Border Padding="10" >
-									<StackPanel VerticalAlignment="Center">
-										<TextBlock Text="Player 1" HorizontalAlignment="Center" FontWeight="Bold">
-										</TextBlock>
-										<TextBlock Text="Combo: ">
-											<TextBlock Text="100" FontWeight="Bold"></TextBlock>
-										</TextBlock>
-										<TextBlock Text="Precision: ">
-											<TextBlock Text="100" FontWeight="Bold"></TextBlock>
-											<TextBlock Text="%" FontWeight="Bold"></TextBlock>
-										</TextBlock>
-										<Grid HorizontalAlignment="Center">
-											<Grid.ColumnDefinitions>
-												<ColumnDefinition Width="33"/>
-												<ColumnDefinition Width="32"/>
-												<ColumnDefinition Width="33"/>
-											</Grid.ColumnDefinitions>
-											<Grid.RowDefinitions>
-												<RowDefinition Height="33"/>
-												<RowDefinition Height="32"/>
-												<RowDefinition Height="33"/>
-											</Grid.RowDefinitions>
 
 
-											<Rectangle
-												Grid.Column="0" Grid.Row="0"
-												x:Name="g05"
-												Fill="Gray"
-												Width="30"
-												Height="30"/>
-											<Rectangle
-												Grid.Column="1" Grid.Row="0"
-												x:Name="g03"
-												Fill="Gray"
-												Width="30"
-												Height="30"/>
-											<Rectangle
-												Grid.Column="2" Grid.Row="0"
-												x:Name="g06"
-												Fill="Gray"
-												Width="30"
-												Height="30"/>
-											<Rectangle
-												Grid.Column="0" Grid.Row="1"
-												x:Name="g01"
-												Fill="Gray"
-												Width="30"
-												Height="30"/>
-											<Rectangle
-												Grid.Column="1" Grid.Row="1"
-												x:Name="g07"
-												Fill="Gray"
-												Width="30"
-												Height="30"/>
-											<Rectangle
-												Grid.Column="2" Grid.Row="1"
-												x:Name="g02"
-												Fill="Gray"
-												Width="30"
-												Height="30"/>
-											<Rectangle
-												Grid.Column="0" Grid.Row="2"
-												x:Name="g08"
-												Fill="Gray"
-												Width="30"
-												Height="30"/>
-											<Rectangle
-												Grid.Column="1" Grid.Row="2"
-												x:Name="g04"
-												Fill="Gray"
-												Width="30"
-												Height="30"/>
-											<Rectangle
-												Grid.Column="2" Grid.Row="2"
-												x:Name="g09"
-												Fill="Gray"
-												Width="30"
-												Height="30"/>
-										</Grid>
-									</StackPanel>
-								</Border>
+							<DockPanel DockPanel.Dock="Top" LastChildFill="False">
+								<TextBlock>
+									Devices
+								</TextBlock>
+								<Button
+									DockPanel.Dock="Right"
+									Classes="Ghost"
+									Command="{Binding AddDevice}"
+									ToolTip.Tip="Add Device"
+								>
+									<PathIcon Data="{StaticResource SemiIconPlus}" Width="16">
+									</PathIcon>
+								</Button>
+							</DockPanel>
 
-								<Border Padding="10" >
-									<!--Player 2-->
-									<StackPanel VerticalAlignment="Center">
-										<TextBlock Text="Player 2" HorizontalAlignment="Center" FontWeight="Bold">
-										</TextBlock>
-										<TextBlock Text="Combo: ">
-											<TextBlock Text="100" FontWeight="Bold"></TextBlock>
-										</TextBlock>
-										<TextBlock Text="Precision: ">
-											<TextBlock Text="100" FontWeight="Bold"></TextBlock>
-											<TextBlock Text="%" FontWeight="Bold"></TextBlock>
-										</TextBlock>
-										<Grid HorizontalAlignment="Center">
-											<Grid.ColumnDefinitions>
-												<ColumnDefinition Width="33"/>
-												<ColumnDefinition Width="32"/>
-												<ColumnDefinition Width="33"/>
-											</Grid.ColumnDefinitions>
-											<Grid.RowDefinitions>
-												<RowDefinition Height="33"/>
-												<RowDefinition Height="32"/>
-												<RowDefinition Height="33"/>
-											</Grid.RowDefinitions>
-
-
-											<Rectangle
-												Grid.Column="0" Grid.Row="0"
-												x:Name="g14"
-												Fill="Gray"
-												Width="30"
-												Height="30"/>
-											<Rectangle
-												Grid.Column="1" Grid.Row="0"
-												x:Name="g12"
-												Fill="Gray"
-												Width="30"
-												Height="30"/>
-											<Rectangle
-												Grid.Column="2" Grid.Row="0"
-												x:Name="g15"
-												Fill="Gray"
-												Width="30"
-												Height="30"/>
-											<Rectangle
-												Grid.Column="0" Grid.Row="1"
-												x:Name="g10"
-												Fill="Gray"
-												Width="30"
-												Height="30"/>
-											<Rectangle
-												Grid.Column="1" Grid.Row="1"
-												x:Name="g16"
-												Fill="Gray"
-												Width="30"
-												Height="30"/>
-											<Rectangle
-												Grid.Column="2" Grid.Row="1"
-												x:Name="g11"
-												Fill="Gray"
-												Width="30"
-												Height="30"/>
-											<Rectangle
-												Grid.Column="0" Grid.Row="2"
-												x:Name="g17"
-												Fill="Gray"
-												Width="30"
-												Height="30"/>
-											<Rectangle
-												Grid.Column="1" Grid.Row="2"
-												x:Name="g13"
-												Fill="Gray"
-												Width="30"
-												Height="30"/>
-											<Rectangle
-												Grid.Column="2" Grid.Row="2"
-												x:Name="g18"
-												Fill="Gray"
-												Width="30"
-												Height="30"/>
-										</Grid>
-									</StackPanel>
-								</Border>
-
-							</StackPanel>
-						</DockPanel>
-					</DockPanel>
-				</Border>
-
-				<!--Devices-->
-				<Border Classes="Shadow" Grid.Row="1" Theme="{StaticResource CardBorder}" Margin="5">
-
-					<DockPanel>
-
-
-						<DockPanel DockPanel.Dock="Top" LastChildFill="False">
-							<TextBlock>
-								Devices
-							</TextBlock>
-							<Button
-								DockPanel.Dock="Right"
-								Classes="Ghost"
-								Command="{Binding AddDevice}"
-								Content="Add">
-							</Button>
-						</DockPanel>
-
-						<ScrollViewer>
-							<StackPanel>
-								<ItemsControl ItemsSource="{Binding devices}" >
-									<ItemsControl.ItemsPanel>
-										<ItemsPanelTemplate>
-											<StackPanel Spacing="10"></StackPanel>
-										</ItemsPanelTemplate>
-									</ItemsControl.ItemsPanel>
-									<ItemsControl.ItemTemplate>
-										<DataTemplate x:DataType="cd:Device">
-											<Border Padding="10">
-												<DockPanel LastChildFill="False">
-													<StackPanel DockPanel.Dock="Left">
-														<TextBlock Text="{Binding Name}" FontWeight="SemiBold" FontSize="14"></TextBlock>
-														<StackPanel Orientation="Horizontal" Spacing="10">
-															<StackPanel Orientation="Horizontal">
-																<TextBlock Text="Ip: " FontSize="12" FontWeight="SemiBold"></TextBlock>
-																<TextBlock Text="{Binding Ip}" FontSize="14"></TextBlock>
-															</StackPanel>
-															<StackPanel Orientation="Horizontal">
-																<TextBlock Text="Segments: " FontSize="12" FontWeight="SemiBold"></TextBlock>
-																<TextBlock Text="{Binding Segments.Count}" FontSize="14"></TextBlock>
+							<ScrollViewer>
+								<StackPanel>
+									<ItemsControl ItemsSource="{Binding devices}" >
+										<ItemsControl.ItemsPanel>
+											<ItemsPanelTemplate>
+												<StackPanel Spacing="10"></StackPanel>
+											</ItemsPanelTemplate>
+										</ItemsControl.ItemsPanel>
+										<ItemsControl.ItemTemplate>
+											<DataTemplate x:DataType="cd:Device">
+												<Border Padding="10">
+													<DockPanel LastChildFill="False">
+														<StackPanel DockPanel.Dock="Left">
+															<TextBlock Text="{Binding Name}" FontWeight="SemiBold" FontSize="14"></TextBlock>
+															<StackPanel Orientation="Horizontal" Spacing="10">
+																<StackPanel Orientation="Horizontal">
+																	<TextBlock Text="Ip: " FontSize="12" FontWeight="SemiBold"></TextBlock>
+																	<TextBlock Text="{Binding Ip}" FontSize="14"></TextBlock>
+																</StackPanel>
+																<StackPanel Orientation="Horizontal">
+																	<TextBlock Text="Segments: " FontSize="12" FontWeight="SemiBold"></TextBlock>
+																	<TextBlock Text="{Binding Segments.Count}" FontSize="14"></TextBlock>
+																</StackPanel>
 															</StackPanel>
 														</StackPanel>
-													</StackPanel>
-													<Button Margin="10,0,10,0" DockPanel.Dock="Right" Command="{Binding DeleteDevice}" Classes="Danger" Content="Delete"/>
-													<Button Margin="10,0,10,0" DockPanel.Dock="Right" Command="{Binding EditDevice}" Classes="Secondary" Content="Setup"/>
+														<Button Margin="10,0,10,0" DockPanel.Dock="Right" ToolTip.Tip="Delete this Device" Command="{Binding DeleteDevice}" Classes="Danger">
+															<PathIcon Data="{StaticResource SemiIconDelete}" Width="16"/>
+														</Button>
+														<Button Margin="10,0,10,0" DockPanel.Dock="Right" ToolTip.Tip="Edit this Device" Command="{Binding EditDevice}" Classes="Secondary">
+															<PathIcon Data="{StaticResource SemiIconSetting}" Width="16"/>
+														</Button>
+													</DockPanel>
+												</Border>
+											</DataTemplate>
+										</ItemsControl.ItemTemplate>
+									</ItemsControl>
+								</StackPanel>
+							</ScrollViewer>
+						</DockPanel>
+					</Border>
+				</Grid>
+
+				<!--Lighting Preview-->
+				<Border Grid.Column="1" Margin="20">
+					<DockPanel >
+						<DockPanel DockPanel.Dock="Top" LastChildFill="False">
+							<TextBlock Text="Light Preview" DockPanel.Dock="Left" FontSize="18" FontWeight="SemiBold"></TextBlock>
+							<CheckBox VerticalAlignment="Center" Margin="10,0,0,0" x:CompileBindings="False" IsChecked="{Binding lightOutput}">
+								Enable Light Output?
+							</CheckBox>
+
+							<Button DockPanel.Dock="Right" Command="{Binding AddEffect}" ToolTip.Tip="Add Effect">
+								<PathIcon Data="{StaticResource SemiIconPlus}" Width="16"/>
+							</Button>
+						</DockPanel>
+						<ScrollViewer >
+							<ItemsControl ItemsSource="{Binding effects, Mode=OneWay}" >
+								<ItemsControl.ItemsPanel>
+									<ItemsPanelTemplate>
+										<StackPanel/>
+									</ItemsPanelTemplate>
+								</ItemsControl.ItemsPanel>
+								<ItemsControl.ItemTemplate>
+									<DataTemplate x:DataType="cd:Effect">
+
+										<Border Theme="{StaticResource CardBorder}" Margin="5" Padding="10" Classes="Shadow">
+											<DockPanel>
+												<DockPanel DockPanel.Dock="Top" LastChildFill="False">
+													<TextBlock VerticalAlignment="Center" DockPanel.Dock="Left" Text="{Binding Name}"/>
+													<Button Margin="10,0,10,0" DockPanel.Dock="Right" ToolTip.Tip="Delete this Effect" Command="{Binding DeleteEffect}" Classes="Danger">
+														<PathIcon Data="{StaticResource SemiIconDelete}" Width="16"/>
+													</Button>
+													<Button Margin="10,0,10,0" DockPanel.Dock="Right" ToolTip.Tip="Edit this Effect" Command="{Binding EditEffect}" Classes="Secondary">
+														<PathIcon Data="{StaticResource SemiIconSetting}" Width="16"/>
+													</Button>
 												</DockPanel>
-											</Border>
-										</DataTemplate>
-									</ItemsControl.ItemTemplate>
-								</ItemsControl>
-							</StackPanel>
+
+												<ItemsControl x:DataType="cd:Effect" ItemsSource="{Binding Segments}" >
+													<ItemsControl.ItemsPanel>
+														<ItemsPanelTemplate>
+															<StackPanel VerticalAlignment="Top"/>
+														</ItemsPanelTemplate>
+													</ItemsControl.ItemsPanel>
+													<ItemsControl.ItemTemplate>
+														<DataTemplate x:DataType="cd:Segment">
+															<!--Segments-->
+															<Border Theme="{StaticResource CardBorder}" Margin="5" Padding="0">
+																<controls:SegmentView Leds="{Binding leds}" SegmentName="{Binding Name}" SegmentLength="{Binding Length}"></controls:SegmentView>
+															</Border>
+														</DataTemplate>
+													</ItemsControl.ItemTemplate>
+												</ItemsControl>
+											</DockPanel>
+										</Border>
+									</DataTemplate>
+								</ItemsControl.ItemTemplate>
+							</ItemsControl>
 						</ScrollViewer>
 					</DockPanel>
 				</Border>
-			</Grid>
 
-			<!--Lighting Preview-->
-			<Border Grid.Column="1" Margin="20">
-				<DockPanel >
-					<DockPanel DockPanel.Dock="Top" LastChildFill="False">
-						<TextBlock Text="Light Preview" DockPanel.Dock="Left" FontSize="18" FontWeight="SemiBold"></TextBlock>
-						<CheckBox VerticalAlignment="Center" Margin="10,0,0,0" x:CompileBindings="False" IsChecked="{Binding lightOutput}">
-							Enable Light Output?
-						</CheckBox>
-						
-						<Button DockPanel.Dock="Right" Command="{Binding AddEffect}">
-							Add
-						</Button>
-					</DockPanel>
-					<ScrollViewer >
-						<ItemsControl ItemsSource="{Binding effects, Mode=OneWay}" >
-							<ItemsControl.ItemsPanel>
-								<ItemsPanelTemplate>
-									<WrapPanel VerticalAlignment="Top"/>
-								</ItemsPanelTemplate>
-							</ItemsControl.ItemsPanel>
-							<ItemsControl.ItemTemplate>
-								<DataTemplate x:DataType="cd:Effect">
-									
-									<Border Theme="{StaticResource CardBorder}" Margin="5" Padding="10" Classes="Shadow">
-										<DockPanel>
-											<TextBlock DockPanel.Dock="Top" Text="{Binding Name}"/>
-											<ItemsControl x:DataType="cd:Device" ItemsSource="{Binding Segments}" >
-												<ItemsControl.ItemsPanel>
-													<ItemsPanelTemplate>
-														<WrapPanel VerticalAlignment="Top"/>
-													</ItemsPanelTemplate>
-												</ItemsControl.ItemsPanel>
-												<ItemsControl.ItemTemplate>
-													<DataTemplate x:DataType="cd:Segment">
-														<!--Segments-->
-														<Border Theme="{StaticResource CardBorder}" Margin="5" Padding="0">
-															<controls:SegmentView Leds="{Binding leds}" SegmentName="{Binding Name}" SegmentLength="{Binding Length}"></controls:SegmentView>
-														</Border>
-													</DataTemplate>
-												</ItemsControl.ItemTemplate>
-											</ItemsControl>
-										</DockPanel>
-									</Border>
-								</DataTemplate>
-							</ItemsControl.ItemTemplate>
-						</ItemsControl>
-					</ScrollViewer>
-				</DockPanel>
-			</Border>
-			
-			<dialogHost:DialogHost Background="Transparent" Identifier="Dialog" Grid.ColumnSpan="2" Grid.RowSpan="2" CloseOnClickAway="True">
-				<dialogHost:DialogHost.DialogContent>
-				</dialogHost:DialogHost.DialogContent>
-			</dialogHost:DialogHost>
-				
-		</Grid>
-	</Border>
+
+
+			</Grid>
+		</Border>
+		<dialogHost:DialogHost Background="Transparent" Identifier="Dialog" Grid.ColumnSpan="2" Grid.RowSpan="2" CloseOnClickAway="True">
+			<dialogHost:DialogHost.DialogContent>
+			</dialogHost:DialogHost.DialogContent>
+		</dialogHost:DialogHost>
+	</Panel>
 </Window>

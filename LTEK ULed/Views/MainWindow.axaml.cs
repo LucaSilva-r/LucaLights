@@ -8,13 +8,16 @@ using DialogHostAvalonia;
 using DynamicData;
 using LTEK_ULed.Code;
 using LTEK_ULed.Controls;
+using LTEK_ULed.ViewModels;
 using System;
 using System.Collections.Generic;
+using System.Collections.ObjectModel;
 using System.Diagnostics;
 using System.Linq;
 using System.Text.Json;
 using System.Text.Json.Serialization;
 using System.Threading.Tasks;
+using Effect = LTEK_ULed.Code.Effect;
 
 namespace LTEK_ULed.Views;
 
@@ -31,12 +34,10 @@ public partial class MainWindow : Window
     Dictionary<GameButton, Rectangle> GBToRect = new Dictionary<GameButton, Rectangle>();
     List<SegmentView> segmentViews = new List<SegmentView>();
 
+
     public MainWindow()
     {
-
-
         InitializeComponent();
-
         Instance = this;
 
         for (int i = 1; i <= 18; i++)

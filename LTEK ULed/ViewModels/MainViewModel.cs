@@ -20,10 +20,10 @@ public partial class MainViewModel : ViewModelBase
 
     public Settings settings => Settings.Instance!;
 
-    public MainViewModel() {
+    public MainViewModel()
+    {
 
         Instance = this;
-
         Settings.Load();
         PipeManager.Start();
         LightingManager.Start();
@@ -35,10 +35,13 @@ public partial class MainViewModel : ViewModelBase
     {
         object? newDevice = await DialogHost.Show(new DeviceSetup());
 
-        if (newDevice != null)
+        lock (Settings.Lock)
         {
-            Settings.Instance!.AddDevice((Device)newDevice);
-            Settings.Save();
+            if (newDevice != null)
+            {
+                Settings.Instance!.AddDevice((Device)newDevice);
+                Settings.Save();
+            }
         }
     }
 
@@ -48,11 +51,15 @@ public partial class MainViewModel : ViewModelBase
     {
         object? newEffect = await DialogHost.Show(new EffectSetup());
 
-        if (newEffect != null)
+        lock (Settings.Lock)
         {
-            Settings.Instance!.AddEffect((Effect)newEffect);
-            Settings.Save();
+            if (newEffect != null)
+            {
+                Settings.Instance!.AddEffect((Effect)newEffect);
+                Settings.Save();
+            }
         }
+
     }
 }
 

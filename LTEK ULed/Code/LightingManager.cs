@@ -1,7 +1,6 @@
 ﻿using Avalonia.Media;
 using Avalonia.Threading;
 using ColorMine.ColorSpaces;
-using Extensions;
 using LTEK_ULed.ViewModels;
 using LTEK_ULed.Views;
 using System;
@@ -40,8 +39,6 @@ namespace LTEK_ULed.Code
 
         private class LightThread
         {
-            private Dictionary<GameButton, List<Segment>> buttonMappings = new();
-            private Dictionary<CabinetLight, List<Segment>> cabinetMappings = new();
 
             int counter;
             float[] inputTimers = new float[4];
@@ -62,54 +59,20 @@ namespace LTEK_ULed.Code
             {
                 this.token = token;
                 animationGlobalTimer.Start();
-                Setup();
+
+                lock (Settings.Instance!)
+                {
+                    Setup();
+                }
             }
 
 
             private void Setup()
             {
-                buttonMappings = new();
-                cabinetMappings = new();
-
-                int totalSegments = 0;
-                //foreach (Device device in Settings.Instance!.Devices)
-                //{
-                //    device.Recalculate();
-                //    totalSegments += device.Segments.Count();
-
-                //    foreach (Segment segment in device.Segments)
-                //    {
-                //        foreach (GameButton i in Enum.GetValues(typeof(GameButton)))
-                //        {
-                //            if (segment.buttonMapping.HasFlag(i) && i != 0)
-                //            {
-                //                if (!buttonMappings.ContainsKey(i))
-                //                {
-                //                    buttonMappings.Add(i, new List<Segment>());
-                //                }
-                //                if (!buttonMappings[i].Contains(segment))
-                //                {
-                //                    buttonMappings[i].Add(segment);
-                //                }
-                //            }
-                //        }
-                //        foreach (CabinetLight i in Enum.GetValues(typeof(CabinetLight)))
-                //        {
-                //            if (segment.cabinetMapping.HasFlag(i) && i != 0)
-                //            {
-                //                if (!cabinetMappings.ContainsKey(i))
-                //                {
-                //                    cabinetMappings.Add(i, new List<Segment>());
-                //                }
-                //                cabinetMappings[i].Add(segment);
-                //            }
-                //        }
-                //    }
-                //}
-
-                inputTimers = new float[totalSegments];
-                visualTimers = new float[totalSegments];
-
+                foreach (Effect effect in Settings.Instance!.Effects)
+                {
+                    effect.Recalculate();
+                }
                 Settings.Instance!.ClearDirty();
             }
 
@@ -134,7 +97,7 @@ namespace LTEK_ULed.Code
                 {
                     sw.Restart();
 
-                    while (sw.ElapsedMilliseconds < wait );
+                    while (sw.ElapsedMilliseconds < wait) ;
 
                     while ((!GameState.gameState.Connected && !MainViewModel.Instance!.debug && !token.IsCancellationRequested))
                     {
@@ -156,11 +119,20 @@ namespace LTEK_ULed.Code
                         cabinetLight = GameState.gameState.state.cabinetLight;
                     }
 
-                    ProcessVisual(cabinetLight);
-                    ProcessInput(gameButton);
-
-                    lock (Settings.Instance!)
+                    lock (Settings.Lock)
                     {
+                        foreach (Effect effect in Settings.Instance.Effects)
+                        {
+                            effect.Render(gameButton, cabinetLight);
+                            for (int i = 0; i < effect.Segments.Count; i++)
+                            {
+                                for (int j = 0; j < effect.Segments[i].leds.Length; j++)
+                                {
+                                    effect.Segments[i].leds[j] = effect.leds[i][j];
+                                }
+                            }
+                        }
+
                         if (Settings.Instance!.Dirty)
                         {
                             Setup();
@@ -175,7 +147,7 @@ namespace LTEK_ULed.Code
                         }
                     }
 
-                    Dispatcher.UIThread.Post(()=>MainWindow.Instance!.UpdateLeds());
+                    Dispatcher.UIThread.Post(() => MainWindow.Instance!.UpdateLeds());
 
 
                     // Calculate time to wait
@@ -211,162 +183,9 @@ namespace LTEK_ULed.Code
 
                 Debug.WriteLine("LightThread Exited");
             }
-
-            void ProcessVisual(CabinetLight cabinetLight)
-            {
-
-                foreach (KeyValuePair<CabinetLight, List<Segment>> entry in cabinetMappings)
-                {
-                    bool value = cabinetLight.HasFlag(entry.Key);
-
-                    foreach (Segment segment in entry.Value)
-                    {
-                        if (value)
-                        {
-                            FillSegment(segment, RainbowAnimation(animationGlobalTimer.ElapsedMilliseconds / 10f));
-                        }
-                        else
-                        {
-                            FillSegment(segment, Color.FromRgb(0, 0, 0));
-                        }
-                    }
-                }
-            }
-
-
-            void FillSegment(Segment segment, Color color)
-            {
-                for (int i = 0; i < segment.leds.Length; i++)
-                {
-                    segment.leds[i] = color;
-                }
-            }
-
-
-            void ProcessInput(GameButton gameButton)
-            {
-                int indexy = 0;
-
-                foreach (KeyValuePair<GameButton, List<Segment>> entry in buttonMappings)
-                {
-                    bool value = gameButton.HasFlag(entry.Key);
-
-                    int indexj = 0;
-                    foreach (Segment segment in entry.Value)
-                    {
-
-                        int index = indexj + indexy;
-                        if (value)
-                        {
-                            inputTimers[index] = Math.Clamp(inputTimers[index] + increaseSpeed, 0, 100);
-                        }
-                        else if (inputTimers[index] > 1)
-                        {
-                            inputTimers[index] = 1;
-                        }
-                        else
-                        {
-                            inputTimers[index] = Math.Clamp(inputTimers[index] - decreaseSpeed, 0, 100);
-                        }
-
-                        FillSegment(segment, Color.FromRgb(0, 0, 0));
-                        CollapsingAnimation(segment, 4, inputTimers[index], FireAnimation(inputTimers[index]));
-
-                        indexj++;
-                    }
-                    indexy++;
-                }
-            }
-
-            void CollapsingAnimation(Segment segment, int numSegments, float time, Color color)
-            {
-                time = Math.Clamp(time, 0, 1);
-                int length = (int)Math.Ceiling(Extension.Map(time, 0, 1, 0, segment.leds.Length));
-
-                for (int i = 0; i < length; i++)
-                {
-                    segment.leds[i] = color;
-                }
-            }
-
-            Color FireAnimation(float t)
-            {
-                Hsv fire = new Hsv();
-                fire.S = Extension.Map(Math.Clamp(t, 0, 20), 0, 20, 1, 0);
-                fire.V = 1;
-                fire.H = 0;
-                IRgb c = fire.ToRgb();
-
-                return Color.FromRgb((byte)c.R, (byte)c.G, (byte)c.B);
-            }
-
-            Color RainbowAnimation(float t)
-            {
-                Hsv rainbow = new Hsv();
-                rainbow.S = 1;
-                rainbow.V = 1;
-                rainbow.H = t;
-                IRgb c = rainbow.ToRgb();
-
-                return Color.FromRgb((byte)c.R, (byte)c.G, (byte)c.B);
-            }
-
-            bool IsBitSet(int b, int pos)
-            {
-                return (b & (1 << pos)) != 0;
-            }
-        }
-
-        struct Pad
-        {
-            public int nSegments;
-            public int segmentLen;
-            public int offset;
-            public GameButton gameButton;
-
-            public CabinetLight cabinetLight;
-
-            public Pad(int nSegments, int segmentLen, int offset, GameButton gameButton, CabinetLight cabinetLight)
-            {
-                this.nSegments = nSegments;
-                this.segmentLen = segmentLen;
-                this.offset = offset;
-                this.gameButton = gameButton;
-                this.cabinetLight = cabinetLight;
-            }
         }
     }
 }
 
-namespace Extensions
-{
-    using System.Drawing;
-    using System.Numerics;
 
-    public static class Extension
-    {
-        public static Color Sum(this Color a, Color b)
-        {
-            return Color.FromArgb(Clamp(a.R + b.R, 0, 255), Clamp(a.G + b.G, 0, 255), Clamp(a.B + b.B, 0, 255));
-        }
-
-        public static Color SetBrightness(this Color a, float b)
-        {
-            return Color.FromArgb(Clamp((int)(a.R * b), 0, 255), Clamp((int)(a.G * b), 0, 255), Clamp((int)(a.B * b), 0, 255));
-        }
-
-
-        public static T Clamp<T>(this T val, T min, T max) where T : IComparable<T>
-        {
-            if (val.CompareTo(min) < 0) return min;
-            else if (val.CompareTo(max) > 0) return max;
-            else return val;
-        }
-
-        public static T Map<T>(this T value, T fromSource, T toSource, T fromTarget, T toTarget) where T : INumber<T>
-        {
-            return (value - fromSource) / (toSource - fromSource) * (toTarget - fromTarget) + fromTarget;
-        }
-    }
-}
 

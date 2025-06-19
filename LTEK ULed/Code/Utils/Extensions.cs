@@ -1,8 +1,10 @@
-﻿namespace LTEK_ULed.Code.Utils
+﻿using Avalonia.Media;
+using System;
+using System.Numerics;
+
+namespace LTEK_ULed.Code.Utils
 {
-    internal class Extensions
-    {
-    }
+
 
     public static class StringExt
     {
@@ -29,6 +31,33 @@
                 return value.ToString();
             else
                 return ((System.ComponentModel.DescriptionAttribute)attribArray[0]).Description;
+        }
+    }
+
+
+    public static class Extension
+    {
+        public static Color Sum(this Color a, Color b)
+        {
+            return Color.FromRgb((byte) Clamp(a.R + b.R, 0, 255), (byte) Clamp(a.G + b.G, 0, 255), (byte) Clamp<int>(a.B + b.B, 0, 255));
+        }
+
+        public static Color SetBrightness(this Color a, float b)
+        {
+            return Color.FromRgb((byte)Clamp((int)(a.R * b), 0, 255), (byte) Clamp((int)(a.G * b), 0, 255), (byte)Clamp((int)(a.B * b), 0, 255));
+        }
+
+
+        public static T Clamp<T>(this T val, T min, T max) where T : IComparable<T>
+        {
+            if (val.CompareTo(min) < 0) return min;
+            else if (val.CompareTo(max) > 0) return max;
+            else return val;
+        }
+
+        public static T Map<T>(this T value, T fromSource, T toSource, T fromTarget, T toTarget) where T : INumber<T>
+        {
+            return (value - fromSource) / (toSource - fromSource) * (toTarget - fromTarget) + fromTarget;
         }
     }
 }
