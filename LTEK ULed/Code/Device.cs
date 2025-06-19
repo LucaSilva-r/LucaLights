@@ -12,6 +12,7 @@ using LTEK_ULed.Views;
 using System;
 using System.Collections.Generic;
 using System.Collections.ObjectModel;
+using System.Linq;
 using System.Text.Json;
 using System.Text.Json.Serialization;
 using System.Threading.Tasks;
@@ -120,15 +121,34 @@ namespace LTEK_ULed.Code
                 {
                     lock (Settings.Lock)
                     {
+
+                        foreach (Segment segment in Segments)
+                        {
+                            foreach (Effect effect in Settings.Instance!.Effects)
+                            {
+                                effect.Segments.Remove(segment);
+                            }
+                        }
+
                         Name = dev!.Name;
                         Ip = dev!.Ip;
                         Segments.Clear();
+
                         foreach (Segment segment in dev.Segments)
                         {
                             Segments.Add(segment);
+                            foreach (int groupId in segment.GroupIds)
+                            {
+                                Effect? effect = Settings.Instance!.Effects.FirstOrDefault(x => x.GroupId == groupId);
+                                if(effect != null)
+                                {
+                                    effect.Segments.Add(segment);
+                                    effect.Recalculate();
+                                }
+                            }
                         }
                         Recalculate();
-
+                        Settings.Instance!.MarkDirty();
                         Settings.Save();
                     }
                 }

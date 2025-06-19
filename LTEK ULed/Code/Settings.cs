@@ -102,6 +102,15 @@ namespace LTEK_ULed.Code
         {
             lock (Lock)
             {
+
+                foreach (Device device in Devices)
+                {
+                    foreach (Segment segment in device.Segments)
+                    {
+                        segment.GroupIds.Remove(effect.GroupId);
+                    }
+                }
+
                 Dirty = true;
                 Effects.Remove(effect);
                 Save();
