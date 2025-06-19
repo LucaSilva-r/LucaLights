@@ -1,16 +1,17 @@
 using Avalonia;
 using Avalonia.Controls;
+using Avalonia.Data;
 using Avalonia.Interactivity;
 using Avalonia.Markup.Xaml;
+using Avalonia.Markup.Xaml.MarkupExtensions;
+using Avalonia.Media;
+using LTEK_ULed.Code.Utils;
+using Semi.Avalonia;
 using System;
 using System.Collections.Generic;
 using System.Collections.ObjectModel;
 using System.Diagnostics;
 using System.Linq;
-using Avalonia.Data;
-using Avalonia.Markup.Xaml.MarkupExtensions;
-using Avalonia.Media;
-using LTEK_ULed.Code.Utils;
 namespace LTEK_ULed.Controls;
 
 public partial class EnumButton : UserControl
@@ -74,11 +75,20 @@ public partial class EnumButton : UserControl
             if (menuItems.Count == 0)
             {
                 // Create a MenuItem for each defined value of the enum
+
+
+                object? iconGeometry;
+
+                IResourceDictionary? _resources = new Icons();
+                _resources.TryGetResource("SemiIconCheckBoxTick", null, out iconGeometry);
+
+                System.Collections.Generic.IList<IResourceProvider> t = _resources.MergedDictionaries;
+
                 foreach (var val in Enum.GetValues(value))
                 {
                     if ((int)val != 0)
                     {
-                        var menuitem = new MenuItem()
+                        var menuItem = new MenuItem()
                         {
                             Header = ((Enum)val).GetDescription(),
                             IsEnabled = true,
@@ -87,25 +97,18 @@ public partial class EnumButton : UserControl
                             IsChecked = (EnumValue & (1 << (int)val)) != 0
                         };
 
-                        TextBlock textBlock = new TextBlock()
+                        PathIcon icon = new PathIcon();
+                        if (iconGeometry != null)
                         {
-                            Text = "V",
-                            FontSize = 12,
-                            Width=16,
-                            Height=16,
-                            FontWeight = FontWeight.Bold,
-                        };
-                        //Lucide icon = new Lucide()
-                        //{
-                        //    Icon = LucideIconNames.Check,
-                        //    Width = 16,
-                        //    Height = 16,
-                        //};
-                        //icon.Bind(Lucide.StrokeBrushProperty, new DynamicResourceExtension("SecondaryForegroundColor"));
-                        textBlock.Bind(TextBlock.IsVisibleProperty, menuitem.GetObservable(MenuItem.IsCheckedProperty));
-                        menuitem.Icon = textBlock;
-                        menuitem.Click += Menuitem_Click;
-                        menuItems.Add(menuitem);
+                            icon.Data = (Avalonia.Media.Geometry)iconGeometry;
+                        }
+
+                        icon.Bind(PathIcon.IsVisibleProperty, menuItem.GetObservable(MenuItem.IsCheckedProperty));
+
+                        menuItem.Icon = icon;
+
+                        menuItem.Click += Menuitem_Click;
+                        menuItems.Add(menuItem);
                     }
 
                 }

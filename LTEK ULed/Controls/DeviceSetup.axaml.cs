@@ -26,7 +26,6 @@ public partial class DeviceSetup : UserControl
     {
         DataContext = device;
         InitializeComponent();
-
     }
 
     private void TextBox_TextChanged(object? sender, Avalonia.Controls.TextChangedEventArgs e)

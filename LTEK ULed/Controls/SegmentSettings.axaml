@@ -9,7 +9,7 @@
 			 xmlns:local="clr-namespace:LTEK_ULed.Converters;assembly=LTEK ULed"
              x:Class="LTEK_ULed.Controls.SegmentSettings"
 			 x:DataType="cd:Segment"
-			 MinWidth="600">
+			 MinWidth="650">
 	<UserControl.Resources>
 		<local:FlagsIntConverter x:Key="FlagsIntConverter"/>
 	</UserControl.Resources>
@@ -43,9 +43,14 @@
 							Minimum="1"/>
 					</StackPanel>
 
-					<!--<controls:EnumButton ButtonLabel="Cabinet Lights" VerticalAlignment="Bottom" ChoicesSource="cd:CabinetLight" EnumValue="{Binding cabinetMapping, Mode=TwoWay, Converter={StaticResource FlagsIntConverter}}" />
-				<controls:EnumButton ButtonLabel="Button Lights" VerticalAlignment="Bottom" ChoicesSource="cd:GameButton" EnumValue="{Binding buttonMapping, Mode=TwoWay, Converter={StaticResource FlagsIntConverter}}" />-->
-
+					<Button VerticalAlignment="Bottom" Content="Effect Mapping" Click="MappingClicked">
+						<Button.ContextMenu>
+							<ContextMenu x:Name="EffectMapping">
+								<MenuItem Header="Title"></MenuItem>
+							</ContextMenu>
+						</Button.ContextMenu>
+					</Button>
+						
 				</StackPanel>
 				<Button
 					Margin="0,0,0,0"
