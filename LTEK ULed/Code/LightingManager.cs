@@ -1,6 +1,7 @@
 ﻿using Avalonia.Media;
 using Avalonia.Threading;
 using ColorMine.ColorSpaces;
+using LTEK_ULed.Code.Utils;
 using LTEK_ULed.ViewModels;
 using LTEK_ULed.Views;
 using System;
@@ -8,6 +9,7 @@ using System.Collections.Generic;
 using System.Diagnostics;
 using System.Linq;
 using System.Threading;
+using System.Xml.XPath;
 
 namespace LTEK_ULed.Code
 {
@@ -121,6 +123,13 @@ namespace LTEK_ULed.Code
 
                     lock (Settings.Lock)
                     {
+                        foreach (Device device in Settings.Instance!.Devices)
+                        {
+                            foreach (var segment in device.Segments)
+                            {
+                                Array.Clear(segment.leds);
+                            }
+                        }
                         foreach (Effect effect in Settings.Instance.Effects)
                         {
                             effect.Render(gameButton, cabinetLight);
@@ -128,7 +137,14 @@ namespace LTEK_ULed.Code
                             {
                                 for (int j = 0; j < effect.Segments[i].leds.Length; j++)
                                 {
-                                    effect.Segments[i].leds[j] = effect.leds[i][j];
+                                    Color col = effect.Segments[i].leds[j];
+                                    Color col2 = effect.leds[i][j];
+
+                                    effect.Segments[i].leds[j] = Color.FromRgb(
+                                        (byte)Math.Clamp(col.R + col2.R, 0, 255),
+                                        (byte)Math.Clamp(col.G + col2.G, 0, 255),
+                                        (byte)Math.Clamp(col.B + col2.B, 0, 255)
+                                        );
                                 }
                             }
                         }
