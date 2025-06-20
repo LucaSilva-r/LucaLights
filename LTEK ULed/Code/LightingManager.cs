@@ -104,8 +104,6 @@ namespace LTEK_ULed.Code
                 {
                     sw.Restart();
 
-                    while (sw.ElapsedMilliseconds < wait) ;
-
                     while ((!GameState.gameState.Connected && !MainViewModel.Instance!.debug && !token.IsCancellationRequested))
                     {
                         Thread.Sleep(1);
@@ -184,7 +182,7 @@ namespace LTEK_ULed.Code
                     // Spin for the last ~1 ms to maintain accuracy
                     while (sw.ElapsedMilliseconds < targetFrameTimeMs)
                     {
-                        Thread.SpinWait(10);
+                        Thread.SpinWait(64);
                     }
 
                     //// Logging average frame time
