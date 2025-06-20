@@ -5,7 +5,9 @@
              mc:Ignorable="d"
              x:Class="LTEK_ULed.Controls.SegmentView"
              xmlns:shadui="clr-namespace:ShadUI.Controls;assembly=ShadUI"
-			 x:Name="Segment">
+			 x:Name="Segment"
+			 xmlns:cd ="clr-namespace:LTEK_ULed.Code;assembly=LTEK ULed"
+			 x:DataType="cd:Segment">
 	<Border Padding="10" BorderThickness="1" CornerRadius="10" Margin="5">
 		<DockPanel>
 			<StackPanel DockPanel.Dock="Top" Orientation="Horizontal" Spacing="10">

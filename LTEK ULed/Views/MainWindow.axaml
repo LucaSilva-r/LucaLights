@@ -362,7 +362,7 @@
 								<ItemsControl.ItemTemplate>
 									<DataTemplate x:DataType="cd:Effect">
 
-										<Border Theme="{StaticResource CardBorder}" Margin="5" Padding="10" Classes="Shadow">
+										<Border DataContext="{Binding}" Theme="{StaticResource CardBorder}" Margin="5" Padding="10" Classes="Shadow">
 											<DockPanel>
 												<DockPanel DockPanel.Dock="Top" LastChildFill="False">
 													<TextBlock VerticalAlignment="Center" DockPanel.Dock="Left" Text="{Binding Name}"/>
@@ -374,7 +374,7 @@
 													</Button>
 												</DockPanel>
 
-												<ItemsControl x:DataType="cd:Effect" ItemsSource="{Binding Segments}" >
+												<ItemsControl Tag="{Binding GroupId}" x:DataType="cd:Effect" ItemsSource="{Binding Segments}" >
 													<ItemsControl.ItemsPanel>
 														<ItemsPanelTemplate>
 															<StackPanel VerticalAlignment="Top"/>
@@ -384,7 +384,7 @@
 														<DataTemplate x:DataType="cd:Segment">
 															<!--Segments-->
 															<Border Theme="{StaticResource CardBorder}" Margin="5" Padding="0">
-																<controls:SegmentView Leds="{Binding leds}" SegmentName="{Binding Name}" SegmentLength="{Binding Length}"></controls:SegmentView>
+																<controls:SegmentView Tag="{Binding RelativeSource={RelativeSource AncestorType={x:Type ItemsControl}}, Path=Tag}" SegmentName="{Binding Name}" SegmentLength="{Binding Length}"></controls:SegmentView>
 															</Border>
 														</DataTemplate>
 													</ItemsControl.ItemTemplate>

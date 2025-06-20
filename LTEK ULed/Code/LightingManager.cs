@@ -64,7 +64,10 @@ namespace LTEK_ULed.Code
 
                 lock (Settings.Instance!)
                 {
-                    Setup();
+                    foreach (Effect effect in Settings.Instance!.Effects)
+                    {
+                        effect.Recalculate();
+                    }
                 }
             }
 
@@ -75,7 +78,9 @@ namespace LTEK_ULed.Code
                 {
                     effect.Recalculate();
                 }
+                Dispatcher.UIThread.Post(() => MainWindow.Instance!.UpdateLeds(true));
                 Settings.Instance!.ClearDirty();
+
             }
 
 
@@ -152,7 +157,7 @@ namespace LTEK_ULed.Code
                         if (Settings.Instance!.Dirty)
                         {
                             Setup();
-                            Dispatcher.UIThread.Post(() => MainWindow.Instance!.UpdateLeds(true));
+
                         }
                         if (MainViewModel.Instance!.lightOutput)
                         {

@@ -1,22 +1,13 @@
-﻿using Avalonia;
-using Avalonia.Controls;
+﻿using Avalonia.Controls;
 using Avalonia.Controls.Shapes;
 using Avalonia.Media;
 using Avalonia.VisualTree;
-using CommunityToolkit.Mvvm.Input;
-using DialogHostAvalonia;
-using DynamicData;
 using LTEK_ULed.Code;
 using LTEK_ULed.Controls;
-using LTEK_ULed.ViewModels;
 using System;
 using System.Collections.Generic;
-using System.Collections.ObjectModel;
 using System.Diagnostics;
 using System.Linq;
-using System.Text.Json;
-using System.Text.Json.Serialization;
-using System.Threading.Tasks;
 using Effect = LTEK_ULed.Code.Effect;
 
 namespace LTEK_ULed.Views;
@@ -32,7 +23,6 @@ public partial class MainWindow : Window
 
     Dictionary<Rectangle, GameButton> RectToGB = new Dictionary<Rectangle, GameButton>();
     Dictionary<GameButton, Rectangle> GBToRect = new Dictionary<GameButton, Rectangle>();
-    List<SegmentView> segmentViews = new List<SegmentView>();
 
 
     public MainWindow()
@@ -76,16 +66,55 @@ public partial class MainWindow : Window
         updateCabinetLighting(cabinetLight);
 
     }
+
+
+    private SegmentView[][] segmentViewsDict = [];
+
     public void UpdateLeds(bool reset = false)
     {
-        if (Settings.Instance!.Dirty || segmentViews.Count == 0 || reset)
+        if (segmentViewsDict.Length == 0 || reset)
         {
-            segmentViews = this.GetVisualDescendants().OfType<SegmentView>().ToList();
+            Array.Clear(segmentViewsDict);
+            segmentViewsDict = new SegmentView[Settings.Instance!.Effects.Count][];
+            List<SegmentView> segmentViews = this.GetVisualDescendants().OfType<SegmentView>().ToList();
+
+            if (segmentViews[0].Tag != null)
+            {
+                for (int i = 0; i < Settings.Instance!.Effects.Count; i++)
+                {
+                    Effect tempEffect = Settings.Instance!.Effects[i];
+                    List<SegmentView> segList = new();
+
+                    for (int j = 0; j < tempEffect.Segments.Count; j++)
+                    {
+
+                        Segment segment = tempEffect.Segments[j];
+
+                        for (int k = 0; k < segmentViews.Count; k++)
+                        {
+                            //Debug.WriteLine(segmentViews[k].Tag);
+                            if (segmentViews[k].Tag!.ToString() == tempEffect.GroupId.ToString())
+                            {
+                                Segment tempSegment = (Segment)segmentViews[k].DataContext!;
+                                if(tempSegment == segment)
+                                {
+                                    segList.Add(segmentViews[k]);
+                                    break;
+                                }
+                            }
+                        }
+                    }
+                    segmentViewsDict[i] = segList.ToArray();
+                }
+            }
         }
 
-        foreach (SegmentView segmentView in segmentViews)
+        for (int i = 0; i < Settings.Instance!.Effects.Count; i++)
         {
-            segmentView.UpdateLeds();
+            for (int j = 0; j < Settings.Instance!.Effects[i].leds.Length && j < segmentViewsDict.Length; j++)
+            {
+                segmentViewsDict[i][j].UpdateLeds(Settings.Instance!.Effects[i].leds[j]);
+            }
         }
     }
 

@@ -16,17 +16,12 @@ public partial class SegmentView : UserControl
 
     Segment? segment;
 
-    public void UpdateLeds()
+    public void UpdateLeds(Color[] leds)
     {
-
-        if (segment!= null)
+        for (int i = 0; i < ledRects.Count && i < leds.Length; i++)
         {
-            for (int i = 0; i < ledRects.Count && i < segment?.leds.Length; i++)
-            {
-                (ledRects[i].Fill as SolidColorBrush)!.Color = segment!.leds[i];
-            }
+            (ledRects[i].Fill as SolidColorBrush)!.Color = leds[i];
         }
-
     }
 
     public SegmentView()
@@ -40,6 +35,7 @@ public partial class SegmentView : UserControl
             {
                 UpdateLength(segment!.Length);
             }
+
         };
     }
 
@@ -55,7 +51,7 @@ public partial class SegmentView : UserControl
             int difference = length - ledRects.Count;
             for (int i = 0; i < difference; i++)
             {
-                Rectangle temp = new Rectangle() {Name = i.ToString(),  Margin = new Thickness(5, 5, 5, 5), Fill = new SolidColorBrush(Color.Parse("Red")), Height = 15, Width = 15 };
+                Rectangle temp = new Rectangle() { Name = i.ToString(), Margin = new Thickness(5, 5, 5, 5), Fill = new SolidColorBrush(Color.Parse("Red")), Height = 15, Width = 15 };
 
                 Border border = new Border() { BorderThickness = new Thickness(1), };
                 border.Bind(BorderBrushProperty, new DynamicResourceExtension("BorderCardBorderBrush"));
@@ -107,6 +103,20 @@ public partial class SegmentView : UserControl
         }
     }
 
+
+    public static readonly StyledProperty<Segment?> SegmentProperty =
+    AvaloniaProperty.Register<SegmentView, Segment?>(nameof(Segment),defaultValue:null, defaultBindingMode: Avalonia.Data.BindingMode.OneWay);
+
+    public Segment? SegmentObject
+    {
+        get => GetValue(SegmentProperty);
+
+        set => SetValue(SegmentProperty, value);
+        
+    }
+
+
+
     public static readonly StyledProperty<Color[]> LedsProperty =
     AvaloniaProperty.Register<SegmentView, Color[]>(nameof(Leds), defaultValue: [], defaultBindingMode: Avalonia.Data.BindingMode.OneWay);
 
@@ -115,4 +125,15 @@ public partial class SegmentView : UserControl
         get => GetValue(LedsProperty);
         set => SetValue(LedsProperty, value);
     }
+
+    public static readonly StyledProperty<int> GroupIdProperty =
+           AvaloniaProperty.Register<SegmentView, int>(nameof(GroupId), defaultValue: 0, defaultBindingMode: Avalonia.Data.BindingMode.OneTime);
+
+
+    public int GroupId
+    {
+        get => GetValue(GroupIdProperty);
+        set => SetValue(GroupIdProperty, value);
+    }
+
 }
