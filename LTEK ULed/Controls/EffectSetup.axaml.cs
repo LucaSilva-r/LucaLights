@@ -1,5 +1,6 @@
 using Avalonia.Controls;
 using Avalonia.LogicalTree;
+using Avalonia.Media;
 using DialogHostAvalonia;
 using LTEK_ULed.Code;
 using LTEK_ULed.Code.Utils;
@@ -24,12 +25,12 @@ public partial class EffectSetup : UserControl
             }
         }
 
-        DataContext = new Effect("New Effect", 0, 0, randomNumber);
+        DataContext = new LightEffect("New Effect", 0, 0, Color.Parse("cyan"), randomNumber);
         
         InitializeComponent();
     }
 
-    public EffectSetup(Effect effect)
+    public EffectSetup(LightEffect effect)
     {
         DataContext = effect;
 

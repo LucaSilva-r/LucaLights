@@ -2,8 +2,6 @@ using Avalonia;
 using Avalonia.Controls;
 using Avalonia.Markup.Xaml.MarkupExtensions;
 using LTEK_ULed.Code;
-using LucideAvalonia;
-using LucideAvalonia.Enum;
 using Semi.Avalonia;
 using System.Collections.ObjectModel;
 using System.Collections.Specialized;
@@ -105,7 +103,7 @@ public partial class SegmentSettings : UserControl
 
         System.Collections.Generic.IList<IResourceProvider> t = _resources.MergedDictionaries;
 
-        foreach (Effect effect in Settings.Instance.Effects)
+        foreach (LightEffect effect in Settings.Instance.Effects)
         {
             var menuItem = new MenuItem()
             {

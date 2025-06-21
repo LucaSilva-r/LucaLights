@@ -8,7 +8,7 @@ using System;
 using System.Collections.Generic;
 using System.Diagnostics;
 using System.Linq;
-using Effect = LTEK_ULed.Code.Effect;
+using LightEffect = LTEK_ULed.Code.LightEffect;
 
 namespace LTEK_ULed.Views;
 
@@ -21,9 +21,7 @@ public partial class MainWindow : Window
     SolidColorBrush active = new SolidColorBrush(Color.FromRgb(255, 0, 0));
     SolidColorBrush inactive = new SolidColorBrush(Color.FromRgb(200, 200, 200));
 
-    Dictionary<Rectangle, GameButton> RectToGB = new Dictionary<Rectangle, GameButton>();
-    Dictionary<GameButton, Rectangle> GBToRect = new Dictionary<GameButton, Rectangle>();
-
+    BidirectionalDictionary<Rectangle, GameButton> RectGameBMap = new();
 
     public MainWindow()
     {
@@ -37,12 +35,13 @@ public partial class MainWindow : Window
             Enum.TryParse<GameButton>("GAME_BUTTON_CUSTOM_" + text, false, out result);
             Rectangle? rect = this.FindControl<Rectangle>("g" + text);
 
-            RectToGB.Add(rect!, result);
-            GBToRect.Add(result, rect!);
+            if (rect != null)
+            {
+                RectGameBMap.Add(rect, result);
+            }
             rect!.PointerPressed += Rectangle_PointerPressed;
             rect!.PointerReleased += Rectangle_PointerReleased;
             rect!.PointerExited += Rectangle_PointerExited;
-
         }
 
         this.GetVisualDescendants().OfType<SegmentView>().ToList();
@@ -82,7 +81,7 @@ public partial class MainWindow : Window
             {
                 for (int i = 0; i < Settings.Instance!.Effects.Count; i++)
                 {
-                    Effect tempEffect = Settings.Instance!.Effects[i];
+                    LightEffect tempEffect = Settings.Instance!.Effects[i];
                     List<SegmentView> segList = new();
 
                     for (int j = 0; j < tempEffect.Segments.Count; j++)
@@ -96,7 +95,7 @@ public partial class MainWindow : Window
                             if (segmentViews[k].Tag!.ToString() == tempEffect.GroupId.ToString())
                             {
                                 Segment tempSegment = (Segment)segmentViews[k].DataContext!;
-                                if(tempSegment == segment)
+                                if (tempSegment == segment)
                                 {
                                     segList.Add(segmentViews[k]);
                                     break;
@@ -139,13 +138,12 @@ public partial class MainWindow : Window
     {
         foreach (GameButton item in Enum.GetValues(typeof(GameButton)))
         {
-            if (GBToRect.ContainsKey(item))
+            if (RectGameBMap.Inverse.ContainsKey(item))
             {
-                GBToRect[item]!.Fill = gameButton.HasFlag(item) ? active : inactive;
+                RectGameBMap.Inverse[item]!.Fill = gameButton.HasFlag(item) ? active : inactive;
             }
         }
     }
-
 
     private void Rectangle_PointerPressed(object? sender, Avalonia.Input.PointerPressedEventArgs e)
     {
@@ -153,7 +151,7 @@ public partial class MainWindow : Window
 
         lock (gameState)
         {
-            gameState.state.gameButton |= RectToGB[(sender as Rectangle)!];
+            gameState.state.gameButton |= RectGameBMap[(sender as Rectangle)!];
             Debug.WriteLine(gameState.state.gameButton);
         }
     }
@@ -164,7 +162,7 @@ public partial class MainWindow : Window
 
         lock (gameState)
         {
-            gameState.state.gameButton &= ~RectToGB[(sender as Rectangle)!];
+            gameState.state.gameButton &= ~RectGameBMap[(sender as Rectangle)!];
         }
     }
 
@@ -174,7 +172,7 @@ public partial class MainWindow : Window
 
         lock (gameState)
         {
-            gameState.state.gameButton &= ~RectToGB[(sender as Rectangle)!];
+            gameState.state.gameButton &= ~RectGameBMap[(sender as Rectangle)!];
         }
     }
 

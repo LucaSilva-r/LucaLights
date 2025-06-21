@@ -23,7 +23,7 @@ namespace LTEK_ULed.Code
 
         [ObservableProperty]
         [property: JsonPropertyName("effects")]
-        public ObservableCollection<Effect> _effects = new();
+        public ObservableCollection<LightEffect> _effects = new();
 
         [JsonIgnore]
         public bool Dirty { get; private set; } = true;
@@ -38,7 +38,7 @@ namespace LTEK_ULed.Code
         }
 
         [JsonConstructor]
-        public Settings(ObservableCollection<Device> devices, ObservableCollection<Effect> effects)
+        public Settings(ObservableCollection<Device> devices, ObservableCollection<LightEffect> effects)
         {
             lock (Lock)
             {
@@ -58,7 +58,7 @@ namespace LTEK_ULed.Code
                 {
                     foreach (int groupId in segment.GroupIds)
                     {
-                        Effect? effect = Settings.Instance.Effects.FirstOrDefault(e => e.GroupId == groupId, null);
+                        LightEffect? effect = Settings.Instance.Effects.FirstOrDefault(e => e.GroupId == groupId, null);
                         if (effect != null)
                         {
                             effect.Segments.Remove(segment);
@@ -82,7 +82,7 @@ namespace LTEK_ULed.Code
                 {
                     foreach (int groupId in segment.GroupIds)
                     {
-                        Effect? effect = Settings.Instance.Effects.FirstOrDefault(e => e.GroupId == groupId, null);
+                        LightEffect? effect = Settings.Instance.Effects.FirstOrDefault(e => e.GroupId == groupId, null);
                         if (effect != null && !effect.Segments.Contains(segment))
                         {
                             effect.Segments.Add(segment);
@@ -98,7 +98,7 @@ namespace LTEK_ULed.Code
         }
 
         //Effects
-        public void RemoveEffect(Effect effect)
+        public void RemoveEffect(LightEffect effect)
         {
             lock (Lock)
             {
@@ -118,7 +118,7 @@ namespace LTEK_ULed.Code
         }
 
 
-        public void AddEffect(Effect effect)
+        public void AddEffect(LightEffect effect)
         {
             lock (Lock)
             {
@@ -187,7 +187,7 @@ namespace LTEK_ULed.Code
                     {
                         foreach (int groupId in segment.GroupIds)
                         {
-                            Effect? effect = Settings.Instance.Effects.FirstOrDefault(e => e.GroupId == groupId, null);
+                            LightEffect? effect = Settings.Instance.Effects.FirstOrDefault(e => e.GroupId == groupId, null);
                             if (effect != null)
                             {
                                 effect.Segments.Add(segment);

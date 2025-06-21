@@ -12,6 +12,7 @@ using LTEK_ULed.Validators;
 using System;
 using System.Collections.Generic;
 using System.Collections.ObjectModel;
+using System.Diagnostics;
 using System.Linq;
 using System.Text.Json;
 using System.Text.Json.Serialization;
@@ -20,7 +21,7 @@ using System.Threading.Tasks;
 namespace LTEK_ULed.Code
 {
     [Serializable]
-    public partial class Effect : ObservableObject
+    public partial class LightEffect : ObservableObject
     {
         [ObservableProperty]
         [property: JsonPropertyName("name"), NameValidation]
@@ -45,6 +46,10 @@ namespace LTEK_ULed.Code
 
         public Color[][] leds = new Color[0][];
 
+        [ObservableProperty]
+        [property: JsonPropertyName("tempColor"), JsonConverter(typeof(ColorJsonConverter))]
+        private Color _tempColor = Color.FromRgb(0, 255, 255);
+
         [RelayCommand]
         [property: JsonIgnore]
         public async Task DeleteEffect()
@@ -61,7 +66,7 @@ namespace LTEK_ULed.Code
         public async Task EditEffect()
         {
             string json = JsonSerializer.Serialize(this);
-            Effect effect = JsonSerializer.Deserialize<Effect>(json);
+            LightEffect effect = JsonSerializer.Deserialize<LightEffect>(json);
             object? obj = await DialogHost.Show(new EffectSetup(effect!));
 
             if (obj != null)
@@ -69,17 +74,19 @@ namespace LTEK_ULed.Code
                 Name = effect!.Name;
                 LightMapping = effect.LightMapping;
                 ButtonMapping = effect.ButtonMapping;
+                TempColor = effect.TempColor;
                 Settings.Save();
 
             }
         }
 
-        public Effect(string name, GameButton buttonMapping, CabinetLight lightMapping, int groupId)
+        public LightEffect(string name, GameButton buttonMapping, CabinetLight lightMapping, Color tempColor, int groupId)
         {
-            this.Name = name;
-            this.ButtonMapping = buttonMapping;
-            this.LightMapping = lightMapping;
-            this.GroupId = groupId;
+            Name = name;
+            ButtonMapping = buttonMapping;
+            LightMapping = lightMapping;
+            GroupId = groupId;
+            TempColor = tempColor;
             Recalculate();
         }
 
@@ -106,8 +113,9 @@ namespace LTEK_ULed.Code
             {
                 if (clicked)
                 {
-                    FillSegment(leds[i], Color.FromRgb(255, 255, 255));
-                } else
+                    FillSegment(leds[i], TempColor);
+                }
+                else
                 {
                     FillSegment(leds[i], Color.FromRgb(0, 0, 0));
                 }

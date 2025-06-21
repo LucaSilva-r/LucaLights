@@ -64,7 +64,7 @@ namespace LTEK_ULed.Code
 
                 lock (Settings.Instance!)
                 {
-                    foreach (Effect effect in Settings.Instance!.Effects)
+                    foreach (LightEffect effect in Settings.Instance!.Effects)
                     {
                         effect.Recalculate();
                     }
@@ -74,7 +74,7 @@ namespace LTEK_ULed.Code
 
             private void Setup()
             {
-                foreach (Effect effect in Settings.Instance!.Effects)
+                foreach (LightEffect effect in Settings.Instance!.Effects)
                 {
                     effect.Recalculate();
                 }
@@ -133,7 +133,7 @@ namespace LTEK_ULed.Code
                                 Array.Clear(segment.leds);
                             }
                         }
-                        foreach (Effect effect in Settings.Instance.Effects)
+                        foreach (LightEffect effect in Settings.Instance.Effects)
                         {
                             effect.Render(gameButton, cabinetLight);
                             for (int i = 0; i < effect.Segments.Count; i++)

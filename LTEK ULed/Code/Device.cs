@@ -124,7 +124,7 @@ namespace LTEK_ULed.Code
 
                         foreach (Segment segment in Segments)
                         {
-                            foreach (Effect effect in Settings.Instance!.Effects)
+                            foreach (LightEffect effect in Settings.Instance!.Effects)
                             {
                                 effect.Segments.Remove(segment);
                             }
@@ -139,7 +139,7 @@ namespace LTEK_ULed.Code
                             Segments.Add(segment);
                             foreach (int groupId in segment.GroupIds)
                             {
-                                Effect? effect = Settings.Instance!.Effects.FirstOrDefault(x => x.GroupId == groupId);
+                                LightEffect? effect = Settings.Instance!.Effects.FirstOrDefault(x => x.GroupId == groupId);
                                 if(effect != null)
                                 {
                                     effect.Segments.Add(segment);

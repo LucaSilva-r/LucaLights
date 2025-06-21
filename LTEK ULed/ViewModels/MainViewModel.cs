@@ -16,7 +16,7 @@ public partial class MainViewModel : ViewModelBase
     public bool lightOutput { get; set; } = true;
 
     public ObservableCollection<Device> devices => Settings.Instance!.Devices;
-    public ObservableCollection<Effect> effects => Settings.Instance!.Effects;
+    public ObservableCollection<LightEffect> effects => Settings.Instance!.Effects;
 
     public Settings settings => Settings.Instance!;
 
@@ -55,7 +55,7 @@ public partial class MainViewModel : ViewModelBase
         {
             if (newEffect != null)
             {
-                Settings.Instance!.AddEffect((Effect)newEffect);
+                Settings.Instance!.AddEffect((LightEffect)newEffect);
                 Settings.Save();
             }
         }

@@ -4,7 +4,8 @@
         xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
         mc:Ignorable="d"
 	    xmlns:cd="using:LTEK_ULed.Code"
-		x:DataType="cd:Effect"
+	    xmlns:semi="https://irihi.tech/semi"
+		x:DataType="cd:LightEffect"
 		Background="{DynamicResource WindowBackgroundColor}"
         xmlns:controls="clr-namespace:LTEK_ULed.Controls"
         x:Class="LTEK_ULed.Controls.EffectSetup"
@@ -16,7 +17,6 @@
 	</UserControl.Resources>
 	<Border Theme="{StaticResource CardBorder}" Classes="Shadow" Padding="10" Width="770">
 		<StackPanel Spacing="10">
-
 			<TextBlock FontSize="18" Margin="0,0,0,10" Classes="h4">Device Setup</TextBlock>
 			<StackPanel Orientation="Horizontal" Spacing="20" HorizontalAlignment="Left">
 				<StackPanel Spacing="5">
@@ -43,6 +43,11 @@
 				<Button Content="Save" Classes="Primary" Click="Confirm"/>
 				<Button Content="Cancel" Classes="Secondary" Click="Cancel"/>
 			</StackPanel>
+			<ColorPicker Color="{Binding TempColor}" ColorSpectrumShape="Box" IsAlphaEnabled="False" IsAlphaVisible="False">
+				<ColorPicker.Palette>
+					<semi:SemiColorLightPalette />
+				</ColorPicker.Palette>
+			</ColorPicker>
 		</StackPanel>
 	</Border>
 </UserControl>

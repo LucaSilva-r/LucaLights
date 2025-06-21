@@ -360,7 +360,7 @@
 									</ItemsPanelTemplate>
 								</ItemsControl.ItemsPanel>
 								<ItemsControl.ItemTemplate>
-									<DataTemplate x:DataType="cd:Effect">
+									<DataTemplate x:DataType="cd:LightEffect">
 
 										<Border DataContext="{Binding}" Theme="{StaticResource CardBorder}" Margin="5" Padding="10" Classes="Shadow">
 											<DockPanel>
@@ -374,7 +374,7 @@
 													</Button>
 												</DockPanel>
 
-												<ItemsControl Tag="{Binding GroupId}" x:DataType="cd:Effect" ItemsSource="{Binding Segments}" >
+												<ItemsControl Tag="{Binding GroupId}" x:DataType="cd:LightEffect" ItemsSource="{Binding Segments}" >
 													<ItemsControl.ItemsPanel>
 														<ItemsPanelTemplate>
 															<StackPanel VerticalAlignment="Top"/>
