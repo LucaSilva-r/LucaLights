@@ -1,22 +1,25 @@
 <Window xmlns="https://github.com/avaloniaui"
-        mc:Ignorable="d" d:DesignWidth="800" d:DesignHeight="450"
-        x:Class="LTEK_ULed.Views.MainWindow"
-        xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
-        xmlns:vm="using:LTEK_ULed.ViewModels"
-	    xmlns:cd="using:LTEK_ULed.Code"
-        xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
-        xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
-        xmlns:views="clr-namespace:LTEK_ULed.Views"
-        xmlns:controls="clr-namespace:LTEK_ULed.Controls"
+		mc:Ignorable="d" d:DesignWidth="800" d:DesignHeight="450"
+		x:Class="LTEK_ULed.Views.MainWindow"
+		xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+		xmlns:vm="using:LTEK_ULed.ViewModels"
+		xmlns:cd="using:LTEK_ULed.Code"
+		xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
+		xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
+        xmlns:c="using:Avalonia.Markup.Xaml.Converters"
+		xmlns:views="clr-namespace:LTEK_ULed.Views"
+		xmlns:controls="clr-namespace:LTEK_ULed.Controls"
 		x:Name="Window"
-        Icon="/Assets/avalonia-logo.ico"
-        Title="Status"
+		Icon="/Assets/avalonia-logo.ico"
+		Title="Status"
 		MinHeight="540"
 		MinWidth="960"
 		x:DataType="vm:MainViewModel"
-        xmlns:dialogHost="clr-namespace:DialogHostAvalonia;assembly=DialogHost.Avalonia"
+		xmlns:dialogHost="clr-namespace:DialogHostAvalonia;assembly=DialogHost.Avalonia"
 		>
-
+	<Window.Resources>
+		<c:ColorToBrushConverter x:Key="ColorToBrushConverter"/>
+	</Window.Resources>
 	<Panel>
 		<Border Padding="10">
 			<Grid>
@@ -60,7 +63,6 @@
 													<RowDefinition Height="33"/>
 													<RowDefinition Height="33"/>
 													<RowDefinition Height="33"/>
-
 												</Grid.RowDefinitions>
 
 												<Rectangle
@@ -366,6 +368,16 @@
 											<DockPanel>
 												<DockPanel DockPanel.Dock="Top" LastChildFill="False">
 													<TextBlock VerticalAlignment="Center" DockPanel.Dock="Left" Text="{Binding Name}"/>
+													
+													<Border Background="{Binding TempColor, Converter={StaticResource ColorToBrushConverter}}"
+															CornerRadius="10"
+															DockPanel.Dock="Left"
+															Theme="{StaticResource CardBorder}"
+															Margin="10,0,0,0"
+															Padding="0" 
+															Width="60"
+															Classes="Shadow"/>
+													
 													<Button Margin="10,0,10,0" DockPanel.Dock="Right" ToolTip.Tip="Delete this Effect" Command="{Binding DeleteEffect}" Classes="Danger">
 														<PathIcon Data="{StaticResource SemiIconDelete}" Width="16"/>
 													</Button>

@@ -1,4 +1,5 @@
-﻿using Avalonia.Controls;
+﻿using Avalonia;
+using Avalonia.Controls;
 using Avalonia.Controls.Shapes;
 using Avalonia.Media;
 using Avalonia.VisualTree;
@@ -21,12 +22,27 @@ public partial class MainWindow : Window
     SolidColorBrush active = new SolidColorBrush(Color.FromRgb(255, 0, 0));
     SolidColorBrush inactive = new SolidColorBrush(Color.FromRgb(200, 200, 200));
 
-    BidirectionalDictionary<Rectangle, GameButton> RectGameBMap = new();
-
+    BidirectionalDictionary<Rectangle, GameButton> RectGBMap = new();
+    BidirectionalDictionary<Rectangle, CabinetLight> RectCBMap = new();
     public MainWindow()
     {
         InitializeComponent();
         Instance = this;
+
+
+        RectCBMap.Add(mDownLeft, CabinetLight.LIGHT_MARQUEE_LR_LEFT);
+        RectCBMap.Add(mUpLeft, CabinetLight.LIGHT_MARQUEE_UP_LEFT);
+        RectCBMap.Add(mDownRight, CabinetLight.LIGHT_MARQUEE_LR_RIGHT);
+        RectCBMap.Add(mUpRight, CabinetLight.LIGHT_MARQUEE_UP_RIGHT);
+        RectCBMap.Add(bassLeft, CabinetLight.LIGHT_BASS_LEFT);
+        RectCBMap.Add(bassRight, CabinetLight.LIGHT_BASS_RIGHT);
+
+        foreach (Rectangle rect in RectCBMap.Keys)
+        {
+            rect!.PointerPressed += Rectangle_PointerPressed;
+            rect!.PointerReleased += Rectangle_PointerReleased;
+            rect!.PointerExited += Rectangle_PointerExited;
+        }
 
         for (int i = 1; i <= 18; i++)
         {
@@ -37,7 +53,7 @@ public partial class MainWindow : Window
 
             if (rect != null)
             {
-                RectGameBMap.Add(rect, result);
+                RectGBMap.Add(rect, result);
             }
             rect!.PointerPressed += Rectangle_PointerPressed;
             rect!.PointerReleased += Rectangle_PointerReleased;
@@ -59,16 +75,20 @@ public partial class MainWindow : Window
             cabinetLight = gameState.state.cabinetLight;
         }
 
-        updatePad(true, gameButton);
-        updatePad(false, gameButton);
+        foreach (CabinetLight item in RectCBMap.Values)
+        {
+            RectCBMap.Inverse[item]!.Fill = cabinetLight.HasFlag(item) ? active : inactive;
+        }
 
-        updateCabinetLighting(cabinetLight);
-
+        foreach (GameButton item in RectGBMap.Values)
+        {
+            RectGBMap.Inverse[item]!.Fill = gameButton.HasFlag(item) ? active : inactive;
+        }
     }
-
 
     private SegmentView[][] segmentViewsDict = [];
 
+    //THIS IS FUCKED but works :)
     public void UpdateLeds(bool reset = false)
     {
         if (segmentViewsDict.Length == 0 || reset)
@@ -117,63 +137,37 @@ public partial class MainWindow : Window
         }
     }
 
-    private void updateCabinetLighting(CabinetLight cabinetLight)
-    {
-
-        SolidColorBrush active = new SolidColorBrush(Color.FromRgb(255, 0, 0));
-        SolidColorBrush inactive = new SolidColorBrush(Color.FromRgb(200, 200, 200));
-
-        bassLeft.Fill = cabinetLight.HasFlag(CabinetLight.LIGHT_BASS_LEFT) ? active : inactive;
-        bassRight.Fill = cabinetLight.HasFlag(CabinetLight.LIGHT_BASS_RIGHT) ? active : inactive;
-
-        mUpLeft.Fill = cabinetLight.HasFlag(CabinetLight.LIGHT_MARQUEE_UP_LEFT) ? active : inactive;
-        mUpRight.Fill = cabinetLight.HasFlag(CabinetLight.LIGHT_MARQUEE_UP_RIGHT) ? active : inactive;
-
-        mDownLeft.Fill = cabinetLight.HasFlag(CabinetLight.LIGHT_MARQUEE_LR_LEFT) ? active : inactive;
-        mDownRight.Fill = cabinetLight.HasFlag(CabinetLight.LIGHT_MARQUEE_LR_RIGHT) ? active : inactive;
-
-    }
-
-    private void updatePad(bool player1, GameButton gameButton)
-    {
-        foreach (GameButton item in Enum.GetValues(typeof(GameButton)))
-        {
-            if (RectGameBMap.Inverse.ContainsKey(item))
-            {
-                RectGameBMap.Inverse[item]!.Fill = gameButton.HasFlag(item) ? active : inactive;
-            }
-        }
-    }
 
     private void Rectangle_PointerPressed(object? sender, Avalonia.Input.PointerPressedEventArgs e)
     {
-        (sender as Rectangle)!.Fill = active;
-
-        lock (gameState)
-        {
-            gameState.state.gameButton |= RectGameBMap[(sender as Rectangle)!];
-            Debug.WriteLine(gameState.state.gameButton);
-        }
+        HandleClick((Rectangle)sender!, true);
     }
 
     private void Rectangle_PointerReleased(object? sender, Avalonia.Input.PointerReleasedEventArgs e)
     {
-        (sender as Rectangle)!.Fill = inactive;
-
-        lock (gameState)
-        {
-            gameState.state.gameButton &= ~RectGameBMap[(sender as Rectangle)!];
-        }
+        HandleClick((Rectangle)sender!, false);
     }
 
     private void Rectangle_PointerExited(object? sender, Avalonia.Input.PointerEventArgs e)
     {
-        (sender as Rectangle)!.Fill = inactive;
+        HandleClick((Rectangle)sender!, false);
+    }
 
+    private void HandleClick(Rectangle rect, bool pressed)
+    {
         lock (gameState)
         {
-            gameState.state.gameButton &= ~RectGameBMap[(sender as Rectangle)!];
+            if (RectGBMap.ContainsKey(rect))
+            {
+                gameState.state.gameButton = pressed ? gameState.state.gameButton | RectGBMap[rect] : gameState.state.gameButton & ~RectGBMap[rect];
+            }
+            else if (RectCBMap.ContainsKey(rect))
+            {
+                gameState.state.cabinetLight = pressed ? gameState.state.cabinetLight | RectCBMap[rect] : gameState.state.cabinetLight & ~RectCBMap[rect];
+
+            }
         }
+        UpdateUi();
     }
 
     private void SaveClick(object? sender, Avalonia.Interactivity.RoutedEventArgs e)
