@@ -94,7 +94,7 @@ namespace LTEK_ULed.Code
                         currentData = pipe.ReadByte();
                         if (currentData == (byte)'\n')
                         {
-                            counter = 0;
+                            counter = buffer.Length;
                         }
                         else if (currentData != -1 && counter < buffer.Length)
                         {
@@ -107,6 +107,7 @@ namespace LTEK_ULed.Code
                             {
                                 GameState.gameState.Parse(buffer);
                             }
+                            counter = 0;
                         }
                     }
                     if (!token.IsCancellationRequested)
