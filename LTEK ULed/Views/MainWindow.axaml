@@ -10,7 +10,6 @@
 		xmlns:views="clr-namespace:LTEK_ULed.Views"
 		xmlns:controls="clr-namespace:LTEK_ULed.Controls"
 		x:Name="Window"
-		Icon="/Assets/avalonia-logo.ico"
 		Title="Status"
 		MinHeight="540"
 		MinWidth="960"

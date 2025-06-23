@@ -169,15 +169,4 @@ public partial class MainWindow : Window
         }
         UpdateUi();
     }
-
-    private void SaveClick(object? sender, Avalonia.Interactivity.RoutedEventArgs e)
-    {
-        Settings.Save();
-    }
-
-    private void ReloadClick(object? sender, Avalonia.Interactivity.RoutedEventArgs e)
-    {
-        Settings.Load();
-    }
-
 }
