@@ -106,6 +106,7 @@ namespace LTEK_ULed.Code
                             if (!MainViewModel.Instance!.debug)
                             {
                                 GameState.gameState.Parse(buffer);
+
                             }
                             counter = 0;
                         }
