@@ -345,7 +345,7 @@
 					<DockPanel >
 						<DockPanel DockPanel.Dock="Top" LastChildFill="False">
 							<TextBlock Text="Light Preview" DockPanel.Dock="Left" FontSize="18" FontWeight="SemiBold"></TextBlock>
-							<CheckBox VerticalAlignment="Center" Margin="10,0,0,0" x:CompileBindings="False" IsChecked="{Binding lightOutput}">
+							<CheckBox VerticalAlignment="Center" Margin="10,0,0,0" IsChecked="{Binding lightOutput}">
 								Enable Light Output?
 							</CheckBox>
 
