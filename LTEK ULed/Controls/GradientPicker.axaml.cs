@@ -29,7 +29,9 @@ public partial class GradientPicker : UserControl
                 new GradientStop(Color.Parse("Red"), 0),
                 new GradientStop(Color.Parse("White"), 1)
             }
-        }, defaultBindingMode: Avalonia.Data.BindingMode.OneWay);
+        },
+        defaultBindingMode: Avalonia.Data.BindingMode.TwoWay
+        );
 
     public LinearGradientBrush Gradient
     {

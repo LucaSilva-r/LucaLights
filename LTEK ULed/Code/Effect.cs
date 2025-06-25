@@ -1,4 +1,5 @@
-﻿using Avalonia.Controls;
+﻿using Avalonia;
+using Avalonia.Controls;
 using Avalonia.Controls.ApplicationLifetimes;
 using Avalonia.Media;
 using ColorMine.ColorSpaces;
@@ -50,6 +51,18 @@ namespace LTEK_ULed.Code
         [property: JsonPropertyName("tempColor"), JsonConverter(typeof(ColorJsonConverter))]
         private Color _tempColor = Color.FromRgb(0, 255, 255);
 
+        [ObservableProperty]
+        [property: JsonPropertyName("gradient")]
+        private LinearGradientBrush _gradient = new LinearGradientBrush()
+        {
+            StartPoint = new RelativePoint(0, 0, RelativeUnit.Relative),
+            EndPoint = new RelativePoint(1, 0, RelativeUnit.Relative),
+            GradientStops = {
+                new GradientStop(Color.Parse("Red"), 0),
+                new GradientStop(Color.Parse("White"), 1)
+            }
+        };
+
         [RelayCommand]
         [property: JsonIgnore]
         public async Task DeleteEffect()
@@ -65,8 +78,15 @@ namespace LTEK_ULed.Code
         [property: JsonIgnore]
         public async Task EditEffect()
         {
-            string json = JsonSerializer.Serialize(this);
-            LightEffect effect = JsonSerializer.Deserialize<LightEffect>(json);
+            string json = JsonSerializer.Serialize(this, JsonOptions.jsonSerializerOptionsForPropertyModel);
+            LightEffect? effect = JsonSerializer.Deserialize<LightEffect>(json, JsonOptions.jsonSerializerOptionsForPropertyModel);
+
+            if (effect == null)
+            {
+                Debug.WriteLine("Failed to deserialize LightEffect for editing.");
+                return;
+            }
+
             object? obj = await DialogHost.Show(new EffectSetup(effect!));
 
             if (obj != null)
@@ -75,18 +95,45 @@ namespace LTEK_ULed.Code
                 LightMapping = effect.LightMapping;
                 ButtonMapping = effect.ButtonMapping;
                 TempColor = effect.TempColor;
+                Gradient = effect.Gradient;
                 Settings.Save();
 
             }
         }
 
-        public LightEffect(string name, GameButton buttonMapping, CabinetLight lightMapping, Color tempColor, int groupId)
+        public LightEffect(string name, GameButton buttonMapping, CabinetLight lightMapping, Color tempColor, int groupId, LinearGradientBrush gradient)
         {
             Name = name;
             ButtonMapping = buttonMapping;
             LightMapping = lightMapping;
             GroupId = groupId;
             TempColor = tempColor;
+
+            if (gradient == null)
+            {
+                gradient = new LinearGradientBrush()
+                {
+                    StartPoint = new RelativePoint(0, 0, RelativeUnit.Relative),
+                    EndPoint = new RelativePoint(1, 0, RelativeUnit.Relative),
+                    GradientStops = {
+                        new GradientStop(Color.Parse("Red"), 0),
+                        new GradientStop(Color.Parse("White"), 1)
+                    }
+                };
+            }
+            gradient.StartPoint = new RelativePoint(0, 0, RelativeUnit.Relative);
+            gradient.EndPoint = new RelativePoint(1, 0, RelativeUnit.Relative);
+            if (gradient.GradientStops.Count == 0)
+            {
+                gradient.GradientStops = new()
+                {
+                    new GradientStop(Color.Parse("Red"), 0),
+                    new GradientStop(Color.Parse("White"), 1)
+                };
+            }
+           Gradient = gradient;
+
+
             Recalculate();
         }
 

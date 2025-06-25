@@ -1,6 +1,9 @@
 ﻿using Avalonia.Media;
 using System;
+using System.Linq;
 using System.Numerics;
+using System.Text.Json;
+using System.Text.Json.Serialization.Metadata;
 
 namespace LTEK_ULed.Code.Utils
 {
@@ -39,12 +42,12 @@ namespace LTEK_ULed.Code.Utils
     {
         public static Color Sum(this Color a, Color b)
         {
-            return Color.FromRgb((byte) Clamp(a.R + b.R, 0, 255), (byte) Clamp(a.G + b.G, 0, 255), (byte) Clamp<int>(a.B + b.B, 0, 255));
+            return Color.FromRgb((byte)Clamp(a.R + b.R, 0, 255), (byte)Clamp(a.G + b.G, 0, 255), (byte)Clamp<int>(a.B + b.B, 0, 255));
         }
 
         public static Color SetBrightness(this Color a, float b)
         {
-            return Color.FromRgb((byte)Clamp((int)(a.R * b), 0, 255), (byte) Clamp((int)(a.G * b), 0, 255), (byte)Clamp((int)(a.B * b), 0, 255));
+            return Color.FromRgb((byte)Clamp((int)(a.R * b), 0, 255), (byte)Clamp((int)(a.G * b), 0, 255), (byte)Clamp((int)(a.B * b), 0, 255));
         }
 
 
@@ -58,6 +61,40 @@ namespace LTEK_ULed.Code.Utils
         public static T Map<T>(this T value, T fromSource, T toSource, T fromTarget, T toTarget) where T : INumber<T>
         {
             return (value - fromSource) / (toSource - fromSource) * (toTarget - fromTarget) + fromTarget;
+        }
+    }
+
+    public static class JsonOptions
+    {
+        public static readonly JsonSerializerOptions jsonSerializerOptionsForPropertyModel = new()
+        {
+            TypeInfoResolver = new DefaultJsonTypeInfoResolver()
+            {
+                Modifiers =
+                {
+                    ApplyCustomConverterToObjectProperties
+                }
+            }
+        };
+
+        public static readonly JsonSerializerOptions jsonSerializerOptionsForSaving = new()
+        {
+            WriteIndented = true,
+            TypeInfoResolver = new DefaultJsonTypeInfoResolver()
+            {
+                Modifiers =
+                {
+                    ApplyCustomConverterToObjectProperties
+                }
+            }
+        };
+
+        private static void ApplyCustomConverterToObjectProperties(JsonTypeInfo typeInfo)
+        {
+            if (typeInfo.Type.FullName == typeof(GradientStop).FullName)
+            {
+                typeInfo.Properties.First(x => x.Name == nameof(Color)).CustomConverter = new ColorJsonConverter();
+            }
         }
     }
 }

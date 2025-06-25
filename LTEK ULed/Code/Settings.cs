@@ -1,4 +1,5 @@
 ﻿using CommunityToolkit.Mvvm.ComponentModel;
+using LTEK_ULed.Code.Utils;
 using System;
 using System.Collections.ObjectModel;
 using System.Diagnostics;
@@ -149,7 +150,7 @@ namespace LTEK_ULed.Code
                 {
                     try
                     {
-                        Settings? settings = JsonSerializer.Deserialize<Settings>(File.ReadAllText(file.FullName));
+                        Settings? settings = JsonSerializer.Deserialize<Settings>(File.ReadAllText(file.FullName), JsonOptions.jsonSerializerOptionsForPropertyModel);
                         if (settings != null)
                         {
                             Instance = settings;
@@ -208,7 +209,7 @@ namespace LTEK_ULed.Code
                 string file = Environment.GetFolderPath(Environment.SpecialFolder.ApplicationData) + "/LtekULED/settings.json";
                 try
                 {
-                    string? json = JsonSerializer.Serialize(Instance, new JsonSerializerOptions() { WriteIndented = true });
+                    string? json = JsonSerializer.Serialize(Instance, JsonOptions.jsonSerializerOptionsForSaving );
                     if (json != null)
                     {
                         File.WriteAllText(file, json);

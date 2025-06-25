@@ -48,7 +48,7 @@
 					<semi:SemiColorLightPalette />
 				</ColorPicker.Palette>
 			</ColorPicker>
-			<controls:GradientPicker></controls:GradientPicker>
+			<controls:GradientPicker Gradient="{Binding Gradient}"></controls:GradientPicker>
 		</StackPanel>
 	</Border>
 </UserControl>
