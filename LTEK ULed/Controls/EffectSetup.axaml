@@ -17,7 +17,7 @@
 	</UserControl.Resources>
 	<Border Theme="{StaticResource CardBorder}" Classes="Shadow" Padding="10" Width="770">
 		<StackPanel Spacing="10">
-			<TextBlock FontSize="18" Margin="0,0,0,10" Classes="h4">Device Setup</TextBlock>
+			<TextBlock FontSize="18" Margin="0,0,0,10" Classes="h4">Effect Setup</TextBlock>
 			<StackPanel Orientation="Horizontal" Spacing="20" HorizontalAlignment="Left">
 				<StackPanel Spacing="5">
 					<Label>
@@ -46,13 +46,14 @@
 			<StackPanel Orientation="Horizontal" Spacing="20">
 					<StackPanel>
 						<TextBlock DockPanel.Dock="Top" Margin="0 5" Classes="h4">Color Setup</TextBlock>
-						<controls:GradientPicker DockPanel.Dock="Bottom" HorizontalAlignment="Left" Gradient="{Binding Gradient}"></controls:GradientPicker>
+						<controls:GradientPicker ToolTip.Tip="Click on a handle to change color, Click and drag to reposition, Right Click handle to remove it, Click on the gradient to add a new one" DockPanel.Dock="Bottom" HorizontalAlignment="Left" Gradient="{Binding Gradient}"></controls:GradientPicker>
 					</StackPanel>
 					<StackPanel VerticalAlignment="Bottom">
 						<TextBlock DockPanel.Dock="Top" Margin="0 5" Classes="h4">Gradient Scroll Speed</TextBlock>
 						<NumericUpDown Minimum="0" Maximum="5" Increment="0.001" Value="{Binding GradientScrollSpeed}"></NumericUpDown>
 					</StackPanel>
-				</StackPanel>
+					<ToggleSwitch  ToolTip.Tip="The timer animating the gradient will be reset at every press. Keep disabled to keep syncronized with other gradients at same speed. (Restart app to resync)" VerticalAlignment="Bottom" IsChecked="{Binding RestartGradientOnClick}">Restart On Event</ToggleSwitch>
+			</StackPanel>
 			
 			<StackPanel Orientation="Horizontal" Spacing="20" FlowDirection="RightToLeft">
 				<Button Content="Save" Classes="Primary" Click="Confirm"/>

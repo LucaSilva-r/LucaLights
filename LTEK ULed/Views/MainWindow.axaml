@@ -367,16 +367,16 @@
 											<DockPanel>
 												<DockPanel DockPanel.Dock="Top" LastChildFill="False">
 													<TextBlock VerticalAlignment="Center" DockPanel.Dock="Left" Text="{Binding Name}"/>
-													
+
 													<Border Background="{Binding Gradient}"
 															CornerRadius="10"
 															DockPanel.Dock="Left"
 															Theme="{StaticResource CardBorder}"
 															Margin="10,0,0,0"
-															Padding="0" 
+															Padding="0"
 															Width="60"
 															Classes="Shadow"/>
-													
+
 													<Button Margin="10,0,10,0" DockPanel.Dock="Right" ToolTip.Tip="Delete this Effect" Command="{Binding DeleteEffect}" Classes="Danger">
 														<PathIcon Data="{StaticResource SemiIconDelete}" Width="16"/>
 													</Button>
@@ -413,9 +413,27 @@
 
 			</Grid>
 		</Border>
-		<dialogHost:DialogHost Background="Transparent" Identifier="Dialog" Grid.ColumnSpan="2" Grid.RowSpan="2" CloseOnClickAway="True">
+		<dialogHost:DialogHost  Background="Transparent" Identifier="Dialog" Grid.ColumnSpan="2" Grid.RowSpan="2" CloseOnClickAway="True">
 			<dialogHost:DialogHost.DialogContent>
 			</dialogHost:DialogHost.DialogContent>
 		</dialogHost:DialogHost>
 	</Panel>
+
+	<Window.Styles>
+		<Style Selector="dialogHost|DialogHost">
+			<Setter Property="PopupTemplate">
+				<ControlTemplate>
+					<VisualLayerManager IsPopup="True" Name="PART_DialogPopupRoot">
+
+						<ContentPresenter Name="PART_ContentPresenter"
+										  Background="{TemplateBinding Background}"
+										  ContentTemplate="{TemplateBinding ContentTemplate}"
+										  Content="{TemplateBinding Content}"
+										  Padding="{TemplateBinding Padding}" />
+
+					</VisualLayerManager>
+				</ControlTemplate>
+			</Setter>
+		</Style>
+	</Window.Styles>
 </Window>

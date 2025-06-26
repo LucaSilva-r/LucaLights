@@ -73,6 +73,9 @@ namespace LTEK_ULed.Code
         private float _gradientScrollTime = 0;
         private float _gradientScrollTimeDelta = 1000 / LightingManager.targetFps;
 
+        [ObservableProperty]
+        [property: JsonPropertyName("restartGradientOnClick")]
+        private bool _restartGradientOnClick = false;
 
         [RelayCommand]
         [property: JsonIgnore]
@@ -110,6 +113,8 @@ namespace LTEK_ULed.Code
                     ButtonMapping = effect.ButtonMapping;
                     TempColor = effect.TempColor;
                     Gradient = effect.Gradient;
+                    GradientScrollSpeed = effect.GradientScrollSpeed;
+                    RestartGradientOnClick = effect.RestartGradientOnClick;
                     List<Stop> stops = new();
                     foreach (var stop in effect.Gradient.GradientStops)
                     {
@@ -190,9 +195,19 @@ namespace LTEK_ULed.Code
             }
         }
 
+        private bool oldClicked = false;
         public void Render(GameButton button, CabinetLight light)
         {
+
+            if( GradientScrollSpeed > 0)
+            {
+                _gradientScrollTime += _gradientScrollTimeDelta * GradientScrollSpeed;
+                _gradientScrollTime %= 1000;
+            }
+
+
             bool clicked = (((int)button & (int)ButtonMapping) != 0) || (((int)light & (int)LightMapping) != 0);
+            
             for (int i = 0; i < leds.Length; i++)
             {
                 if (clicked)
@@ -204,6 +219,11 @@ namespace LTEK_ULed.Code
                     FillSegment(leds[i], Color.FromRgb(0, 0, 0));
                 }
             }
+            if (clicked != oldClicked && RestartGradientOnClick)
+            {
+                _gradientScrollTime = 0;
+            }
+            oldClicked = clicked;
         }
 
         private Color RenderColor()
@@ -217,9 +237,6 @@ namespace LTEK_ULed.Code
             {
                 return _gradientStops[0].Color;
             }
-
-            _gradientScrollTime += _gradientScrollTimeDelta / GradientScrollSpeed;
-            _gradientScrollTime %= 1000;
 
             float t = _gradientScrollTime / 1000f;
 
