@@ -206,7 +206,12 @@ namespace LTEK_ULed.Code
         {
             lock (Lock)
             {
-                string file = Environment.GetFolderPath(Environment.SpecialFolder.ApplicationData) + "/LtekULED/settings.json";
+                string directory = Environment.GetFolderPath(Environment.SpecialFolder.ApplicationData) + "/LtekULED";
+                string file = directory +"/settings.json";
+                if(Directory.Exists(directory) == false)
+                {
+                    Directory.CreateDirectory(directory);
+                }
                 try
                 {
                     string? json = JsonSerializer.Serialize(Instance, JsonOptions.jsonSerializerOptionsForSaving );
