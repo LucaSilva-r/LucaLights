@@ -45,8 +45,22 @@ public partial class GradientPicker : UserControl
     {
         if (sender is Border border)
         {
-            selectedGradientHandle = border;
-           
+            if (e.GetCurrentPoint(border).Properties.IsRightButtonPressed)
+            {
+                if(border.DataContext is GradientStop gradientStop && Gradient.GradientStops.Count > 1)
+                {
+                    Gradient.GradientStops.Remove(gradientStop);
+                }
+
+                e.Handled = true;
+                return; // Only handle left button presses
+            }
+            else
+            {
+                selectedGradientHandle = border;
+            }
+
+
             e.Handled = true;
         }
     }
