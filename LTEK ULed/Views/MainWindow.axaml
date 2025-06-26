@@ -368,7 +368,7 @@
 												<DockPanel DockPanel.Dock="Top" LastChildFill="False">
 													<TextBlock VerticalAlignment="Center" DockPanel.Dock="Left" Text="{Binding Name}"/>
 													
-													<Border Background="{Binding TempColor, Converter={StaticResource ColorToBrushConverter}}"
+													<Border Background="{Binding Gradient}"
 															CornerRadius="10"
 															DockPanel.Dock="Left"
 															Theme="{StaticResource CardBorder}"
