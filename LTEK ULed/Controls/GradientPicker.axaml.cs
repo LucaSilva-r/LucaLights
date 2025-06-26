@@ -41,13 +41,71 @@ public partial class GradientPicker : UserControl
 
     Border? selectedGradientHandle = null;
 
+
+
+    private void AddGradientHandle(object? sender, Avalonia.Input.PointerPressedEventArgs e)
+    {
+        // Only handle left button presses
+        if (e.GetCurrentPoint(container).Properties.IsLeftButtonPressed)
+        {
+            // Get the position of the click relative to the container
+            var position = e.GetPosition(container);
+            // Calculate the offset based on the width of the container
+            double offset = Math.Clamp(position.X / container.Bounds.Width, 0, 1);
+            // Create a new GradientStop at the clicked position
+
+
+
+            var newStop = new GradientStop(Color.Parse("White"), offset);
+            // Add the new stop to the gradient
+
+            for (int i = 0; i < Gradient.GradientStops.Count; i++)
+            {
+                if (Gradient.GradientStops[i].Offset > offset)
+                {
+                    if (i - 1 < 0)
+                    {
+                        newStop.Color = Gradient.GradientStops[i].Color;
+                        Gradient.GradientStops.Insert(0, newStop);
+                        break;
+                    }
+                    Color rMax = Gradient.GradientStops[i].Color;
+                    Color rMin = Gradient.GradientStops[i - 1].Color;
+
+                    double difference = Gradient.GradientStops[i].Offset - Gradient.GradientStops[i - 1].Offset;
+                    double pos = (offset - Gradient.GradientStops[i - 1].Offset);
+
+                    double pos1 = pos / difference;
+                    double pos2 = 1 - (pos / difference);
+
+                    // Interpolate the color between the two stops
+                    newStop.Color = Color.FromArgb(
+                        (byte)(rMax.A * pos1 + rMin.A * pos2),
+                        (byte)(rMax.R * pos1 + rMin.R * pos2),
+                        (byte)(rMax.G * pos1 + rMin.G * pos2),
+                        (byte)(rMax.B * pos1 + rMin.B * pos2));
+                    Gradient.GradientStops.Insert(i, newStop);
+                    break;
+                }
+            }
+
+            if (!Gradient.GradientStops.Contains(newStop))
+            {
+                newStop.Color = Gradient.GradientStops.Last().Color;
+                Gradient.GradientStops.Add(newStop);
+
+            }
+            e.Handled = true;
+        }
+    }
+
     private void GradientHandlePressed(object? sender, Avalonia.Input.PointerPressedEventArgs e)
     {
         if (sender is Border border)
         {
             if (e.GetCurrentPoint(border).Properties.IsRightButtonPressed)
             {
-                if(border.DataContext is GradientStop gradientStop && Gradient.GradientStops.Count > 1)
+                if (border.DataContext is GradientStop gradientStop && Gradient.GradientStops.Count > 1)
                 {
                     Gradient.GradientStops.Remove(gradientStop);
                 }

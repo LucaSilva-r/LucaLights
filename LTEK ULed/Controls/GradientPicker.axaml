@@ -19,6 +19,7 @@
 		<ControlTemplate>
 			<Border Name="GradientContainer"
 					PointerMoved="GradientHandleMoved"
+					PointerPressed="AddGradientHandle"
 					Background="{TemplateBinding Gradient}"
 					CornerRadius="10"
 					Theme="{StaticResource CardBorder}"
