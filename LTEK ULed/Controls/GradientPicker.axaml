@@ -4,7 +4,7 @@
              xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
              mc:Ignorable="d"
 			d:DesignWidth="700"
-			d:DesignHeight="500"			 
+			d:DesignHeight="500"
              x:Class="LTEK_ULed.Controls.GradientPicker"
 			 x:DataType="LinearGradientBrush"
 	 		 xmlns:local="clr-namespace:LTEK_ULed.Converters;assembly=LTEK ULed"
@@ -12,8 +12,8 @@
 			 >
 
 	<UserControl.Resources>
-			<c:ColorToBrushConverter x:Key="ColorToBrushConverter"/>
-			<local:NumberMultiplier x:Key="NumberMultiplier"/>
+		<c:ColorToBrushConverter x:Key="ColorToBrushConverter"/>
+		<local:NumberMultiplier x:Key="NumberMultiplier"/>
 	</UserControl.Resources>
 	<UserControl.Template>
 		<ControlTemplate>
@@ -31,13 +31,13 @@
 				<ItemsControl ItemsSource="{Binding Gradient.GradientStops, RelativeSource={RelativeSource TemplatedParent}}">
 					<ItemsControl.ItemsPanel>
 						<ItemsPanelTemplate>
-							<Canvas>
-								<TextBox>tesssst</TextBox>
-							</Canvas>
+							<Canvas></Canvas>
 						</ItemsPanelTemplate>
 					</ItemsControl.ItemsPanel>
 					<ItemsControl.ItemTemplate>
 						<DataTemplate x:DataType="GradientStop">
+
+
 
 							<Border DataContext="{Binding}"
 									PointerPressed="GradientHandlePressed"
@@ -50,7 +50,13 @@
 									Classes="Shadow"
 									Padding="0"
 									Margin="0"
-									Background="{Binding Color, Converter={StaticResource ColorToBrushConverter}}"></Border>
+									Background="{Binding Color, Converter={StaticResource ColorToBrushConverter}}">
+								<FlyoutBase.AttachedFlyout>
+									<Flyout>
+										<ColorView Color="{Binding Color}"></ColorView>
+									</Flyout>
+								</FlyoutBase.AttachedFlyout>
+							</Border>
 
 						</DataTemplate>
 					</ItemsControl.ItemTemplate>

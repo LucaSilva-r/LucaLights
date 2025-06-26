@@ -99,10 +99,15 @@ public partial class GradientPicker : UserControl
         }
     }
 
+    bool clicked = false;
+    bool moved = false;
+
     private void GradientHandlePressed(object? sender, Avalonia.Input.PointerPressedEventArgs e)
     {
         if (sender is Border border)
         {
+            clicked = true;
+            moved = false;
             if (e.GetCurrentPoint(border).Properties.IsRightButtonPressed)
             {
                 if (border.DataContext is GradientStop gradientStop && Gradient.GradientStops.Count > 1)
@@ -117,8 +122,6 @@ public partial class GradientPicker : UserControl
             {
                 selectedGradientHandle = border;
             }
-
-
             e.Handled = true;
         }
     }
@@ -132,6 +135,7 @@ public partial class GradientPicker : UserControl
 
     private void GradientHandleMoved(object? sender, Avalonia.Input.PointerEventArgs e)
     {
+        moved = true;
         // Make sure we are dragging a handle
         if (selectedGradientHandle == null || selectedGradientHandle.DataContext is not GradientStop selectedStop)
         {
@@ -181,6 +185,14 @@ public partial class GradientPicker : UserControl
         {
             selectedGradientHandle = null;
             e.Handled = true;
+
+            if (!moved && clicked)
+            {
+                FlyoutBase.ShowAttachedFlyout(border);
+                
+            }
+            moved = false;
+            clicked = false;
         }
     }
 }
