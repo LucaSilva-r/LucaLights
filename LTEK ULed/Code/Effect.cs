@@ -53,6 +53,7 @@ namespace LTEK_ULed.Code
 
         [ObservableProperty]
         [property: JsonPropertyName("gradient")]
+
         private LinearGradientBrush _gradient = new LinearGradientBrush()
         {
             StartPoint = new RelativePoint(0, 0, RelativeUnit.Relative),
@@ -62,6 +63,16 @@ namespace LTEK_ULed.Code
                 new GradientStop(Color.Parse("White"), 1)
             }
         };
+
+        private Stop[] _gradientStops = new Stop[0];
+
+        [ObservableProperty]
+        [property: JsonPropertyName("scrollSpeed")]
+        private float _gradientScrollSpeed = 1;
+
+        private float _gradientScrollTime = 0;
+        private float _gradientScrollTimeDelta = 1000 / LightingManager.targetFps;
+
 
         [RelayCommand]
         [property: JsonIgnore]
@@ -78,6 +89,7 @@ namespace LTEK_ULed.Code
         [property: JsonIgnore]
         public async Task EditEffect()
         {
+
             string json = JsonSerializer.Serialize(this, JsonOptions.jsonSerializerOptionsForPropertyModel);
             LightEffect? effect = JsonSerializer.Deserialize<LightEffect>(json, JsonOptions.jsonSerializerOptionsForPropertyModel);
 
@@ -91,14 +103,28 @@ namespace LTEK_ULed.Code
 
             if (obj != null)
             {
-                Name = effect!.Name;
-                LightMapping = effect.LightMapping;
-                ButtonMapping = effect.ButtonMapping;
-                TempColor = effect.TempColor;
-                Gradient = effect.Gradient;
-                Settings.Save();
+                lock (Settings.Lock)
+                {
+                    Name = effect!.Name;
+                    LightMapping = effect.LightMapping;
+                    ButtonMapping = effect.ButtonMapping;
+                    TempColor = effect.TempColor;
+                    Gradient = effect.Gradient;
+                    List<Stop> stops = new();
+                    foreach (var stop in effect.Gradient.GradientStops)
+                    {
+                        stops.Add(new Stop()
+                        {
+                            Color = stop.Color,
+                            Offset = (float)stop.Offset
+                        });
+                    }
+                    _gradientStops = stops.ToArray();
+                    Settings.Save();
 
+                }
             }
+
         }
 
         public LightEffect(string name, GameButton buttonMapping, CabinetLight lightMapping, Color tempColor, int groupId, LinearGradientBrush gradient)
@@ -131,8 +157,19 @@ namespace LTEK_ULed.Code
                     new GradientStop(Color.Parse("White"), 1)
                 };
             }
-           Gradient = gradient;
+            Gradient = gradient;
 
+            List<Stop> stops = new();
+
+            foreach (var stop in gradient.GradientStops)
+            {
+                stops.Add(new Stop()
+                {
+                    Color = stop.Color,
+                    Offset = (float)stop.Offset
+                });
+            }
+            _gradientStops = stops.ToArray();
 
             Recalculate();
         }
@@ -160,13 +197,84 @@ namespace LTEK_ULed.Code
             {
                 if (clicked)
                 {
-                    FillSegment(leds[i], TempColor);
+                    FillSegment(leds[i], RenderColor());
                 }
                 else
                 {
                     FillSegment(leds[i], Color.FromRgb(0, 0, 0));
                 }
             }
+        }
+
+        private Color RenderColor()
+        {
+
+            if (GradientScrollSpeed == 0 || _gradientStops.Length == 0)
+            {
+                return _gradientStops.Length > 0 ? _gradientStops[0].Color : Color.FromRgb(0, 0, 0);
+            }
+            if (_gradientStops.Length == 1)
+            {
+                return _gradientStops[0].Color;
+            }
+
+            _gradientScrollTime += _gradientScrollTimeDelta / GradientScrollSpeed;
+            _gradientScrollTime %= 1000;
+
+            float t = _gradientScrollTime / 1000f;
+
+            // --- Find the Correct Gradient Segment and Interpolate ---
+            for (int i = 0; i < _gradientStops.Length; i++)
+            {
+                Stop currentStop = _gradientStops[i];
+                Stop nextStop = _gradientStops[(i + 1) % _gradientStops.Length];
+
+                bool isInSegment = false;
+
+                if (currentStop.Offset > nextStop.Offset)
+                {
+                    // The time is valid if it's past the current stop OR before the next stop.
+                    if (t >= currentStop.Offset || t < nextStop.Offset)
+                    {
+                        isInSegment = true;
+                    }
+                }
+                else
+                {
+                    if (t >= currentStop.Offset && t < nextStop.Offset)
+                    {
+                        isInSegment = true;
+                    }
+                }
+
+                if (isInSegment)
+                {
+                    // We found the correct segment, now calculate the color.
+                    float segmentDuration = nextStop.Offset - currentStop.Offset;
+                    float progressInSegment = t - currentStop.Offset;
+
+                    if (segmentDuration < 0)
+                    {
+                        segmentDuration += 1.0f;
+                    }
+                    if (progressInSegment < 0)
+                    {
+                        progressInSegment += 1.0f;
+                    }
+
+                    float lerpFactor = (segmentDuration == 0) ? 0 : progressInSegment / segmentDuration;
+
+                    Color startColor = currentStop.Color;
+                    Color endColor = nextStop.Color;
+
+                    byte r = (byte)(endColor.R * lerpFactor + startColor.R * (1 - lerpFactor));
+                    byte g = (byte)(endColor.G * lerpFactor + startColor.G * (1 - lerpFactor));
+                    byte b = (byte)(endColor.B * lerpFactor + startColor.B * (1 - lerpFactor));
+
+                    return Color.FromRgb(r, g, b);
+                }
+            }
+            return _gradientStops[0].Color;
         }
 
         void FillSegment(Color[] leds, Color color)
@@ -210,5 +318,13 @@ namespace LTEK_ULed.Code
             return Color.FromRgb((byte)c.R, (byte)c.G, (byte)c.B);
         }
 
+
+        private struct Stop
+        {
+            public Color Color;
+            public float Offset;
+        }
     }
+
+
 }

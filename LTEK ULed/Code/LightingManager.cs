@@ -20,6 +20,7 @@ namespace LTEK_ULed.Code
 
         private static CancellationTokenSource? run;
 
+        public const int targetFps = 60;
 
 
         public static void Start()
@@ -41,21 +42,11 @@ namespace LTEK_ULed.Code
 
         private class LightThread
         {
-
-            int counter;
-            float[] inputTimers = new float[4];
-            float[] visualTimers = new float[4];
-            float decreaseSpeed = 0.2f;
-            float increaseSpeed = 0.5f;
-
             //static Device[] devices;
 
             Stopwatch animationGlobalTimer = new Stopwatch();
 
             CancellationToken token;
-
-
-            int wait = 1000 / 60;
 
             public LightThread(CancellationToken token)
             {
@@ -86,7 +77,6 @@ namespace LTEK_ULed.Code
 
             public void Run()
             {
-                const int targetFps = 60;
                 const int targetFrameTimeMs = 1000 / targetFps; // 16 ms per frame approx
 
                 Stopwatch sw = new Stopwatch();

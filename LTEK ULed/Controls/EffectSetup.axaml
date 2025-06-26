@@ -29,26 +29,35 @@
 						Watermark="Name"
 						Text="{Binding Name}"/>
 				</StackPanel>
-				<controls:EnumButton ButtonLabel="Cabinet Lights Mapping" ToolTip.Tip="What Cabinet light trigger the effect, multiple can be selected." VerticalAlignment="Bottom" ChoicesSource="cd:CabinetLight" EnumValue="{Binding LightMapping, Mode=TwoWay, Converter={StaticResource FlagsIntConverter}}" />
-				<controls:EnumButton ButtonLabel="Button Lights Mapping" ToolTip.Tip="What player button triggers the effect, multiple can be selected." VerticalAlignment="Bottom" ChoicesSource="cd:GameButton" EnumValue="{Binding ButtonMapping, Mode=TwoWay, Converter={StaticResource FlagsIntConverter}}" />
 
 			</StackPanel>
-			
 			<DockPanel LastChildFill="False">
-				<TextBlock DockPanel.Dock="Left" Margin="0 5" Classes="h4">Segment setup</TextBlock>
+				<TextBlock DockPanel.Dock="Top" Margin="0 5" Classes="h4">Game Event Mapping</TextBlock>
+
+				<StackPanel Orientation="Horizontal" Spacing="20">
+					<controls:EnumButton ButtonLabel="Cabinet Lights Mapping" ToolTip.Tip="What Cabinet light trigger the effect, multiple can be selected." VerticalAlignment="Bottom" ChoicesSource="cd:CabinetLight" EnumValue="{Binding LightMapping, Mode=TwoWay, Converter={StaticResource FlagsIntConverter}}" />
+					<controls:EnumButton ButtonLabel="Button Lights Mapping" ToolTip.Tip="What player button triggers the effect, multiple can be selected." VerticalAlignment="Bottom" ChoicesSource="cd:GameButton" EnumValue="{Binding ButtonMapping, Mode=TwoWay, Converter={StaticResource FlagsIntConverter}}" />
+
+				</StackPanel>
 
 			</DockPanel>
+			<Separator></Separator>
 
+			<StackPanel Orientation="Horizontal" Spacing="20">
+					<StackPanel>
+						<TextBlock DockPanel.Dock="Top" Margin="0 5" Classes="h4">Color Setup</TextBlock>
+						<controls:GradientPicker DockPanel.Dock="Bottom" HorizontalAlignment="Left" Gradient="{Binding Gradient}"></controls:GradientPicker>
+					</StackPanel>
+					<StackPanel VerticalAlignment="Bottom">
+						<TextBlock DockPanel.Dock="Top" Margin="0 5" Classes="h4">Gradient Scroll Speed</TextBlock>
+						<NumericUpDown Minimum="0" Maximum="5" Increment="0.001" Value="{Binding GradientScrollSpeed}"></NumericUpDown>
+					</StackPanel>
+				</StackPanel>
+			
 			<StackPanel Orientation="Horizontal" Spacing="20" FlowDirection="RightToLeft">
 				<Button Content="Save" Classes="Primary" Click="Confirm"/>
 				<Button Content="Cancel" Classes="Secondary" Click="Cancel"/>
 			</StackPanel>
-			<ColorPicker Color="{Binding TempColor}" ColorSpectrumShape="Box" IsAlphaEnabled="False" IsAlphaVisible="False">
-				<ColorPicker.Palette>
-					<semi:SemiColorLightPalette />
-				</ColorPicker.Palette>
-			</ColorPicker>
-			<controls:GradientPicker Gradient="{Binding Gradient}"></controls:GradientPicker>
 		</StackPanel>
 	</Border>
 </UserControl>
