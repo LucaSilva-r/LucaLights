@@ -43,15 +43,19 @@
 			</DockPanel>
 			<Separator></Separator>
 
-			<StackPanel Orientation="Horizontal" Spacing="20">
+			<StackPanel Orientation="Horizontal" Spacing="20" Margin="0,0,0,50">
 					<StackPanel>
 						<TextBlock DockPanel.Dock="Top" Margin="0 5" Classes="h4">Color Setup</TextBlock>
 						<controls:GradientPicker  DockPanel.Dock="Bottom" HorizontalAlignment="Left" Gradient="{Binding Gradient}"></controls:GradientPicker>
 					</StackPanel>
 					<StackPanel VerticalAlignment="Bottom">
 						<TextBlock DockPanel.Dock="Top" Margin="0 5" Classes="h4">Gradient Scroll Speed</TextBlock>
-						<NumericUpDown Minimum="0" Maximum="5" Increment="0.001" Value="{Binding GradientScrollSpeed}"></NumericUpDown>
+						<NumericUpDown Minimum="0" Maximum="5" Increment="0.01" Value="{Binding GradientScrollSpeed}"></NumericUpDown>
 					</StackPanel>
+				<StackPanel VerticalAlignment="Bottom">
+					<TextBlock DockPanel.Dock="Top" Margin="0 5" Classes="h4">Gradient Scale</TextBlock>
+					<NumericUpDown ToolTip.Tip="Useful only with light strips. 0 = The whole strip will be the same color. 1 = The gradient will be mapped to the strips length" Minimum="0" Maximum="5" Increment="0.001" Value="{Binding GradientScale}"></NumericUpDown>
+				</StackPanel>
 					<ToggleSwitch  ToolTip.Tip="The timer animating the gradient will be reset at every press. Keep disabled to keep syncronized with other gradients at same speed. (Restart app to resync)" VerticalAlignment="Bottom" IsChecked="{Binding RestartGradientOnClick}">Restart On Event</ToggleSwitch>
 			</StackPanel>
 			

@@ -74,7 +74,7 @@ namespace LTEK_ULed.Code
 
             }
 
-
+            bool cleared = false;
             public void Run()
             {
                 const int targetFrameTimeMs = 1000 / targetFps; // 16 ms per frame approx
@@ -97,7 +97,33 @@ namespace LTEK_ULed.Code
                     while ((!GameState.gameState.Connected && !MainViewModel.Instance!.debug && !token.IsCancellationRequested))
                     {
                         Thread.Sleep(1);
+                        if (!cleared)
+                        {
+                            lock (Settings.Lock)
+                            {
+                                foreach (Device device in Settings.Instance!.Devices)
+                                {
+                                    foreach (var segment in device.Segments)
+                                    {
+                                        Array.Clear(segment.leds);
+                                    }
+                                    device.Send();
+
+                                }
+
+                                foreach (var item in Settings.Instance.Effects)
+                                {
+                                    item.Clear();
+                                }
+
+                                Dispatcher.UIThread.Post(() => MainWindow.Instance!.UpdateLeds());
+
+                                cleared = true;
+                            }
+                        }
                     }
+
+                    cleared = false;
 
                     if (token.IsCancellationRequested)
                     {

@@ -25,7 +25,7 @@ public partial class EffectSetup : UserControl
             }
         }
 
-        DataContext = new LightEffect("New Effect", 0, 0, Color.Parse("cyan"), randomNumber, new());
+        DataContext = new LightEffect("New Effect", 0, 0, Color.Parse("cyan"), randomNumber, new(), 1, 0);
         
         InitializeComponent();
     }

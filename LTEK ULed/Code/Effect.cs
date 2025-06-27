@@ -67,8 +67,12 @@ namespace LTEK_ULed.Code
         private Stop[] _gradientStops = new Stop[0];
 
         [ObservableProperty]
-        [property: JsonPropertyName("scrollSpeed")]
+        [property: JsonPropertyName("gradientScrollSpeed")]
         private float _gradientScrollSpeed = 1;
+
+        [ObservableProperty]
+        [property: JsonPropertyName("gradientScale")]
+        private float _gradientScale = 0;
 
         private float _gradientScrollTime = 0;
         private float _gradientScrollTimeDelta = 1000 / LightingManager.targetFps;
@@ -115,6 +119,7 @@ namespace LTEK_ULed.Code
                     Gradient = effect.Gradient;
                     GradientScrollSpeed = effect.GradientScrollSpeed;
                     RestartGradientOnClick = effect.RestartGradientOnClick;
+                    GradientScale = effect.GradientScale;
                     List<Stop> stops = new();
                     foreach (var stop in effect.Gradient.GradientStops)
                     {
@@ -132,7 +137,7 @@ namespace LTEK_ULed.Code
 
         }
 
-        public LightEffect(string name, GameButton buttonMapping, CabinetLight lightMapping, Color tempColor, int groupId, LinearGradientBrush gradient)
+        public LightEffect(string name, GameButton buttonMapping, CabinetLight lightMapping, Color tempColor, int groupId, LinearGradientBrush gradient, float gradientScrollSpeed, float gradientScale)
         {
             Name = name;
             ButtonMapping = buttonMapping;
@@ -163,6 +168,8 @@ namespace LTEK_ULed.Code
                 };
             }
             Gradient = gradient;
+            GradientScale = gradientScale;
+            GradientScrollSpeed = gradientScrollSpeed;
 
             List<Stop> stops = new();
 
@@ -179,6 +186,16 @@ namespace LTEK_ULed.Code
             Recalculate();
         }
 
+        public void Clear()
+        {
+            lock (Settings.Lock)
+            {
+                for(int i = 0; i < leds.Length; i++)
+                {
+                    Array.Fill(leds[i], Color.FromRgb(0,0,0));
+                }
+            }
+        }
 
         public void Recalculate()
         {
@@ -199,7 +216,7 @@ namespace LTEK_ULed.Code
         public void Render(GameButton button, CabinetLight light)
         {
 
-            if( GradientScrollSpeed > 0)
+            if (GradientScrollSpeed > 0)
             {
                 _gradientScrollTime += _gradientScrollTimeDelta * GradientScrollSpeed;
                 _gradientScrollTime %= 1000;
@@ -207,12 +224,12 @@ namespace LTEK_ULed.Code
 
 
             bool clicked = (((int)button & (int)ButtonMapping) != 0) || (((int)light & (int)LightMapping) != 0);
-            
+
             for (int i = 0; i < leds.Length; i++)
             {
                 if (clicked)
                 {
-                    FillSegment(leds[i], RenderColor());
+                    FillSegment(leds[i]);
                 }
                 else
                 {
@@ -223,10 +240,32 @@ namespace LTEK_ULed.Code
             {
                 _gradientScrollTime = 0;
             }
+
             oldClicked = clicked;
         }
 
-        private Color RenderColor()
+
+
+        void FillSegment(Color[] leds, Color? color = null)
+        {
+            if (color != null)
+            {
+                for (int j = 0; j < leds.Length; j++)
+                {
+                    leds[j] = (Color)color;
+                }
+            }
+            else
+            {
+                float step = (1f / leds.Length) * GradientScale;
+                for (int j = 0; j < leds.Length; j++)
+                {
+                    leds[j] = RenderColor(step * j);
+                }
+            }
+        }
+
+        private Color RenderColor(float offset = 0)
         {
 
             if (GradientScrollSpeed == 0 || _gradientStops.Length == 0)
@@ -238,7 +277,7 @@ namespace LTEK_ULed.Code
                 return _gradientStops[0].Color;
             }
 
-            float t = _gradientScrollTime / 1000f;
+            float t = ((_gradientScrollTime / 1000f) + offset) % 1;
 
             // --- Find the Correct Gradient Segment and Interpolate ---
             for (int i = 0; i < _gradientStops.Length; i++)
@@ -294,13 +333,7 @@ namespace LTEK_ULed.Code
             return _gradientStops[0].Color;
         }
 
-        void FillSegment(Color[] leds, Color color)
-        {
-            for (int i = 0; i < leds.Length; i++)
-            {
-                leds[i] = color;
-            }
-        }
+
 
         void CollapsingAnimation(Segment segment, int numSegments, float time, Color color)
         {

@@ -34,11 +34,13 @@
 					</Grid.RowDefinitions>
 					<Border Theme="{StaticResource CardBorder}" Classes="Shadow" Margin="5">
 						<DockPanel >
-							<StackPanel DockPanel.Dock="Top" Orientation="Horizontal" Spacing="20">
-								<TextBlock Text="ITG Status"/>
+							<DockPanel DockPanel.Dock="Top" LastChildFill="False">
+								<TextBlock DockPanel.Dock="Left" Text="ITG Status"/>
 
-								<CheckBox VerticalAlignment="Center" IsChecked="{Binding debug}" >Debug?</CheckBox>
-							</StackPanel>
+								<CheckBox IsCheckedChanged="LightEmChanged" Name="DebugCheckBox" DockPanel.Dock="Left" Margin="20,0,0,0" VerticalAlignment="Top" IsChecked="{Binding debug}" >Debug?</CheckBox>
+								<ToggleButton IsVisible="{Binding ElementName=DebugCheckBox, Path=IsChecked}" x:Name="LightEm" IsCheckedChanged="LightEmChanged" VerticalAlignment="Top" DockPanel.Dock="Right">Light em' up!</ToggleButton>
+
+							</DockPanel>
 							<DockPanel>
 								<StackPanel Orientation="Horizontal" DockPanel.Dock="Top">
 								</StackPanel>
@@ -102,6 +104,7 @@
 													Width="30"
 													Height="60"/>
 											</Grid>
+											
 										</StackPanel>
 
 									</Border>
@@ -273,7 +276,10 @@
 									</Border>
 
 								</StackPanel>
+
+
 							</DockPanel>
+
 						</DockPanel>
 					</Border>
 

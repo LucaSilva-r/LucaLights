@@ -1,5 +1,6 @@
 ﻿using Avalonia;
 using Avalonia.Controls;
+using Avalonia.Controls.Primitives;
 using Avalonia.Controls.Shapes;
 using Avalonia.Media;
 using Avalonia.VisualTree;
@@ -140,21 +141,25 @@ public partial class MainWindow : Window
 
     private void Rectangle_PointerPressed(object? sender, Avalonia.Input.PointerPressedEventArgs e)
     {
+        LightEm.IsChecked = false;
         HandleClick((Rectangle)sender!, true);
     }
 
     private void Rectangle_PointerReleased(object? sender, Avalonia.Input.PointerReleasedEventArgs e)
     {
-        HandleClick((Rectangle)sender!, false);
+        if (LightEm.IsChecked == false)
+            HandleClick((Rectangle)sender!, false);
     }
 
     private void Rectangle_PointerExited(object? sender, Avalonia.Input.PointerEventArgs e)
     {
-        HandleClick((Rectangle)sender!, false);
+        if (LightEm.IsChecked == false)
+            HandleClick((Rectangle)sender!, false);
     }
 
     private void HandleClick(Rectangle rect, bool pressed)
     {
+
         lock (gameState)
         {
             if (RectGBMap.ContainsKey(rect))
@@ -168,5 +173,56 @@ public partial class MainWindow : Window
             }
         }
         UpdateUi();
+    }
+
+    private void LightEmChanged(object? sender, Avalonia.Interactivity.RoutedEventArgs e)
+    {
+        if(sender is CheckBox checkBox)
+        {
+            LightEm.IsChecked = false;
+            foreach (var item in RectGBMap.Keys)
+            {
+                item.Fill = inactive;
+            }
+            foreach (var item in RectCBMap.Keys)
+            {
+                item.Fill = inactive;
+            }
+
+            gameState.state.gameButton = GameButton.NONE;
+            gameState.state.cabinetLight = CabinetLight.NONE;
+
+        } else if (sender is ToggleButton button)
+        {
+            if (button.IsChecked == true)
+            {
+                foreach (var item in RectGBMap.Keys)
+                {
+                    item.Fill = active;
+                }
+                foreach (var item in RectCBMap.Keys)
+                {
+                    item.Fill = active;
+                }
+                gameState.state.gameButton = ~GameButton.NONE;
+                gameState.state.cabinetLight = ~CabinetLight.NONE;
+
+            }
+            if (button.IsChecked == false)
+            {
+                foreach (var item in RectGBMap.Keys)
+                {
+                    item.Fill = inactive;
+                }
+                foreach (var item in RectCBMap.Keys)
+                {
+                    item.Fill = inactive;
+                }
+
+                gameState.state.gameButton = GameButton.NONE;
+                gameState.state.cabinetLight = CabinetLight.NONE;
+
+            }
+        }
     }
 }
