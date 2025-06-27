@@ -46,7 +46,7 @@
 			<StackPanel Orientation="Horizontal" Spacing="20">
 					<StackPanel>
 						<TextBlock DockPanel.Dock="Top" Margin="0 5" Classes="h4">Color Setup</TextBlock>
-						<controls:GradientPicker ToolTip.Tip="Click on a handle to change color, Click and drag to reposition, Right Click handle to remove it, Click on the gradient to add a new one" DockPanel.Dock="Bottom" HorizontalAlignment="Left" Gradient="{Binding Gradient}"></controls:GradientPicker>
+						<controls:GradientPicker  DockPanel.Dock="Bottom" HorizontalAlignment="Left" Gradient="{Binding Gradient}"></controls:GradientPicker>
 					</StackPanel>
 					<StackPanel VerticalAlignment="Bottom">
 						<TextBlock DockPanel.Dock="Top" Margin="0 5" Classes="h4">Gradient Scroll Speed</TextBlock>

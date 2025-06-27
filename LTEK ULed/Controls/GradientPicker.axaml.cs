@@ -3,7 +3,9 @@ using Avalonia.Controls;
 using Avalonia.Controls.Primitives;
 using Avalonia.Markup.Xaml;
 using Avalonia.Media;
+using LTEK_ULed.Code;
 using System;
+using System.Collections.ObjectModel;
 using System.Linq;
 
 namespace LTEK_ULed.Controls;
@@ -15,11 +17,21 @@ public partial class GradientPicker : UserControl
     public GradientPicker()
     {
         InitializeComponent();
+
+        GradientPresets = new ObservableCollection<GradientPreset>(GradientPreset.GetPresets());
+
+    }
+    public static readonly StyledProperty<ObservableCollection<GradientPreset>> GradientPresetsProperty =
+        AvaloniaProperty.Register<GradientPicker, ObservableCollection<GradientPreset>>(nameof(Gradient), defaultBindingMode: Avalonia.Data.BindingMode.OneTime);
+
+    private ObservableCollection<GradientPreset> GradientPresets
+    {
+        get => GetValue(GradientPresetsProperty);
+        set => SetValue(GradientPresetsProperty, value);
     }
 
-
     public static readonly StyledProperty<LinearGradientBrush> GradientProperty =
-    AvaloniaProperty.Register<SegmentView, LinearGradientBrush>(
+    AvaloniaProperty.Register<GradientPicker, LinearGradientBrush>(
         nameof(Gradient),
         defaultValue: new LinearGradientBrush()
         {
@@ -43,6 +55,7 @@ public partial class GradientPicker : UserControl
 
 
 
+
     private void AddGradientHandle(object? sender, Avalonia.Input.PointerPressedEventArgs e)
     {
         // Only handle left button presses
@@ -53,8 +66,6 @@ public partial class GradientPicker : UserControl
             // Calculate the offset based on the width of the container
             double offset = Math.Clamp(position.X / container.Bounds.Width, 0, 1);
             // Create a new GradientStop at the clicked position
-
-
 
             var newStop = new GradientStop(Color.Parse("White"), offset);
             // Add the new stop to the gradient
@@ -189,10 +200,26 @@ public partial class GradientPicker : UserControl
             if (!moved && clicked)
             {
                 FlyoutBase.ShowAttachedFlyout(border);
-                
+
             }
             moved = false;
             clicked = false;
+        }
+    }
+
+    private void GradientPresetPressed(object? sender, Avalonia.Input.PointerPressedEventArgs e)
+    {
+
+        if (sender is Border border && border.DataContext is GradientPreset preset)
+        {
+            // Clear the current gradient stops
+            Gradient.GradientStops.Clear();
+            // Add the stops from the selected preset
+            foreach (var stop in preset.gradientBrush.GradientStops)
+            {
+                Gradient.GradientStops.Add(new GradientStop(stop.Color, stop.Offset));
+            }
+            e.Handled = true;
         }
     }
 }

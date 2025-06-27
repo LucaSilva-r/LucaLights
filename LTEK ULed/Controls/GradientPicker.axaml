@@ -3,74 +3,105 @@
              xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
              xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
              mc:Ignorable="d"
-			d:DesignWidth="700"
-			d:DesignHeight="500"
+			 d:DesignWidth="700"
+			 d:DesignHeight="500"
              x:Class="LTEK_ULed.Controls.GradientPicker"
-			 x:DataType="LinearGradientBrush"
 	 		 xmlns:local="clr-namespace:LTEK_ULed.Converters;assembly=LTEK ULed"
 			 xmlns:c="using:Avalonia.Markup.Xaml.Converters"
+	 		 xmlns:cd="using:LTEK_ULed.Code"
 			 >
-
 	<UserControl.Resources>
 		<c:ColorToBrushConverter x:Key="ColorToBrushConverter"/>
 		<local:NumberMultiplier x:Key="NumberMultiplier"/>
 	</UserControl.Resources>
 	<UserControl.Template>
 		<ControlTemplate>
-			<Border Name="GradientContainer"
-					PointerMoved="GradientHandleMoved"
-					PointerPressed="AddGradientHandle"
-					Background="{TemplateBinding Gradient}"
-					CornerRadius="10"
-					Theme="{StaticResource CardBorder}"
-					Margin="0,0,0,0"
-					Padding="0"
-					Width="200"
-					Height="30"
-					Classes="Shadow">
-				<ItemsControl ItemsSource="{Binding Gradient.GradientStops, RelativeSource={RelativeSource TemplatedParent}}">
-					<ItemsControl.ItemsPanel>
-						<ItemsPanelTemplate>
-							<Canvas></Canvas>
-						</ItemsPanelTemplate>
-					</ItemsControl.ItemsPanel>
-					<ItemsControl.ItemTemplate>
-						<DataTemplate x:DataType="GradientStop">
+			<StackPanel Orientation="Horizontal" Spacing="20">
 
 
+				<Border Name="GradientContainer"
+						PointerMoved="GradientHandleMoved"
+						PointerPressed="AddGradientHandle"
+						Background="{TemplateBinding Gradient}"
+						CornerRadius="10"
+						Theme="{StaticResource CardBorder}"
+						Margin="0,0,0,0"
+						Padding="0"
+						Width="200"
+						Height="30"
+						Classes="Shadow"
+						ToolTip.Tip="Click on a handle to change color, Click and drag to reposition, Right Click handle to remove it, Click on the gradient to add a new one">
+					<ItemsControl
+						ItemsSource="{Binding Gradient.GradientStops, RelativeSource={RelativeSource TemplatedParent}}">
+						<ItemsControl.ItemsPanel>
+							<ItemsPanelTemplate>
+								<Canvas></Canvas>
+							</ItemsPanelTemplate>
+						</ItemsControl.ItemsPanel>
+						<ItemsControl.ItemTemplate>
+							<DataTemplate x:DataType="GradientStop">
+								<Border DataContext="{Binding}"
+										PointerPressed="GradientHandlePressed"
+										PointerReleased="GradientHandleReleased"
+										CornerRadius="20"
+										Width="15" Height="26"
+										BorderThickness="1"
+										Theme="{StaticResource CardBorder}"
+										BorderBrush="Black"
+										Classes="Shadow"
+										Padding="0"
+										Margin="0"
+										Background="{Binding Color, Converter={StaticResource ColorToBrushConverter}}">
+									<FlyoutBase.AttachedFlyout>
+										<Flyout>
+											<ColorView Color="{Binding Color}"></ColorView>
+										</Flyout>
+									</FlyoutBase.AttachedFlyout>
+								</Border>
 
-							<Border DataContext="{Binding}"
-									PointerPressed="GradientHandlePressed"
-									PointerReleased="GradientHandleReleased"
-									CornerRadius="20"
-									Width="15" Height="26"
-									BorderThickness="1"
-									Theme="{StaticResource CardBorder}"
-									BorderBrush="Black"
-									Classes="Shadow"
-									Padding="0"
-									Margin="0"
-									Background="{Binding Color, Converter={StaticResource ColorToBrushConverter}}">
-								<FlyoutBase.AttachedFlyout>
-									<Flyout>
-										<ColorView Color="{Binding Color}"></ColorView>
-									</Flyout>
-								</FlyoutBase.AttachedFlyout>
-							</Border>
+							</DataTemplate>
+						</ItemsControl.ItemTemplate>
+						<ItemsControl.Styles>
+							<Style Selector="ContentPresenter" x:DataType="GradientStop">
+								<Setter Property="Canvas.Left" Value="{Binding Offset, Mode=OneWay, Converter={StaticResource NumberMultiplier}, ConverterParameter=184}"/>
+								<Setter Property="Canvas.Top" Value="1"/>
+							</Style>
+						</ItemsControl.Styles>
+					</ItemsControl>
+				</Border>
+				<Button>
+					<PathIcon ToolTip.Tip="Search Preset" Data="{StaticResource SemiIconSearch}" Width="16">
+					</PathIcon>
+					<Button.Flyout>
+						<Flyout>
+							<ItemsControl ItemsSource="{Binding GradientPresets, RelativeSource={RelativeSource TemplatedParent}}">
+								<ItemsControl.ItemTemplate>
+									<DataTemplate x:DataType="cd:GradientPreset">
+										<StackPanel Spacing="5">
+											<TextBlock Text="{Binding name}"></TextBlock>
+											<Border Background="{Binding gradientBrush}" 		
+													CornerRadius="10"
+													Theme="{StaticResource CardBorder}"
+													Margin="0,0,0,0"
+													Padding="0"
+													Width="200"
+													Height="30"
+													Classes="Hover"
+													PointerPressed="GradientPresetPressed"/>
 
-						</DataTemplate>
-					</ItemsControl.ItemTemplate>
-					<ItemsControl.Styles>
-						<Style Selector="ContentPresenter" x:DataType="GradientStop">
-							<Setter Property="Canvas.Left" Value="{Binding Offset, Mode=OneWay, Converter={StaticResource NumberMultiplier}, ConverterParameter=184}"/>
-							<Setter Property="Canvas.Top" Value="1"/>
-						</Style>
-					</ItemsControl.Styles>
-				</ItemsControl>
-			</Border>
-
+										</StackPanel>
+									</DataTemplate>
+								</ItemsControl.ItemTemplate>
+								<ItemsControl.ItemsPanel>
+									<ItemsPanelTemplate>
+										<StackPanel Spacing="10"></StackPanel>
+									</ItemsPanelTemplate>
+								</ItemsControl.ItemsPanel>
+							</ItemsControl>
+						</Flyout>
+					</Button.Flyout>
+				</Button>
+			</StackPanel>
 		</ControlTemplate>
 	</UserControl.Template>
-
-
 </UserControl>
