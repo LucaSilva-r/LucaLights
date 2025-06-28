@@ -22,7 +22,7 @@
  						Value="{Binding Progress, RelativeSource={RelativeSource TemplatedParent}}"/>
 					
 					<StackPanel Margin="0,40,0,0" DockPanel.Dock="Bottom" Orientation="Horizontal" HorizontalAlignment="Right">
-						<Button Click="Cancel" Classes="Secondary" Content="Cancel" Margin="5" Width="75" />
+						<Button IsEnabled="{Binding !Updating, RelativeSource={RelativeSource TemplatedParent}}" Click="Cancel" Classes="Secondary" Content="Cancel" Margin="5" Width="75" />
 						<Button Click="Confirm" Classes="Update" Name="btnYes" Content="Yes" Width="75" />
 					</StackPanel>
 				</DockPanel>

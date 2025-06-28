@@ -1,4 +1,5 @@
-﻿using CommunityToolkit.Mvvm.Input;
+﻿using Avalonia.Threading;
+using CommunityToolkit.Mvvm.Input;
 using DialogHostAvalonia;
 using LTEK_ULed.Code;
 using LTEK_ULed.Controls;
@@ -32,12 +33,19 @@ public partial class MainViewModel : ViewModelBase
         PipeManager.Start();
         LightingManager.Start();
 
-
-        CheckUpdate();
+        Task.Delay(3000).ContinueWith((t) =>
+        {
+            Dispatcher.UIThread.Post(() =>
+            {
+                CheckUpdate();
+            });
+        });
     }
+
     private async void CheckUpdate()
     {
         var mgr = new UpdateManager(new GithubSource("https://github.com/LucaSilva-r/LucaLights", null, false, null));
+
         if (!mgr.IsInstalled)
         {
             return;
@@ -45,12 +53,22 @@ public partial class MainViewModel : ViewModelBase
         // check for new version
         var newVersion = await mgr.CheckForUpdatesAsync();
         if (newVersion == null)
+        {
             return; // no update available
+        }
 
-        await DialogHost.Show(new UpdateDialog(mgr, newVersion), "Dialog");
-        
+        UpdateDialog updateDialog = new UpdateDialog() { Update = newVersion };
+        DialogClosingEventHandler handler = (s, e) =>
+        {
+            if (updateDialog.Updating)
+            {
+                e.Cancel(); // prevent dialog from closing while updating
+            }
+        };
+
+        await DialogHost.Show(updateDialog, handler);
+
     }
-
     [RelayCommand]
     public async Task AddDevice()
     {

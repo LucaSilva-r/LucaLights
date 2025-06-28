@@ -3,13 +3,18 @@ using Avalonia.Controls;
 using Avalonia.Controls.Primitives;
 using Avalonia.Controls.Shapes;
 using Avalonia.Media;
+using Avalonia.Threading;
 using Avalonia.VisualTree;
+using DialogHostAvalonia;
 using LTEK_ULed.Code;
 using LTEK_ULed.Controls;
 using System;
 using System.Collections.Generic;
 using System.Diagnostics;
 using System.Linq;
+using System.Threading.Tasks;
+using Velopack;
+using Velopack.Sources;
 using LightEffect = LTEK_ULed.Code.LightEffect;
 
 namespace LTEK_ULed.Views;
@@ -62,7 +67,11 @@ public partial class MainWindow : Window
         }
 
         this.GetVisualDescendants().OfType<SegmentView>().ToList();
+
+
     }
+
+
 
     public void UpdateUi()
     {
