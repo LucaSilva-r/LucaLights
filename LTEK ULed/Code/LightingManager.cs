@@ -62,6 +62,7 @@ namespace LTEK_ULed.Code
                 }
             }
 
+            bool cleared = true;
 
             private void Setup()
             {
@@ -74,7 +75,6 @@ namespace LTEK_ULed.Code
 
             }
 
-            bool cleared = false;
             public void Run()
             {
                 const int targetFrameTimeMs = 1000 / targetFps; // 16 ms per frame approx

@@ -51,7 +51,7 @@ public partial class SegmentView : UserControl
             int difference = length - ledRects.Count;
             for (int i = 0; i < difference; i++)
             {
-                Rectangle temp = new Rectangle() { Name = i.ToString(), Margin = new Thickness(5, 5, 5, 5), Fill = new SolidColorBrush(Color.Parse("Red")), Height = 15, Width = 15 };
+                Rectangle temp = new Rectangle() { Name = i.ToString(), Margin = new Thickness(5, 5, 5, 5), Fill = new SolidColorBrush(Color.Parse("Black")), Height = 15, Width = 15 };
 
                 Border border = new Border() { BorderThickness = new Thickness(1), };
                 border.Bind(BorderBrushProperty, new DynamicResourceExtension("BorderCardBorderBrush"));
