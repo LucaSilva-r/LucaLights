@@ -8,6 +8,7 @@
     <BuiltInComInteropSupport>false</BuiltInComInteropSupport>
     <ApplicationManifest>app.manifest</ApplicationManifest>
     <ApplicationIcon>logo.ico</ApplicationIcon>
+    <AssemblyName>LucaLights</AssemblyName>
 
   </PropertyGroup>
   <ItemGroup>

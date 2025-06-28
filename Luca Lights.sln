@@ -5,7 +5,7 @@ VisualStudioVersion = 17.11.35208.52
 MinimumVisualStudioVersion = 10.0.40219.1
 Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "LTEK ULed", "LTEK ULed\LTEK ULed.csproj", "{1D1BA022-7CA6-47A8-9B53-024E8E7660E5}"
 EndProject
-Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "LTEK ULed.Desktop", "LTEK ULed.Desktop\LTEK ULed.Desktop.csproj", "{70B961E6-F61C-4913-8C42-827EE1A71912}"
+Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "LucaLights", "LTEK ULed.Desktop\LucaLights.csproj", "{70B961E6-F61C-4913-8C42-827EE1A71912}"
 EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
