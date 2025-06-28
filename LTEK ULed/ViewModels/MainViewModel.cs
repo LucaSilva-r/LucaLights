@@ -1,13 +1,18 @@
-﻿using Avalonia.Threading;
+﻿using Avalonia.Controls;
+using Avalonia.Threading;
+using CommunityToolkit.Mvvm.ComponentModel;
 using CommunityToolkit.Mvvm.Input;
 using DialogHostAvalonia;
 using LTEK_ULed.Code;
 using LTEK_ULed.Controls;
 using Microsoft.VisualBasic;
+using NuGet.Versioning;
+using Splat;
 using System.Collections.ObjectModel;
 using System.Runtime.CompilerServices;
 using System.Threading.Tasks;
 using Velopack;
+using Velopack.Locators;
 using Velopack.Sources;
 
 namespace LTEK_ULed.ViewModels;
@@ -25,9 +30,22 @@ public partial class MainViewModel : ViewModelBase
 
     public Settings settings => Settings.Instance!;
 
+    [ObservableProperty]
+    private string _currentVersion = "";
+
+    private IVelopackLocator? Locator { get; }
     public MainViewModel()
     {
+        Locator = VelopackLocator.Current;
 
+        if (Locator != null)
+        {
+            CurrentVersion = Locator.CurrentlyInstalledVersion?.ToString() != null ? "v" + Locator.CurrentlyInstalledVersion?.ToString() : "App is not installed";
+        }
+        else
+        {
+            CurrentVersion = "App is not installed";
+        }
         Instance = this;
         Settings.Load();
         PipeManager.Start();

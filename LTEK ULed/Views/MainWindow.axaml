@@ -415,16 +415,16 @@
 					</DockPanel>
 				</Border>
 
-
-
 			</Grid>
 		</Border>
-		<dialogHost:DialogHost  Background="Transparent" Identifier="Dialog" Grid.ColumnSpan="2" Grid.RowSpan="2" CloseOnClickAway="True">
+		<dialogHost:DialogHost  Background="Transparent" Identifier="Dialog" CloseOnClickAway="True">
 			<dialogHost:DialogHost.DialogContent>
 			</dialogHost:DialogHost.DialogContent>
 		</dialogHost:DialogHost>
+		<Canvas>
+			<TextBlock FontSize="10" Canvas.Left="15" Canvas.Bottom="0" Classes="Quaternary" Text="{Binding CurrentVersion}"></TextBlock>
+		</Canvas>
 	</Panel>
-
 	<Window.Styles>
 		<Style Selector="dialogHost|DialogHost">
 			<Setter Property="PopupTemplate">
@@ -436,7 +436,6 @@
 										  ContentTemplate="{TemplateBinding ContentTemplate}"
 										  Content="{TemplateBinding Content}"
 										  Padding="{TemplateBinding Padding}" />
-
 					</VisualLayerManager>
 				</ControlTemplate>
 			</Setter>
