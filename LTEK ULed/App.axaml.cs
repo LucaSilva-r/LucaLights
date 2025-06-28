@@ -8,11 +8,15 @@ using LTEK_ULed.Views;
 using System;
 using System.Linq;
 using System.Runtime;
+using System.Threading.Tasks;
 
 namespace LTEK_ULed;
 
 public partial class App : Application
 {
+    public delegate Task CheckUpdates();
+    public static CheckUpdates? checkUpdates;
+
     public override void Initialize()
     {
         AvaloniaXamlLoader.Load(this);

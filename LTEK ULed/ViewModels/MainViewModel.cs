@@ -2,8 +2,12 @@
 using DialogHostAvalonia;
 using LTEK_ULed.Code;
 using LTEK_ULed.Controls;
+using Microsoft.VisualBasic;
 using System.Collections.ObjectModel;
+using System.Runtime.CompilerServices;
 using System.Threading.Tasks;
+using Velopack;
+using Velopack.Sources;
 
 namespace LTEK_ULed.ViewModels;
 
@@ -28,6 +32,23 @@ public partial class MainViewModel : ViewModelBase
         PipeManager.Start();
         LightingManager.Start();
 
+
+        CheckUpdate();
+    }
+    private async void CheckUpdate()
+    {
+        var mgr = new UpdateManager(new GithubSource("https://github.com/LucaSilva-r/LucaLights", null, false, null));
+        if (!mgr.IsInstalled)
+        {
+            return;
+        }
+        // check for new version
+        var newVersion = await mgr.CheckForUpdatesAsync();
+        if (newVersion == null)
+            return; // no update available
+
+        await DialogHost.Show(new UpdateDialog(mgr, newVersion), "Dialog");
+        
     }
 
     [RelayCommand]

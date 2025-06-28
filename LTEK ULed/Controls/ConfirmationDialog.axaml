@@ -4,7 +4,7 @@
              xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
              x:Class="LTEK_ULed.Controls.ConfirmationDialog"
 	         xmlns:controls="clr-namespace:LTEK_ULed.Controls"
-			 MinWidth="300" >
+			 MinWidth="400" >
 
 	<UserControl.Template>
 		<ControlTemplate>

@@ -1,0 +1,34 @@
+<UserControl xmlns="https://github.com/avaloniaui"
+             xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+             xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
+             xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
+             x:Class="LTEK_ULed.Controls.UpdateDialog"
+	         xmlns:controls="clr-namespace:LTEK_ULed.Controls"
+			 MinWidth="400" >
+
+	<UserControl.Template>
+		<ControlTemplate>
+			<Border Theme="{StaticResource CardBorder}" Classes="Shadow" Padding="10">
+				<DockPanel>
+					<TextBlock TextAlignment="Center" Classes="Title" DockPanel.Dock="Top" FontSize="18" Margin="40,40,40,0" Text="{TemplateBinding Description}"/>
+					<ProgressBar
+						DockPanel.Dock="Top"
+						Width="200"
+						Margin="0,20,0,0"
+						Maximum="100"
+						Minimum="0"
+						ShowProgressText="True"
+						IsVisible="{Binding Updating, RelativeSource={RelativeSource TemplatedParent}}"
+ 						Value="{Binding Progress, RelativeSource={RelativeSource TemplatedParent}}"/>
+					
+					<StackPanel Margin="0,40,0,0" DockPanel.Dock="Bottom" Orientation="Horizontal" HorizontalAlignment="Right">
+						<Button Click="Cancel" Classes="Secondary" Content="Cancel" Margin="5" Width="75" />
+						<Button Click="Confirm" Classes="Update" Name="btnYes" Content="Yes" Width="75" />
+					</StackPanel>
+				</DockPanel>
+			</Border>
+		</ControlTemplate>
+
+	</UserControl.Template>
+
+</UserControl>
