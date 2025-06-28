@@ -124,6 +124,8 @@ namespace LTEK_ULed.Code
             lock (Lock)
             {
                 Dirty = true;
+                effect.RecalculateGradientStops();
+                effect.Recalculate();
                 Effects.Add(effect);
                 Save();
             }

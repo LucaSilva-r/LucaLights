@@ -107,7 +107,7 @@ public partial class MainWindow : Window
             segmentViewsDict = new SegmentView[Settings.Instance!.Effects.Count][];
             List<SegmentView> segmentViews = this.GetVisualDescendants().OfType<SegmentView>().ToList();
 
-            if (segmentViews[0].Tag != null)
+            if (segmentViews.Count > 0 && segmentViews[0].Tag != null)
             {
                 for (int i = 0; i < Settings.Instance!.Effects.Count; i++)
                 {
@@ -186,7 +186,7 @@ public partial class MainWindow : Window
 
     private void LightEmChanged(object? sender, Avalonia.Interactivity.RoutedEventArgs e)
     {
-        if(sender is CheckBox checkBox)
+        if (sender is CheckBox checkBox)
         {
             LightEm.IsChecked = false;
             foreach (var item in RectGBMap.Keys)
@@ -201,7 +201,8 @@ public partial class MainWindow : Window
             gameState.state.gameButton = GameButton.NONE;
             gameState.state.cabinetLight = CabinetLight.NONE;
 
-        } else if (sender is ToggleButton button)
+        }
+        else if (sender is ToggleButton button)
         {
             if (button.IsChecked == true)
             {

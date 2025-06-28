@@ -120,16 +120,8 @@ namespace LTEK_ULed.Code
                     GradientScrollSpeed = effect.GradientScrollSpeed;
                     RestartGradientOnClick = effect.RestartGradientOnClick;
                     GradientScale = effect.GradientScale;
-                    List<Stop> stops = new();
-                    foreach (var stop in effect.Gradient.GradientStops)
-                    {
-                        stops.Add(new Stop()
-                        {
-                            Color = stop.Color,
-                            Offset = (float)stop.Offset
-                        });
-                    }
-                    _gradientStops = stops.ToArray();
+                    RecalculateGradientStops();
+                    Recalculate();
                     Settings.Save();
 
                 }
@@ -170,10 +162,26 @@ namespace LTEK_ULed.Code
             Gradient = gradient;
             GradientScale = gradientScale;
             GradientScrollSpeed = gradientScrollSpeed;
+            RecalculateGradientStops();
+            Recalculate();
+        }
 
+        public void Clear()
+        {
+            lock (Settings.Lock)
+            {
+                for (int i = 0; i < leds.Length; i++)
+                {
+                    Array.Fill(leds[i], Color.FromRgb(0, 0, 0));
+                }
+            }
+        }
+
+        public void RecalculateGradientStops()
+        {
             List<Stop> stops = new();
 
-            foreach (var stop in gradient.GradientStops)
+            foreach (var stop in Gradient.GradientStops)
             {
                 stops.Add(new Stop()
                 {
@@ -182,25 +190,14 @@ namespace LTEK_ULed.Code
                 });
             }
             _gradientStops = stops.ToArray();
-
-            Recalculate();
-        }
-
-        public void Clear()
-        {
-            lock (Settings.Lock)
-            {
-                for(int i = 0; i < leds.Length; i++)
-                {
-                    Array.Fill(leds[i], Color.FromRgb(0,0,0));
-                }
-            }
         }
 
         public void Recalculate()
         {
             lock (Settings.Lock)
             {
+
+
                 if (Segments != null)
                 {
                     leds = new Color[Segments.Count][];

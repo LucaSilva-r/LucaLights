@@ -171,7 +171,18 @@ namespace LTEK_ULed.Code
         {
             Settings.Instance!.MarkDirty();
 
+            foreach (int groupId in segment.GroupIds)
+            {
+                LightEffect? effect = Settings.Instance.Effects.FirstOrDefault(e => e.GroupId == groupId, null);
+                if (effect != null)
+                {
+                    effect.Segments.Remove(segment);
+                    effect.Recalculate();
+                }
+            }
             Segments.Remove(segment);
+
+
             Recalculate();
         }
 
