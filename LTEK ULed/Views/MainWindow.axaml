@@ -10,7 +10,7 @@
 		xmlns:views="clr-namespace:LTEK_ULed.Views"
 		xmlns:controls="clr-namespace:LTEK_ULed.Controls"
 		x:Name="Window"
-		Title="Status"
+		Title="LucaLights"
 		MinHeight="540"
 		MinWidth="960"
 		x:DataType="vm:MainViewModel"
