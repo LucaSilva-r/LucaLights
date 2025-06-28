@@ -1,30 +1,52 @@
 <h1 align="center">
-  <img src="./Assets/logo.png" width=50/ align="center">
+  <img src="./Assets/logo.png" width="50" align="center">
+  <br/>
   LucaLights
 </h1>
-<h3 align="center">
 
-Bring some color to your DDR sessions!
+<h3 align="center">Bring some color to your DDR sessions!</h3>
 
-## What is this project?
+---
 
-**LucaLights** tries to lower the cost and complexity of lighting setups in StepMania and it's forks (Like ITGMania). **How?** by using **WLED** of course! By using wled (through the DDP protocol) you can use whatever LED Bulb and Light Strip you already have and adding more is as easy as buying one of the many controllers already available.
+## 🌈 What is this project?
 
-## Basic Setup Demo
+**LucaLights** aims to reduce the cost and complexity of lighting setups for **StepMania** and its forks (like **ITGMania**).
+**How?** By using [**WLED**](https://kno.wled.ge/) and the **DDP protocol**, you can repurpose existing LED bulbs and light strips—no expensive proprietary gear required. Adding more lights is as easy as plugging in one of the many affordable controllers supported by WLED.
 
-https://github.com/user-attachments/assets/bb3a2267-fd53-443d-bfa0-c9bf74e6e06f
+---
 
-You just need the ip address of your WLED light and you are ready to go. Be careful when setting up your leds, as of now the UDP port must be 21234 and even though they shouldn't affect it, make sure these settings are setup like this in your sync interfaces. In my case changing dmx universe/start address messed with DDP and the light would not respond anymore
-![image](https://github.com/user-attachments/assets/74615a0b-a21b-4938-a5e4-9d74cbd9f0e8)
+## ⚙️ Basic Setup Demo
 
+> All you need is the IP address of your WLED device—LucaLights handles the rest.
 
-## Supported Platforms
+[https://github.com/user-attachments/assets/bb3a2267-fd53-443d-bfa0-c9bf74e6e06f](https://github.com/user-attachments/assets/bb3a2267-fd53-443d-bfa0-c9bf74e6e06f)
 
-The project is in theory capable of running on Windows, Linux and Macos. (it does work) But i haven't quite figured out the correct way to setup a sensible build system for them.
-For now Windows will be the main supported platform.
-
-## Updating
-
-The app automatically finds updates, in a later revision I'll add the option to ignore new updates.
+Make sure your UDP port is set to **21234**. Some settings (like DMX universe/start address) can interfere with DDP—set those carefully if you're tweaking sync interfaces.
+Here’s what your sync settings should roughly look like:
 
 
+<p align="center">
+  <img src="https://github.com/user-attachments/assets/74615a0b-a21b-4938-a5e4-9d74cbd9f0e8"/>
+</p>
+
+---
+
+## What your setup could look like (Maybe with a better color scheme)
+https://github.com/user-attachments/assets/07af3149-8fe5-49e5-be16-c91e460b07d0
+
+
+## 💻 Supported Platforms
+
+LucaLights *theoretically* runs on **Windows**, **Linux**, and **macOS** — and it does work on all three!
+That said, Windows is currently the primary supported platform, as a cross-platform build system is still in progress.
+
+---
+
+## 🔄 Updating
+
+LucaLights includes an **automatic update checker**.
+Future versions will let you **opt out of updates** if you prefer to stick with a specific release.
+
+---
+
+Let me know if you'd like to add installation instructions, build instructions, or badges (like version, license, etc.) for more polish.
