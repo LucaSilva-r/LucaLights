@@ -18,8 +18,13 @@ LucaLights will let you map **any lighting event** sent out by ITGMania like Cab
 
 You can create and customise the effects that will be sent out.
 
-## What your setup could look like (Maybe with a better color scheme)
+## 🌈 What your setup could look like (Maybe with a better color scheme)
 https://github.com/user-attachments/assets/07af3149-8fe5-49e5-be16-c91e460b07d0
+
+Example with a map in autoplay (Pad not shown as autoplay does not generate Player input events)
+
+https://github.com/user-attachments/assets/871173e1-03d2-40d8-a855-149df1d1059f
+
 
 ---
 
