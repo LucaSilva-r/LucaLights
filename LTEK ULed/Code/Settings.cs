@@ -144,9 +144,9 @@ namespace LTEK_ULed.Code
             lock (Lock)
             {
                 bool loaded = false;
-                var file = new FileInfo(Environment.GetFolderPath(Environment.SpecialFolder.ApplicationData) + "/LtekULED/settings.json");
-                Debug.WriteLine(Environment.GetFolderPath(Environment.SpecialFolder.ApplicationData) + "/LtekULED/settings.json");
-                if (File.Exists(Environment.GetFolderPath(Environment.SpecialFolder.ApplicationData) + "/LtekULED/settings.json"))
+                var file = new FileInfo(Environment.GetFolderPath(Environment.SpecialFolder.ApplicationData) + "/LucaLights/settings.json");
+                Debug.WriteLine(Environment.GetFolderPath(Environment.SpecialFolder.ApplicationData) + "/LucaLights/settings.json");
+                if (File.Exists(Environment.GetFolderPath(Environment.SpecialFolder.ApplicationData) + "/LucaLights/settings.json"))
                 {
                     try
                     {
@@ -206,7 +206,7 @@ namespace LTEK_ULed.Code
         {
             lock (Lock)
             {
-                string directory = Environment.GetFolderPath(Environment.SpecialFolder.ApplicationData) + "/LtekULED";
+                string directory = Environment.GetFolderPath(Environment.SpecialFolder.ApplicationData) + "/LucaLights";
                 string file = directory +"/settings.json";
                 if(Directory.Exists(directory) == false)
                 {
