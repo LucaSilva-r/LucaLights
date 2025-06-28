@@ -105,6 +105,7 @@ public partial class UpdateDialog : UserControl
         }
 
         Updating = true;
+        Description = "Downloading updates...";
 
         var mgr = new UpdateManager(new GithubSource("https://github.com/LucaSilva-r/LucaLights", null, false, null));
 
