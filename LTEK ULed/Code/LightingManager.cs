@@ -116,7 +116,10 @@ namespace LTEK_ULed.Code
                                     item.Clear();
                                 }
 
-                                Dispatcher.UIThread.Post(() => MainWindow.Instance!.UpdateLeds());
+                                if (MainWindow.Instance!.isWindowFocused)
+                                {
+                                    Dispatcher.UIThread.Post(() => MainWindow.Instance!.UpdateLeds());
+                                }
 
                                 cleared = true;
                             }

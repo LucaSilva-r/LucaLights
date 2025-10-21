@@ -31,7 +31,7 @@ public partial class MainWindow : Window
     BidirectionalDictionary<Rectangle, GameButton> RectGBMap = new();
     BidirectionalDictionary<Rectangle, CabinetLight> RectCBMap = new();
 
-    private bool isWindowFocused = true; // Track focus state
+    public bool isWindowFocused = true; // Track focus state
 
     public MainWindow()
     {
