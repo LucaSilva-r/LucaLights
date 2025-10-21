@@ -1,0 +1,44 @@
+name: Create Release
+
+on:
+  workflow_dispatch:
+    inputs:
+      version:
+        description: 'Version number (e.g., 1.0.0)'
+        required: true
+        type: string
+
+permissions:
+  contents: write
+
+jobs:
+  release:
+    runs-on: windows-latest
+    
+    steps:
+      - name: Checkout Repository
+        uses: actions/checkout@v4
+      
+      - name: Setup .NET
+        uses: actions/setup-dotnet@v4
+        with:
+          dotnet-version: 9.0.x
+      
+      - name: Install Velopack
+        run: dotnet tool install -g vpk
+      
+      - name: Restore Dependencies
+        run: dotnet restore
+      
+      - name: Publish Application
+        run: dotnet publish ".\LTEK ULed.Desktop\LucaLights.csproj" -c Release -o publish -r win-x64 --self-contained true /p:Version=${{ github.event.inputs.version }}
+      
+      - name: Download Previous Release
+        run: vpk download github --repoUrl https://github.com/${{ github.repository }}
+        continue-on-error: true
+      
+      - name: Create Velopack Release
+        run: vpk pack -u LucaLights -v ${{ github.event.inputs.version }} -p publish -e LTEK_ULed.exe -i ".\LTEK ULed\LTEK ULed.Desktop\logo.ico"
+      
+      - name: Create GitHub Release
+        run: vpk upload github --repoUrl https://github.com/${{ github.repository }} --tag v${{ github.event.inputs.version }} --releaseName "LucaLights v${{ github.event.inputs.version }}" --token ${{ secrets.GITHUB_TOKEN }}
