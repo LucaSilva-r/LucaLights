@@ -31,7 +31,7 @@ jobs:
         run: dotnet restore
       
       - name: Publish Application
-        run: dotnet publish "\LTEK ULed.Desktop\LucaLights.csproj" -c Release -o publish -r win-x64 --self-contained true /p:Version=${{ github.event.inputs.version }}
+        run: dotnet publish ".\LTEK ULed.Desktop\LucaLights.csproj" -c Release -o publish -r win-x64 --self-contained true /p:Version=${{ github.event.inputs.version }}
       
       - name: Download Previous Release
         run: vpk download github --repoUrl https://github.com/${{ github.repository }}
