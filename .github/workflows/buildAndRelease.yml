@@ -38,7 +38,7 @@ jobs:
         continue-on-error: true
       
       - name: Create Velopack Release
-        run: vpk pack -u LucaLights -v ${{ github.event.inputs.version }} -p publish -e LTEK_ULed.exe -i LTEK_ULed/Assets/icon.ico
+        run: vpk pack -u LucaLights -v ${{ github.event.inputs.version }} -p publish -e LTEK_ULed.exe -i ".\LTEK ULed\LTEK ULed.Desktop\logo.ico"
       
       - name: Create GitHub Release
         run: vpk upload github --repoUrl https://github.com/${{ github.repository }} --tag v${{ github.event.inputs.version }} --releaseName "LucaLights v${{ github.event.inputs.version }}" --token ${{ secrets.GITHUB_TOKEN }}
