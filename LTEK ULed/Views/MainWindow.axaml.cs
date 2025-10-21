@@ -30,11 +30,16 @@ public partial class MainWindow : Window
 
     BidirectionalDictionary<Rectangle, GameButton> RectGBMap = new();
     BidirectionalDictionary<Rectangle, CabinetLight> RectCBMap = new();
+
+    private bool isWindowFocused = true; // Track focus state
+
     public MainWindow()
     {
         InitializeComponent();
         Instance = this;
 
+        this.Activated += MainWindow_Activated;
+        this.Deactivated += MainWindow_Deactivated;
 
         RectCBMap.Add(mDownLeft, CabinetLight.LIGHT_MARQUEE_LR_LEFT);
         RectCBMap.Add(mUpLeft, CabinetLight.LIGHT_MARQUEE_UP_LEFT);
@@ -75,6 +80,8 @@ public partial class MainWindow : Window
 
     public void UpdateUi()
     {
+        if(!isWindowFocused)
+            return;
 
         GameButton gameButton;
         CabinetLight cabinetLight;
@@ -101,6 +108,9 @@ public partial class MainWindow : Window
     //THIS IS FUCKED but works :)
     public void UpdateLeds(bool reset = false)
     {
+        if (!isWindowFocused)
+            return;
+
         if (segmentViewsDict.Length == 0 || reset)
         {
             Array.Clear(segmentViewsDict);
@@ -145,6 +155,17 @@ public partial class MainWindow : Window
                 segmentViewsDict[i][j].UpdateLeds(Settings.Instance!.Effects[i].leds[j]);
             }
         }
+    }
+
+
+    private void MainWindow_Activated(object? sender, EventArgs e)
+    {
+        isWindowFocused = true;
+    }
+
+    private void MainWindow_Deactivated(object? sender, EventArgs e)
+    {
+        isWindowFocused = false;
     }
 
 
