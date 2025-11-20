@@ -20,6 +20,12 @@ using System.Threading.Tasks;
 
 namespace LTEK_ULed.Code
 {
+    public enum WledProtocol
+    {
+        DDP,
+        UdpRealtime
+    }
+
     [Serializable]
     public partial class Device : ObservableObject, IDisposable
     {
@@ -30,6 +36,10 @@ namespace LTEK_ULed.Code
         [ObservableProperty]
         [property: JsonPropertyName("ip"), IpAddressValidation]
         private string _ip = "192.168.1.1";
+
+        [ObservableProperty]
+        [property: JsonPropertyName("protocol")]
+        private WledProtocol _protocol = WledProtocol.DDP;  // Default to DDP for backward compatibility with existing devices
 
 
         [ObservableProperty]
@@ -46,15 +56,17 @@ namespace LTEK_ULed.Code
 
         private Color[] data = new Color[0];
 
-        DDPSend? dDPsend;
+        DDPSend? ddpSend;
+        UdpRealtimeSend? udpRealtimeSend;
         private bool _disposed = false; // To detect redundant calls
 
-        public Device(string name, string ip, ObservableCollection<Segment> segments)
+        public Device(string name, string ip, ObservableCollection<Segment> segments, WledProtocol protocol = WledProtocol.UdpRealtime)
         {
             this.Name = name;
 
             this.Ip = ip;
             this.Segments = segments;
+            this.Protocol = protocol;
 
             Recalculate();
 
@@ -76,8 +88,21 @@ namespace LTEK_ULed.Code
                 Nleds = counter;
                 Nsegments = Segments.Count;
 
-                dDPsend?.Dispose();
-                dDPsend = new DDPSend(this.Ip, data.Length);
+                // Dispose old senders
+                ddpSend?.Dispose();
+                udpRealtimeSend?.Dispose();
+                ddpSend = null;
+                udpRealtimeSend = null;
+
+                // Create appropriate sender based on protocol
+                if (Protocol == WledProtocol.DDP)
+                {
+                    ddpSend = new DDPSend(this.Ip, data.Length);
+                }
+                else // WledProtocol.UdpRealtime
+                {
+                    udpRealtimeSend = new UdpRealtimeSend(this.Ip, data.Length);
+                }
             }
 
         }
@@ -93,7 +118,9 @@ namespace LTEK_ULed.Code
                 counter += segment.leds.Length;
             }
 
-            dDPsend?.send(data);
+            // Send using the appropriate protocol
+            ddpSend?.send(data);
+            udpRealtimeSend?.send(data);
 
         }
 
@@ -141,6 +168,7 @@ namespace LTEK_ULed.Code
 
                     Name = dev!.Name;
                     Ip = dev!.Ip;
+                    Protocol = dev!.Protocol;
                     Segments.Clear();
 
                     foreach (Segment segment in dev.Segments)
@@ -211,7 +239,8 @@ namespace LTEK_ULed.Code
             if (disposing)
             {
                 // Dispose managed state (managed objects).
-                dDPsend?.Dispose();
+                ddpSend?.Dispose();
+                udpRealtimeSend?.Dispose();
             }
 
             // Free unmanaged resources (unmanaged objects) and override a finalizer below.

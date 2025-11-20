@@ -3,6 +3,7 @@ using Avalonia.LogicalTree;
 using DialogHostAvalonia;
 using LTEK_ULed.Code;
 using LTEK_ULed.Code.Utils;
+using System;
 using System.Collections.ObjectModel;
 
 namespace LTEK_ULed.Controls;
@@ -20,12 +21,19 @@ public partial class DeviceSetup : UserControl
         }
         DataContext = new Device(deviceName, "192.168.1.1", new ObservableCollection<Segment>());
         InitializeComponent();
+        SetupProtocolComboBox();
     }
 
     public DeviceSetup(Device device)
     {
         DataContext = device;
         InitializeComponent();
+        SetupProtocolComboBox();
+    }
+
+    private void SetupProtocolComboBox()
+    {
+        ProtocolComboBox.ItemsSource = Enum.GetValues(typeof(WledProtocol));
     }
 
     private void TextBox_TextChanged(object? sender, Avalonia.Controls.TextChangedEventArgs e)

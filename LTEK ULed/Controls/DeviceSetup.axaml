@@ -35,6 +35,16 @@
 					Watermark="IP Address"
 					Text="{Binding Ip}"/>
 			</StackPanel>
+			<StackPanel Spacing="5">
+				<Label>
+					Protocol
+				</Label>
+				<ComboBox
+					x:Name="ProtocolComboBox"
+					HorizontalAlignment="Left"
+					Width="200"
+					SelectedItem="{Binding Protocol}"/>
+			</StackPanel>
 
 			<DockPanel LastChildFill="False">
 				<TextBlock DockPanel.Dock="Left" Margin="0 5" Classes="h4">Segment setup</TextBlock>
