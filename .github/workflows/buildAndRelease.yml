@@ -12,33 +12,101 @@ permissions:
   contents: write
 
 jobs:
-  release:
+  build-windows:
     runs-on: windows-latest
-    
+
     steps:
       - name: Checkout Repository
         uses: actions/checkout@v4
-      
+
       - name: Setup .NET
         uses: actions/setup-dotnet@v4
         with:
-          dotnet-version: 9.0.x
-      
+          dotnet-version: 10.0.x
+
       - name: Install Velopack
         run: dotnet tool install -g vpk
-      
+
       - name: Restore Dependencies
         run: dotnet restore
-      
+
       - name: Publish Application
         run: dotnet publish ".\LTEK ULed.Desktop\LucaLights.csproj" -c Release -o publish -r win-x64 --self-contained true /p:Version=${{ github.event.inputs.version }}
-      
+
       - name: Download Previous Release
         run: vpk download github --repoUrl https://github.com/${{ github.repository }}
         continue-on-error: true
-      
+
       - name: Create Velopack Release
         run: vpk pack -u LucaLights -v ${{ github.event.inputs.version }} -p publish -e LucaLights.exe -i ".\LTEK ULed.Desktop\installer-icon.ico"
-      
-      - name: Create GitHub Release
+
+      - name: Upload Windows Artifacts
+        uses: actions/upload-artifact@v4
+        with:
+          name: windows-release
+          path: Releases/
+
+  build-linux:
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout Repository
+        uses: actions/checkout@v4
+
+      - name: Setup .NET
+        uses: actions/setup-dotnet@v4
+        with:
+          dotnet-version: 10.0.x
+
+      - name: Install Velopack
+        run: dotnet tool install -g vpk
+
+      - name: Restore Dependencies
+        run: dotnet restore
+
+      - name: Publish Application
+        run: dotnet publish "./LTEK ULed.Desktop/LucaLights.csproj" -c Release -o publish -r linux-x64 --self-contained true /p:Version=${{ github.event.inputs.version }}
+
+      - name: Download Previous Release
+        run: vpk download github --repoUrl https://github.com/${{ github.repository }}
+        continue-on-error: true
+
+      - name: Create Velopack Release
+        run: vpk pack -u LucaLights -v ${{ github.event.inputs.version }} -p publish -e LucaLights --icon ./Assets/logo.png
+
+      - name: Upload Linux Artifacts
+        uses: actions/upload-artifact@v4
+        with:
+          name: linux-release
+          path: Releases/
+
+  release:
+    needs: [build-windows, build-linux]
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout Repository
+        uses: actions/checkout@v4
+
+      - name: Download Windows Artifacts
+        uses: actions/download-artifact@v4
+        with:
+          name: windows-release
+          path: Releases/
+
+      - name: Download Linux Artifacts
+        uses: actions/download-artifact@v4
+        with:
+          name: linux-release
+          path: Releases/
+
+      - name: Setup .NET
+        uses: actions/setup-dotnet@v4
+        with:
+          dotnet-version: 10.0.x
+
+      - name: Install Velopack
+        run: dotnet tool install -g vpk
+
+      - name: Upload Velopack Release
         run: vpk upload github --repoUrl https://github.com/${{ github.repository }} --tag v${{ github.event.inputs.version }} --releaseName "LucaLights v${{ github.event.inputs.version }}" --token ${{ secrets.GITHUB_TOKEN }}
