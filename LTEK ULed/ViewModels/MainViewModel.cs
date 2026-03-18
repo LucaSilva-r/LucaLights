@@ -48,7 +48,7 @@ public partial class MainViewModel : ViewModelBase
         }
         Instance = this;
         Settings.Load();
-        PipeManager.Start();
+        PipeManager.Start(Settings.Instance!.PipeName);
         LightingManager.Start();
 
         Task.Delay(3000).ContinueWith((t) =>
@@ -87,6 +87,16 @@ public partial class MainViewModel : ViewModelBase
         await DialogHost.Show(updateDialog, handler);
 
     }
+    [RelayCommand]
+    public void RestartPipe()
+    {
+        lock (Settings.Lock)
+        {
+            Settings.Save();
+        }
+        Task.Run(() => PipeManager.Start(Settings.Instance!.PipeName));
+    }
+
     [RelayCommand]
     public async Task AddDevice()
     {

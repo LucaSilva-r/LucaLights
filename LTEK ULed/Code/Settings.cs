@@ -5,6 +5,7 @@ using System.Collections.ObjectModel;
 using System.Diagnostics;
 using System.IO;
 using System.Linq;
+using System.Runtime.InteropServices;
 using System.Text.Json;
 using System.Text.Json.Serialization;
 using System.Threading;
@@ -26,6 +27,12 @@ namespace LTEK_ULed.Code
         [property: JsonPropertyName("effects")]
         public ObservableCollection<LightEffect> _effects = new();
 
+        [ObservableProperty]
+        [property: JsonPropertyName("pipeName")]
+        public string _pipeName = RuntimeInformation.IsOSPlatform(OSPlatform.Windows)
+            ? "StepMania-Lights-SextetStream"
+            : Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.UserProfile), ".itgmania/Save/StepMania-Lights-SextetStream.out");
+
         [JsonIgnore]
         public bool Dirty { get; private set; } = true;
 
@@ -39,12 +46,14 @@ namespace LTEK_ULed.Code
         }
 
         [JsonConstructor]
-        public Settings(ObservableCollection<Device> devices, ObservableCollection<LightEffect> effects)
+        public Settings(ObservableCollection<Device> devices, ObservableCollection<LightEffect> effects, string? pipeName = null)
         {
             lock (Lock)
             {
                 this.Devices = devices;
                 this.Effects = effects;
+                if (pipeName != null)
+                    this.PipeName = pipeName;
             }
         }
 

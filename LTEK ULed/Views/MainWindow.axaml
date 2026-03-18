@@ -42,8 +42,11 @@
 
 							</DockPanel>
 							<DockPanel>
-								<StackPanel Orientation="Horizontal" DockPanel.Dock="Top">
-								</StackPanel>
+								<DockPanel DockPanel.Dock="Top" Margin="0,5,0,5">
+									<TextBlock DockPanel.Dock="Left" VerticalAlignment="Center" Margin="0,0,10,0">Pipe Name:</TextBlock>
+									<Button DockPanel.Dock="Right" Command="{Binding RestartPipe}" ToolTip.Tip="Restart pipe with new name" Margin="5,0,0,0" Classes="Secondary" Content="Apply"/>
+									<TextBox Text="{Binding settings.PipeName}" Watermark="StepMania-Lights-SextetStream"/>
+								</DockPanel>
 								<StackPanel Orientation="Horizontal" Spacing="20">
 									<!--Cabinet-->
 

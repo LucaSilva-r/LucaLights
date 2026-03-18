@@ -34,13 +34,9 @@ https://github.com/user-attachments/assets/871173e1-03d2-40d8-a855-149df1d1059f
 
 Before LucaLights can work with ITGMania, you’ll need to modify the `Preferences.ini` file.
 
+#### Windows
+
 You can find it here:
-
-```
-C:\Users\USERNAME\AppData\Roaming\ITGmania\Save\Preferences.ini
-```
-
-or simply:
 
 ```
 %appdata%\ITGmania\Save\Preferences.ini
@@ -53,11 +49,33 @@ SextetStreamOutputFilename=\\.\pipe\StepMania-Lights-SextetStream
 LightsDriver=SextetStreamToFile
 ```
 
+#### Linux
+
+You can find it here:
+
+```
+~/.itgmania/Save/Preferences.ini
+```
+
+Make sure these two lines are configured as follows:
+
+```ini
+SextetStreamOutputFilename=Save/StepMania-Lights-SextetStream.out
+LightsDriver=SextetStreamToFile
+```
+
+> **Note:** On Linux, ITGMania uses a virtual filesystem (RageFileManager) that only allows writing to specific mounted directories. The `Save/` path is one of the writable mount points, which maps to `~/.itgmania/Save/` on disk. **Absolute paths (e.g., `/tmp/...`) or paths under `Data/` will not work** because they are either outside the virtual filesystem or mounted as read-only.
+
+LucaLights will automatically create a FIFO (named pipe) at the configured path. The "Pipe Name" field in LucaLights defaults to `~/.itgmania/Save/StepMania-Lights-SextetStream.out` on Linux — make sure it matches the path ITGMania is configured to write to.
+
 ### ⚠️ Important – Read this very carefully
 
-Keep in mind that LucaLights must be open **BEFORE** you open ITGMania, as it will check for the presence of the pipe created by LucaLights only once at startup. 
+Keep in mind that LucaLights must be open **BEFORE** you open ITGMania.
 
-I have made a modified version of ITGMania that does let you open and close LucaLights at will, but i haven't created a pull request for it yet.
+- **Windows:** ITGMania checks for the named pipe created by LucaLights only once at startup.
+- **Linux:** LucaLights creates a FIFO at the configured path. ITGMania’s `open()` call will block until a reader (LucaLights) is present, so starting LucaLights first ensures a smooth connection.
+
+I have made a modified version of ITGMania that does let you open and close LucaLights at will, but i haven’t created a pull request for it yet.
 
 ---
 
