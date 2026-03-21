@@ -1,3 +1,4 @@
+using LTEK_ULed.Code.OsuPlayer;
 using LTEK_ULed.ViewModels;
 using System;
 using System.Diagnostics;
@@ -243,7 +244,7 @@ namespace LTEK_ULed.Code
                     }
                     if (counter == buffer.Length)
                     {
-                        if (!MainViewModel.Instance!.debug)
+                        if (!MainViewModel.Instance!.debug && Settings.Instance!.ActiveInputSource != InputSource.OsuPlayer)
                         {
                             GameState.gameState.Parse(buffer);
                         }

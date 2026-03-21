@@ -136,11 +136,17 @@ namespace LTEK_ULed.Code
     public enum CabinetLight
     {
         NONE = 0,
+        [System.ComponentModel.Description("Marquee Up Left")]
         LIGHT_MARQUEE_UP_LEFT = 1,
+        [System.ComponentModel.Description("Marquee Up Right")]
         LIGHT_MARQUEE_UP_RIGHT = 2,
+        [System.ComponentModel.Description("Marquee Lower Left")]
         LIGHT_MARQUEE_LR_LEFT = 4,
+        [System.ComponentModel.Description("Marquee Lower Right")]
         LIGHT_MARQUEE_LR_RIGHT = 8,
+        [System.ComponentModel.Description("Bass Left")]
         LIGHT_BASS_LEFT = 16,
+        [System.ComponentModel.Description("Bass Right")]
         LIGHT_BASS_RIGHT = 32,
         NUM_CabinetLight = 64,
         CabinetLight_Invalid = 128,
@@ -150,36 +156,67 @@ namespace LTEK_ULed.Code
     public enum GameButton
     {
         NONE = 0,
-        GAME_BUTTON_MENULEFT = 1, /**< Navigate the menus to the left. */
-        GAME_BUTTON_MENURIGHT = 2, /**< Navigate the menus to the right. */
-        GAME_BUTTON_MENUUP = 4, /**< Navigate the menus to the top. */
-        GAME_BUTTON_MENUDOWN = 8, /**< Navigate the menus to the bottom. */
+        [System.ComponentModel.Description("Menu Left")]
+        GAME_BUTTON_MENULEFT = 1,
+        [System.ComponentModel.Description("Menu Right")]
+        GAME_BUTTON_MENURIGHT = 2,
+        [System.ComponentModel.Description("Menu Up")]
+        GAME_BUTTON_MENUUP = 4,
+        [System.ComponentModel.Description("Menu Down")]
+        GAME_BUTTON_MENUDOWN = 8,
+        [System.ComponentModel.Description("Start")]
         GAME_BUTTON_START = 16,
+        [System.ComponentModel.Description("Select")]
         GAME_BUTTON_SELECT = 32,
+        [System.ComponentModel.Description("Back")]
         GAME_BUTTON_BACK = 64,
+        [System.ComponentModel.Description("Restart")]
         GAME_BUTTON_RESTART = 128,
-        GAME_BUTTON_COIN = 256, /**< Insert a coin to play. */
-        GAME_BUTTON_OPERATOR = 512, /**< Access the operator menu. */
+        [System.ComponentModel.Description("Coin")]
+        GAME_BUTTON_COIN = 256,
+        [System.ComponentModel.Description("Operator")]
+        GAME_BUTTON_OPERATOR = 512,
+        [System.ComponentModel.Description("Effect Up")]
         GAME_BUTTON_EFFECT_UP = 1024,
+        [System.ComponentModel.Description("Effect Down")]
         GAME_BUTTON_EFFECT_DOWN = 2048,
+        [System.ComponentModel.Description("P1 Pad Left")]
         GAME_BUTTON_CUSTOM_01 = 4096,
+        [System.ComponentModel.Description("P1 Pad Right")]
         GAME_BUTTON_CUSTOM_02 = 8192,
+        [System.ComponentModel.Description("P1 Pad Up")]
         GAME_BUTTON_CUSTOM_03 = 16384,
+        [System.ComponentModel.Description("P1 Pad Down")]
         GAME_BUTTON_CUSTOM_04 = 32768,
+        [System.ComponentModel.Description("P1 Pad Up-Left (Solo)")]
         GAME_BUTTON_CUSTOM_05 = 65536,
+        [System.ComponentModel.Description("P1 Pad Up-Right (Solo)")]
         GAME_BUTTON_CUSTOM_06 = 131072,
+        [System.ComponentModel.Description("P1 Custom 07")]
         GAME_BUTTON_CUSTOM_07 = 262144,
+        [System.ComponentModel.Description("P1 Custom 08")]
         GAME_BUTTON_CUSTOM_08 = 524288,
+        [System.ComponentModel.Description("P1 Custom 09")]
         GAME_BUTTON_CUSTOM_09 = 1048576,
+        [System.ComponentModel.Description("P2 Pad Left")]
         GAME_BUTTON_CUSTOM_10 = 2097152,
+        [System.ComponentModel.Description("P2 Pad Right")]
         GAME_BUTTON_CUSTOM_11 = 4194304,
+        [System.ComponentModel.Description("P2 Pad Up")]
         GAME_BUTTON_CUSTOM_12 = 8388608,
+        [System.ComponentModel.Description("P2 Pad Down")]
         GAME_BUTTON_CUSTOM_13 = 16777216,
+        [System.ComponentModel.Description("P2 Pad Up-Left (Solo)")]
         GAME_BUTTON_CUSTOM_14 = 33554432,
+        [System.ComponentModel.Description("P2 Pad Up-Right (Solo)")]
         GAME_BUTTON_CUSTOM_15 = 67108864,
+        [System.ComponentModel.Description("P2 Custom 07")]
         GAME_BUTTON_CUSTOM_16 = 134217728,
+        [System.ComponentModel.Description("P2 Custom 08")]
         GAME_BUTTON_CUSTOM_17 = 268435456,
+        [System.ComponentModel.Description("P2 Custom 09")]
         GAME_BUTTON_CUSTOM_18 = 536870912,
+        [System.ComponentModel.Description("P2 Custom 10")]
         GAME_BUTTON_CUSTOM_19 = 1073741824,
     };
 

@@ -1,6 +1,8 @@
 ﻿using CommunityToolkit.Mvvm.ComponentModel;
+using LTEK_ULed.Code.OsuPlayer;
 using LTEK_ULed.Code.Utils;
 using System;
+using System.Collections.Generic;
 using System.Collections.ObjectModel;
 using System.Diagnostics;
 using System.IO;
@@ -32,6 +34,14 @@ namespace LTEK_ULed.Code
         public string _pipeName = RuntimeInformation.IsOSPlatform(OSPlatform.Windows)
             ? "StepMania-Lights-SextetStream"
             : Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.UserProfile), ".itgmania/Save/StepMania-Lights-SextetStream.out");
+
+        [ObservableProperty]
+        [property: JsonPropertyName("activeInputSource")]
+        public InputSource _activeInputSource = InputSource.ITGMania;
+
+        [ObservableProperty]
+        [property: JsonPropertyName("osuColumnMappings")]
+        public Dictionary<int, List<ColumnMapping>> _osuColumnMappings = new();
 
         [JsonIgnore]
         public bool Dirty { get; private set; } = true;

@@ -5,6 +5,7 @@ using CommunityToolkit.Mvvm.Input;
 using DialogHostAvalonia;
 using LTEK_ULed.Code;
 using LTEK_ULed.Controls;
+using LTEK_ULed.Views;
 using Microsoft.VisualBasic;
 using NuGet.Versioning;
 using Splat;
@@ -87,6 +88,22 @@ public partial class MainViewModel : ViewModelBase
         await DialogHost.Show(updateDialog, handler);
 
     }
+    private OsuPlayerWindow? _osuPlayerWindow;
+
+    [RelayCommand]
+    public void OpenOsuPlayer()
+    {
+        if (_osuPlayerWindow == null || !_osuPlayerWindow.IsVisible)
+        {
+            _osuPlayerWindow = new OsuPlayerWindow();
+            _osuPlayerWindow.Show();
+        }
+        else
+        {
+            _osuPlayerWindow.Activate();
+        }
+    }
+
     [RelayCommand]
     public void RestartPipe()
     {

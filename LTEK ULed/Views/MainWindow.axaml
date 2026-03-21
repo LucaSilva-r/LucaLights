@@ -32,14 +32,16 @@
 						<RowDefinition Height="325"></RowDefinition>
 						<RowDefinition Height="*"></RowDefinition>
 					</Grid.RowDefinitions>
-					<Border Theme="{StaticResource CardBorder}" Classes="Shadow" Margin="5">
+
+					<!-- ITG Status -->
+					<Border Grid.Row="0" Theme="{StaticResource CardBorder}" Classes="Shadow" Margin="5">
 						<DockPanel >
 							<DockPanel DockPanel.Dock="Top" LastChildFill="False">
 								<TextBlock DockPanel.Dock="Left" Text="ITG Status"/>
 
 								<CheckBox IsCheckedChanged="LightEmChanged" Name="DebugCheckBox" DockPanel.Dock="Left" Margin="20,0,0,0" VerticalAlignment="Top" IsChecked="{Binding debug}" >Debug?</CheckBox>
 								<ToggleButton IsVisible="{Binding ElementName=DebugCheckBox, Path=IsChecked}" x:Name="LightEm" IsCheckedChanged="LightEmChanged" VerticalAlignment="Top" DockPanel.Dock="Right">Light em' up!</ToggleButton>
-
+								<Button DockPanel.Dock="Right" Command="{Binding OpenOsuPlayerCommand}" Content="osu! Player" Classes="Secondary" Margin="5,0,0,0" VerticalAlignment="Top"/>
 							</DockPanel>
 							<DockPanel>
 								<DockPanel DockPanel.Dock="Top" Margin="0,5,0,5">

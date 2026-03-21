@@ -1,0 +1,39 @@
+<Window xmlns="https://github.com/avaloniaui"
+	xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+	xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
+	xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
+	xmlns:vm="using:LTEK_ULed.ViewModels"
+	xmlns:controls="clr-namespace:LTEK_ULed.Controls"
+	xmlns:dialogHost="clr-namespace:DialogHostAvalonia;assembly=DialogHost.Avalonia"
+	mc:Ignorable="d"
+	x:Class="LTEK_ULed.Views.OsuPlayerWindow"
+	x:DataType="vm:OsuPlayerViewModel"
+	Title="osu! Player"
+	Width="420" Height="280"
+	MinWidth="350" MinHeight="220"
+	SizeToContent="Height">
+	<Panel>
+		<Border Padding="10">
+			<controls:OsuPlayerView/>
+		</Border>
+		<dialogHost:DialogHost Background="Transparent" Identifier="OsuDialog" CloseOnClickAway="True">
+			<dialogHost:DialogHost.DialogContent>
+			</dialogHost:DialogHost.DialogContent>
+		</dialogHost:DialogHost>
+	</Panel>
+	<Window.Styles>
+		<Style Selector="dialogHost|DialogHost">
+			<Setter Property="PopupTemplate">
+				<ControlTemplate>
+					<VisualLayerManager IsPopup="True" Name="PART_DialogPopupRoot">
+						<ContentPresenter Name="PART_ContentPresenter"
+										  Background="{TemplateBinding Background}"
+										  ContentTemplate="{TemplateBinding ContentTemplate}"
+										  Content="{TemplateBinding Content}"
+										  Padding="{TemplateBinding Padding}" />
+					</VisualLayerManager>
+				</ControlTemplate>
+			</Setter>
+		</Style>
+	</Window.Styles>
+</Window>
