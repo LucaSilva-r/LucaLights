@@ -2,9 +2,9 @@
 
 ## Status Summary
 
-- Overall status: `not started`
+- Overall status: `in progress`
 - Current phase: `Phase 0 - Foundation`
-- Current implementation slice: `Planning and tracking scaffold`
+- Current implementation slice: `Phase 0.1 complete, Phase 0.2 next`
 - Last updated: `2026-04-08`
 
 ## Milestones
@@ -12,7 +12,7 @@
 | Milestone | Status | Exit Criteria |
 |---|---|---|
 | Docs scaffold | done | Repo contains plan, tracker, architecture note, and work log |
-| Phase 0.1 - New solution skeleton | not started | `src/LucaLights.Core` and `src/LucaLights.Server` exist and build |
+| Phase 0.1 - New solution skeleton | done | `src/LucaLights.Core` and `src/LucaLights.Server` exist and build |
 | Phase 0.2 - Core extraction | not started | Lighting/device/settings code builds without Avalonia dependencies |
 | Phase 0.3 - Input module foundation | not started | `IGameInputModule`, `GameInputManager`, `InputSnapshot`, and `InputDefinition` are implemented |
 | Phase 0.4 - ITG parity module | not started | Current ITGMania named-pipe behavior works through `ITGManiaInputModule` |
@@ -36,11 +36,18 @@ Scope:
 
 Recommended order:
 
-1. Create the new solution/project skeleton.
+1. Create the new solution/project skeleton. Done on `2026-04-08`.
 2. Move simple shared models first: `Color`, `Segment`, `Device`, `Settings`.
 3. Extract `LightingManager` behind injected dependencies.
 4. Introduce `IGameInputModule` and `GameInputManager`.
 5. Port current `GameState` and `PipeManager` logic into `ITGManiaInputModule`.
+
+Completed in this phase so far:
+
+- added `src/LucaLights.Core`
+- added `src/LucaLights.Server`
+- added the projects to [Luca Lights.sln](../../Luca%20Lights.sln)
+- verified `dotnet build`
 
 ### Phase 1 - Server Host
 
@@ -98,13 +105,16 @@ Exit criteria:
 
 ## Next Recommended Slice
 
-Start with `Phase 0.1 - New solution skeleton`.
+Start `Phase 0.2 - Core extraction`.
 
 Concrete target:
 
-- create `src/LucaLights.Core`
-- create `src/LucaLights.Server`
-- update the solution file
-- verify `dotnet build`
+- move `Color` ownership fully to `LucaLights.Core`
+- extract `Segment`
+- extract `Device`
+- extract `Settings` as plain POCOs without Avalonia or MVVM dependencies
+- keep the old app building while the new core grows alongside it
 
-If that lands cleanly, the next slice should be extracting the simplest non-UI models before touching the render loop.
+Suggested checkpoint commit:
+
+- `v2: add core and server solution skeleton`

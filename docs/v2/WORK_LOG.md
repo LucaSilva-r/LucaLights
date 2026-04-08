@@ -31,3 +31,28 @@ Blockers or risks:
 Next recommended step:
 
 - implement `Phase 0.1 - New solution skeleton`
+
+## 2026-04-08
+
+What changed:
+
+- created `src/LucaLights.Core` with a first `Color` type
+- created `src/LucaLights.Server` with a minimal ASP.NET Core entry point
+- added both projects to [Luca Lights.sln](../../Luca%20Lights.sln)
+- verified the full solution builds successfully
+- added git-checkpoint guidance to the v2 docs
+
+Decisions made:
+
+- keep the existing solution file for now and add v2 projects incrementally
+- use one git commit per implementation slice
+- defer solution/file renaming until the migration shape is more stable
+
+Blockers or risks:
+
+- `dotnet build` succeeds, but the existing Avalonia project still has pre-existing warnings
+- `dotnet sln add` expanded the solution configurations to include `x64` and `x86`; acceptable for now, but worth keeping an eye on
+
+Next recommended step:
+
+- begin `Phase 0.2 - Core extraction` with `Segment`, `Device`, and `Settings`

@@ -18,6 +18,15 @@ When making v2 progress:
 3. Record architecture changes in the relevant doc instead of leaving them only in chat history.
 4. Keep `PLAN.md` focused on direction and phases, and keep day-to-day progress in `docs/v2/`.
 
+## Git Checkpoints
+
+To keep the migration reviewable:
+
+1. Make one commit per implementation slice.
+2. Include tracker/work-log updates in the same commit as the code they describe.
+3. Avoid mixing unrelated extraction, refactor, and feature work in one checkpoint.
+4. Prefer commit messages in the form `v2: <slice outcome>`.
+
 ## Current Focus
 
 The current recommended starting point is Phase 0:
