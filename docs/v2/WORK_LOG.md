@@ -77,3 +77,28 @@ Blockers or risks:
 Next recommended step:
 
 - continue with `Phase 0.2 - Core extraction`
+
+## 2026-04-08
+
+What changed:
+
+- extracted portable core `Segment`, `Device`, and `Settings` models into `src/LucaLights.Core`
+- added future-facing core `Effect` and `NodeGraph` models so settings can reference the new graph-based effect shape
+- added core transport senders for DDP and UDP Realtime
+- added core `ConfigManager` for settings load/save without desktop dependencies
+- verified both `LucaLights.Core` and the full solution build successfully
+
+Decisions made:
+
+- keep the new core models separate from the legacy Avalonia models for now rather than partially rewiring the old app mid-slice
+- let v2 settings store input-module configuration generically under `inputModuleSettings`
+- preserve the current ITGMania pipe path as the default config for the initial input module
+
+Blockers or risks:
+
+- `LightingManager` is still legacy-only, so Phase 0.2 is not complete yet
+- the new v2 `Settings` shape is forward-looking and will still need migration logic from the legacy config format
+
+Next recommended step:
+
+- extract the render loop into a core `LightingManager` that no longer depends on Avalonia or desktop singletons

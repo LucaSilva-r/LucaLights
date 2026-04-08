@@ -4,7 +4,7 @@
 
 - Overall status: `in progress`
 - Current phase: `Phase 0 - Foundation`
-- Current implementation slice: `Phase 0.1 complete, Phase 0.2 next`
+- Current implementation slice: `Phase 0.2 model/config baseline extracted`
 - Last updated: `2026-04-08`
 
 ## Milestones
@@ -48,6 +48,9 @@ Completed in this phase so far:
 - added `src/LucaLights.Server`
 - added the projects to [Luca Lights.sln](../../Luca%20Lights.sln)
 - verified `dotnet build`
+- extracted portable core models: `Segment`, `Device`, `Settings`, `Effect`, `NodeGraph`
+- extracted portable core persistence: `ConfigManager`
+- extracted portable core transport senders: DDP and UDP Realtime
 
 ### Phase 1 - Server Host
 
@@ -109,12 +112,11 @@ Start `Phase 0.2 - Core extraction`.
 
 Concrete target:
 
-- move `Color` ownership fully to `LucaLights.Core`
-- extract `Segment`
-- extract `Device`
-- extract `Settings` as plain POCOs without Avalonia or MVVM dependencies
+- extract `LightingManager` into `LucaLights.Core.Engine`
+- remove Avalonia/MainWindow/MainViewModel dependencies from the extracted render loop
+- introduce event hooks or injected flags for preview/output instead of UI singleton calls
 - keep the old app building while the new core grows alongside it
 
 Suggested checkpoint commit:
 
-- `v2: add core and server solution skeleton`
+- `v2: extract core model and config baseline`
