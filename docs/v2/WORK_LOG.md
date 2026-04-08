@@ -56,3 +56,24 @@ Blockers or risks:
 Next recommended step:
 
 - begin `Phase 0.2 - Core extraction` with `Segment`, `Device`, and `Settings`
+
+## 2026-04-08
+
+What changed:
+
+- added VS Code launch support for the legacy desktop app
+- added VS Code launch support for the new `LucaLights.Server` project
+- added dedicated build tasks for desktop and v2 server targets
+
+Decisions made:
+
+- keep VS Code launch configs explicit per runnable target instead of one generic config
+- use project-specific pre-launch build tasks so running from VS Code stays predictable
+
+Blockers or risks:
+
+- none found; both target projects build cleanly in isolation
+
+Next recommended step:
+
+- continue with `Phase 0.2 - Core extraction`
