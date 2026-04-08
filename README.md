@@ -120,3 +120,15 @@ Let me know if you want to add sections for:
 * 📄 License / badges / contributing
 
 Happy to help further!
+
+---
+
+## v2 Migration Docs
+
+The LucaLights v2 rewrite and migration work is tracked in-repo:
+
+- [PLAN.md](./PLAN.md)
+- [docs/v2/README.md](./docs/v2/README.md)
+- [docs/v2/EXECUTION_TRACKER.md](./docs/v2/EXECUTION_TRACKER.md)
+- [docs/v2/ARCHITECTURE_GAME_INPUTS.md](./docs/v2/ARCHITECTURE_GAME_INPUTS.md)
+- [docs/v2/WORK_LOG.md](./docs/v2/WORK_LOG.md)
