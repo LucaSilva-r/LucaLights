@@ -13,13 +13,13 @@
 |---|---|---|
 | Docs scaffold | done | Repo contains plan, tracker, architecture note, and work log |
 | Phase 0.1 - New solution skeleton | done | `src/LucaLights.Core` and `src/LucaLights.Server` exist and build |
-| Phase 0.2 - Core extraction | not started | Lighting/device/settings code builds without Avalonia dependencies |
+| Phase 0.2 - Core extraction | in progress | Lighting/device/settings code builds without Avalonia dependencies |
 | Phase 0.3 - Input module foundation | not started | `IGameInputModule`, `GameInputManager`, `InputSnapshot`, and `InputDefinition` are implemented |
 | Phase 0.4 - ITG parity module | not started | Current ITGMania named-pipe behavior works through `ITGManiaInputModule` |
 | Phase 1 - Server host | not started | ASP.NET Core host serves APIs, static UI assets, and WebSocket endpoints |
 | Phase 2 - Node engine | not started | Effects can render from compiled node graphs |
 | Phase 3 - SvelteKit UI | not started | Browser UI supports device management, preview, and graph editing |
-| Phase 4 - Migration and packaging | not started | Old settings migrate, publish flow works, and lifecycle controls are complete |
+| Phase 4 - Packaging and polish | not started | Fresh v2 config works, publish flow works, and lifecycle controls are complete |
 
 ## Phase Breakdown
 
@@ -82,14 +82,14 @@ Exit criteria:
 - device/effect management available in browser
 - node editor consumes input definitions dynamically
 
-### Phase 4 - Migration and Packaging
+### Phase 4 - Packaging and Polish
 
 Status: `not started`
 
 Exit criteria:
 
-- old settings migrate to node graphs
-- default module remains ITGMania for existing users
+- fresh v2 config works without legacy migration support
+- default module is `ITGManiaInputModule` for fresh v2 setups
 - build and publish flow documented and repeatable
 
 ## Active Risks

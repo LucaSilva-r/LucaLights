@@ -37,7 +37,7 @@ LucaLights/
         GameInputManager.cs             # Active module lifecycle + snapshot cache
         ModuleContext.cs                # Logging/config/services passed to modules
         Modules/
-          ITGManiaInputModule.cs        # Named pipe/FIFO adapter migrated from PipeManager/GameState
+          ITGManiaInputModule.cs        # Named pipe/FIFO adapter extracted from PipeManager/GameState
       NodeEngine/
         INode.cs                        # Node interface
         NodeContext.cs                   # Per-frame evaluation context
@@ -119,7 +119,7 @@ LucaLights/
   - **Settings.cs**: Remove `ObservableObject`, `ObservableProperty`, `ObservableCollection` -> plain POCO with `List<T>`. Extract Load/Save to `ConfigManager`
   - **DDPSend.cs**, **UdpRealtimeSend.cs**: Swap `Avalonia.Media.Color` for new `Color` struct
   - **Effect.cs**: Strip Avalonia, keep gradient rendering temporarily (replaced in Phase 2)
-- Implement first module: `ITGManiaInputModule` backed by the current named pipe/FIFO protocol so behavior stays equivalent during migration
+- Implement first module: `ITGManiaInputModule` backed by the current named pipe/FIFO protocol so behavior stays equivalent during extraction
 - Create `LucaLights.Server` project, minimal `Program.cs`
 - Verify: `dotnet build` succeeds
 
@@ -225,11 +225,11 @@ For a 10-node graph, 300 LEDs, 60fps = ~180K evaluations/sec of simple float mat
 - **Dashboard**: Live preview, input/module status indicator, system status
 - **System page**: Engine restart, module reconnect, shutdown app, connection status indicators
 
-### Phase 4: Migration & Polish
-**Goal:** Ensure existing users can migrate, cross-platform packaging, app lifecycle.
+### Phase 4: Packaging & Polish
+**Goal:** Finish app lifecycle, packaging, and production hardening for v2.
 
-- **Settings migration**: Detect old format (has `gradient` field), auto-convert to equivalent node graphs (Gradient -> Time+LedPosition+GradientNode+Mix+Output), backup as `settings.json.bak`
-- **Module migration**: Default upgraded installs to `ITGManiaInputModule` so existing users keep current behavior; future modules become additive, not breaking
+- **Fresh-config assumption**: Do not support automatic migration from the legacy settings format. v2 starts from a new config model because the system is fundamentally different.
+- **Default module setup**: Ship with `ITGManiaInputModule` as the default initial module configuration for fresh installs
 - **Console app with lifecycle controls**: App runs as a console window showing logs. Browser UI includes a system status page with Restart Engine / Shut Down buttons. Console supports Ctrl+C for graceful shutdown.
 - **Cross-platform packaging**: `dotnet publish --self-contained`, SvelteKit build copied to wwwroot
 - **Build script**: `npm run build` in web/ -> copy to wwwroot -> `dotnet publish`
@@ -254,7 +254,7 @@ For a 10-node graph, 300 LEDs, 60fps = ~180K evaluations/sec of simple float mat
 
 ## Verification Strategy
 
-- **Unit tests** (LucaLights.Core.Tests): Node evaluation per type, CompiledGraph with known graphs, topological sort + cycle detection, input-module contract tests, config serialization round-trip, settings migration
+- **Unit tests** (LucaLights.Core.Tests): Node evaluation per type, CompiledGraph with known graphs, topological sort + cycle detection, input-module contract tests, config serialization round-trip
 - **Integration tests**: REST API via `WebApplicationFactory`, WebSocket frame reception, module startup/shutdown, config persistence across restart
 - **Manual testing**: Create device + node graph (`input.song_time` -> Rainbow -> Output), verify DDP packets on network. Test debug input via API. Test on both Windows and Linux. Open two browser tabs, verify both get preview.
 

@@ -97,8 +97,29 @@ Decisions made:
 Blockers or risks:
 
 - `LightingManager` is still legacy-only, so Phase 0.2 is not complete yet
-- the new v2 `Settings` shape is forward-looking and will still need migration logic from the legacy config format
+- the new v2 `Settings` shape is forward-looking and intentionally does not support legacy config migration
 
 Next recommended step:
 
 - extract the render loop into a core `LightingManager` that no longer depends on Avalonia or desktop singletons
+
+## 2026-04-08
+
+What changed:
+
+- refactored the core transport layer so `DDPSend` and `UdpRealtimeSend` inherit from a shared `WledProtocol` base class
+- updated core `Device` to store a serialized `ProtocolType` plus a runtime `WledProtocol` instance
+- removed the old-settings migration requirement from the v2 plan and tracker
+
+Decisions made:
+
+- v2 will not attempt to migrate legacy settings automatically
+- device transport should be standardized behind a common protocol abstraction before more engine work lands
+
+Blockers or risks:
+
+- transport abstraction is now cleaner, but the extracted render loop still needs to be moved over to use the new core `Device`
+
+Next recommended step:
+
+- extract `LightingManager` into `LucaLights.Core.Engine` and point it at the new portable models

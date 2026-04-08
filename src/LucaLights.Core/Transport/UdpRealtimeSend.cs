@@ -3,7 +3,7 @@ using System.Net.Sockets;
 
 namespace LucaLights.Core.Transport;
 
-internal sealed class UdpRealtimeSend : IDisposable
+internal sealed class UdpRealtimeSend : WledProtocol
 {
     private const int UdpRealtimePort = 21324;
     private const int HeaderLength = 2;
@@ -16,6 +16,7 @@ internal sealed class UdpRealtimeSend : IDisposable
     private readonly byte _timeout;
 
     public UdpRealtimeSend(string ipAddress, int ledCount, byte timeout = 2)
+        : base(ipAddress, ledCount)
     {
         if (ledCount > MaxLedCount)
         {
@@ -32,7 +33,7 @@ internal sealed class UdpRealtimeSend : IDisposable
         _data[1] = _timeout;
     }
 
-    public void Send(Color[] leds)
+    public override void Send(Color[] leds)
     {
         _data[1] = _timeout;
 
@@ -47,7 +48,7 @@ internal sealed class UdpRealtimeSend : IDisposable
         _ = _client.SendAsync(_data, _data.Length, _endPoint);
     }
 
-    public void Dispose()
+    public override void Dispose()
     {
         _client.Dispose();
     }

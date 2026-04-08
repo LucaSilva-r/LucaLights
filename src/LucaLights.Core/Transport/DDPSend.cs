@@ -4,7 +4,7 @@ using System.Net.Sockets;
 
 namespace LucaLights.Core.Transport;
 
-internal sealed class DDPSend : IDisposable
+internal sealed class DDPSend : WledProtocol
 {
     private const int DdpPort = 4048;
     private const byte DdpHeaderLength = 10;
@@ -18,6 +18,7 @@ internal sealed class DDPSend : IDisposable
     private byte _sequence;
 
     public DDPSend(string ipAddress, int ledCount)
+        : base(ipAddress, ledCount)
     {
         _endPoint = new IPEndPoint(IPAddress.Parse(ipAddress), DdpPort);
         _client = new UdpClient();
@@ -30,7 +31,7 @@ internal sealed class DDPSend : IDisposable
         BinaryPrimitives.WriteInt16BigEndian(_data.AsSpan(8, 2), (short)(ledCount * 3));
     }
 
-    public void Send(Color[] leds)
+    public override void Send(Color[] leds)
     {
         _data[1] = (byte)((_sequence % 15) + 1);
         _sequence++;
@@ -46,7 +47,7 @@ internal sealed class DDPSend : IDisposable
         _ = _client.SendAsync(_data, _data.Length, _endPoint);
     }
 
-    public void Dispose()
+    public override void Dispose()
     {
         _client.Dispose();
     }

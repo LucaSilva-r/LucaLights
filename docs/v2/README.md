@@ -1,6 +1,6 @@
 # LucaLights v2 Docs
 
-This folder is the source of truth for the LucaLights v2 migration work.
+This folder is the source of truth for the LucaLights v2 rewrite work.
 
 Use these files together:
 
@@ -20,7 +20,7 @@ When making v2 progress:
 
 ## Git Checkpoints
 
-To keep the migration reviewable:
+To keep the rewrite reviewable:
 
 1. Make one commit per implementation slice.
 2. Include tracker/work-log updates in the same commit as the code they describe.

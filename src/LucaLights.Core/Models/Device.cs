@@ -6,20 +6,18 @@ namespace LucaLights.Core.Models;
 public sealed class Device : IDisposable
 {
     private Color[] _data = [];
-    private DDPSend? _ddpSend;
-    private UdpRealtimeSend? _udpRealtimeSend;
     private bool _disposed;
 
     public Device()
     {
     }
 
-    public Device(string name, string ip, List<Segment> segments, WledProtocol protocol = WledProtocol.DDP)
+    public Device(string name, string ip, List<Segment> segments, DeviceProtocolType protocolType = DeviceProtocolType.DDP)
     {
         Name = name;
         Ip = ip;
         Segments = segments;
-        Protocol = protocol;
+        ProtocolType = protocolType;
 
         Recalculate();
     }
@@ -31,7 +29,7 @@ public sealed class Device : IDisposable
     public string Ip { get; set; } = "192.168.1.1";
 
     [JsonPropertyName("protocol")]
-    public WledProtocol Protocol { get; set; } = WledProtocol.DDP;
+    public DeviceProtocolType ProtocolType { get; set; } = DeviceProtocolType.DDP;
 
     [JsonPropertyName("segments")]
     public List<Segment> Segments { get; set; } = [];
@@ -42,6 +40,9 @@ public sealed class Device : IDisposable
     [JsonIgnore]
     public int Nleds { get; private set; }
 
+    [JsonIgnore]
+    public WledProtocol? Protocol { get; private set; }
+
     public void Recalculate()
     {
         ThrowIfDisposed();
@@ -51,24 +52,15 @@ public sealed class Device : IDisposable
         Nleds = ledCount;
         Nsegments = Segments.Count;
 
-        _ddpSend?.Dispose();
-        _udpRealtimeSend?.Dispose();
-        _ddpSend = null;
-        _udpRealtimeSend = null;
+        Protocol?.Dispose();
+        Protocol = null;
 
         if (ledCount == 0)
         {
             return;
         }
 
-        if (Protocol == WledProtocol.DDP)
-        {
-            _ddpSend = new DDPSend(Ip, ledCount);
-        }
-        else
-        {
-            _udpRealtimeSend = new UdpRealtimeSend(Ip, ledCount);
-        }
+        Protocol = WledProtocol.Create(ProtocolType, Ip, ledCount);
     }
 
     public void Send()
@@ -82,8 +74,7 @@ public sealed class Device : IDisposable
             offset += segment.Leds.Length;
         }
 
-        _ddpSend?.Send(_data);
-        _udpRealtimeSend?.Send(_data);
+        Protocol?.Send(_data);
     }
 
     public void Dispose()
@@ -93,8 +84,8 @@ public sealed class Device : IDisposable
             return;
         }
 
-        _ddpSend?.Dispose();
-        _udpRealtimeSend?.Dispose();
+        Protocol?.Dispose();
+        Protocol = null;
         _disposed = true;
     }
 
