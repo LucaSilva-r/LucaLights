@@ -107,8 +107,8 @@ Next recommended step:
 
 What changed:
 
-- refactored the core transport layer so `DDPSend` and `UdpRealtimeSend` inherit from a shared `WledProtocol` base class
-- updated core `Device` to store a serialized `ProtocolType` plus a runtime `WledProtocol` instance
+- refactored the core transport layer so `DDPSend` and `UdpRealtimeSend` inherit from a shared transport base class
+- updated core `Device` to store a serialized transport type plus a runtime transport instance
 - removed the old-settings migration requirement from the v2 plan and tracker
 
 Decisions made:
@@ -123,3 +123,22 @@ Blockers or risks:
 Next recommended step:
 
 - extract `LightingManager` into `LucaLights.Core.Engine` and point it at the new portable models
+
+## 2026-04-08
+
+What changed:
+
+- renamed the generic core transport abstraction from `WledProtocol` to `DeviceTransport`
+- renamed the matching serialized/runtime device transport types so future non-WLED outputs fit naturally
+
+Decisions made:
+
+- the v2 core should use device-agnostic transport naming because future support may include DMX and Art-Net devices
+
+Blockers or risks:
+
+- none added by this rename; the remaining Phase 0.2 work is still the render-loop extraction
+
+Next recommended step:
+
+- extract `LightingManager` into `LucaLights.Core.Engine`

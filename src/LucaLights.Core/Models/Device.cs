@@ -12,12 +12,12 @@ public sealed class Device : IDisposable
     {
     }
 
-    public Device(string name, string ip, List<Segment> segments, DeviceProtocolType protocolType = DeviceProtocolType.DDP)
+    public Device(string name, string ip, List<Segment> segments, DeviceTransportType transportType = DeviceTransportType.DDP)
     {
         Name = name;
         Ip = ip;
         Segments = segments;
-        ProtocolType = protocolType;
+        TransportType = transportType;
 
         Recalculate();
     }
@@ -29,7 +29,7 @@ public sealed class Device : IDisposable
     public string Ip { get; set; } = "192.168.1.1";
 
     [JsonPropertyName("protocol")]
-    public DeviceProtocolType ProtocolType { get; set; } = DeviceProtocolType.DDP;
+    public DeviceTransportType TransportType { get; set; } = DeviceTransportType.DDP;
 
     [JsonPropertyName("segments")]
     public List<Segment> Segments { get; set; } = [];
@@ -41,7 +41,7 @@ public sealed class Device : IDisposable
     public int Nleds { get; private set; }
 
     [JsonIgnore]
-    public WledProtocol? Protocol { get; private set; }
+    public DeviceTransport? Transport { get; private set; }
 
     public void Recalculate()
     {
@@ -52,15 +52,15 @@ public sealed class Device : IDisposable
         Nleds = ledCount;
         Nsegments = Segments.Count;
 
-        Protocol?.Dispose();
-        Protocol = null;
+        Transport?.Dispose();
+        Transport = null;
 
         if (ledCount == 0)
         {
             return;
         }
 
-        Protocol = WledProtocol.Create(ProtocolType, Ip, ledCount);
+        Transport = DeviceTransport.Create(TransportType, Ip, ledCount);
     }
 
     public void Send()
@@ -74,7 +74,7 @@ public sealed class Device : IDisposable
             offset += segment.Leds.Length;
         }
 
-        Protocol?.Send(_data);
+        Transport?.Send(_data);
     }
 
     public void Dispose()
@@ -84,8 +84,8 @@ public sealed class Device : IDisposable
             return;
         }
 
-        Protocol?.Dispose();
-        Protocol = null;
+        Transport?.Dispose();
+        Transport = null;
         _disposed = true;
     }
 

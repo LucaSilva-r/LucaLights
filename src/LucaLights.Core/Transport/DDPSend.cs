@@ -4,7 +4,7 @@ using System.Net.Sockets;
 
 namespace LucaLights.Core.Transport;
 
-internal sealed class DDPSend : WledProtocol
+internal sealed class DDPSend : DeviceTransport
 {
     private const int DdpPort = 4048;
     private const byte DdpHeaderLength = 10;

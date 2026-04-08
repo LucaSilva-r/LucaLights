@@ -3,7 +3,7 @@ using System.Net.Sockets;
 
 namespace LucaLights.Core.Transport;
 
-internal sealed class UdpRealtimeSend : WledProtocol
+internal sealed class UdpRealtimeSend : DeviceTransport
 {
     private const int UdpRealtimePort = 21324;
     private const int HeaderLength = 2;
