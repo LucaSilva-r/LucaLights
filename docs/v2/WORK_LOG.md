@@ -164,3 +164,25 @@ Blockers or risks:
 Next recommended step:
 
 - implement the input-module foundation in `LucaLights.Core`
+
+## 2026-04-08
+
+What changed:
+
+- added the core game-input foundation under `src/LucaLights.Core/GameInput`
+- introduced `InputSnapshot`, `InputDefinition`, `InputChannelDefinition`, and `InputValueType`
+- introduced `IGameInputModule` and `GameInputManager`
+- connected the extracted `LightingManager` to `GameInputManager` and carried `InputSnapshot` through `LightingFrameContext`
+
+Decisions made:
+
+- the engine frame context should include the latest input snapshot now, before effect/node integration lands
+- one active input module at a time remains the working model for v2
+
+Blockers or risks:
+
+- there is still no concrete `ITGManiaInputModule`, so the foundation is present but real game input is not wired yet
+
+Next recommended step:
+
+- implement `ITGManiaInputModule` and connect it to the current named pipe or FIFO protocol

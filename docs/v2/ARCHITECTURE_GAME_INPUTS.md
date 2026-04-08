@@ -122,7 +122,7 @@ Suggested shape:
 1. The active module starts.
 2. It parses source-specific input and updates its latest `InputSnapshot`.
 3. `GameInputManager` exposes the latest snapshot to the engine and server APIs.
-4. The render loop reads the latest stable snapshot once per frame.
+4. The render loop reads the latest stable snapshot once per frame and carries it through the frame context.
 5. The compiled graph evaluates per LED using that snapshot plus LED position/time.
 6. The frontend uses the module's `InputDefinition` to populate input-node selectors.
 

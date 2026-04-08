@@ -1,4 +1,5 @@
 using System.Diagnostics;
+using LucaLights.Core.GameInput;
 using LucaLights.Core.Models;
 
 namespace LucaLights.Core.Engine;
@@ -8,8 +9,9 @@ public sealed class LightingManager : IDisposable
     private readonly Settings _settings;
     private readonly ILightingRenderer _renderer;
     private readonly LightingManagerOptions _options;
-    private readonly Func<bool> _isRenderingActive;
     private readonly Func<bool> _shouldSendOutput;
+    private readonly GameInputManager? _gameInputManager;
+    private readonly Func<bool> _isRenderingActiveFallback;
     private readonly Action<string>? _log;
     private readonly object _syncRoot = new();
     private readonly Stopwatch _globalTimer = new();
@@ -25,6 +27,7 @@ public sealed class LightingManager : IDisposable
         Settings settings,
         ILightingRenderer renderer,
         LightingManagerOptions? options = null,
+        GameInputManager? gameInputManager = null,
         Func<bool>? isRenderingActive = null,
         Func<bool>? shouldSendOutput = null,
         Action<string>? log = null)
@@ -32,7 +35,8 @@ public sealed class LightingManager : IDisposable
         _settings = settings ?? throw new ArgumentNullException(nameof(settings));
         _renderer = renderer ?? throw new ArgumentNullException(nameof(renderer));
         _options = options ?? new LightingManagerOptions();
-        _isRenderingActive = isRenderingActive ?? (() => true);
+        _gameInputManager = gameInputManager;
+        _isRenderingActiveFallback = isRenderingActive ?? (() => true);
         _shouldSendOutput = shouldSendOutput ?? (() => true);
         _log = log;
     }
@@ -101,8 +105,9 @@ public sealed class LightingManager : IDisposable
         while (!token.IsCancellationRequested)
         {
             sw.Restart();
+            var inputSnapshot = _gameInputManager?.LatestSnapshot ?? InputSnapshot.Empty;
 
-            if (!_isRenderingActive())
+            if (!IsRenderingActive(inputSnapshot))
             {
                 if (!_cleared && _options.ClearOutputWhenInactive)
                 {
@@ -138,7 +143,7 @@ public sealed class LightingManager : IDisposable
                 var elapsed = _globalTimer.Elapsed;
                 var delta = elapsed - _previousElapsed;
                 _previousElapsed = elapsed;
-                frameContext = new LightingFrameContext(++_frameIndex, elapsed, delta);
+                frameContext = new LightingFrameContext(++_frameIndex, elapsed, delta, inputSnapshot);
 
                 _renderer.Render(_settings, frameContext);
 
@@ -224,5 +229,15 @@ public sealed class LightingManager : IDisposable
     private void ThrowIfDisposed()
     {
         ObjectDisposedException.ThrowIf(_disposed, this);
+    }
+
+    private bool IsRenderingActive(InputSnapshot inputSnapshot)
+    {
+        if (_gameInputManager is not null)
+        {
+            return inputSnapshot.IsActive;
+        }
+
+        return _isRenderingActiveFallback();
     }
 }
