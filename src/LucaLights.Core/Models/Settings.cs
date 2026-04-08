@@ -53,6 +53,19 @@ public sealed class Settings
         Dirty = false;
     }
 
+    public JsonObject GetOrCreateInputModuleSettings(string moduleId)
+    {
+        ArgumentException.ThrowIfNullOrWhiteSpace(moduleId);
+
+        if (!InputModuleSettings.TryGetValue(moduleId, out var moduleSettings) || moduleSettings is null)
+        {
+            moduleSettings = new JsonObject();
+            InputModuleSettings[moduleId] = moduleSettings;
+        }
+
+        return moduleSettings;
+    }
+
     private void EnsureDefaults()
     {
         if (!InputModuleSettings.ContainsKey(DefaultInputModuleId))

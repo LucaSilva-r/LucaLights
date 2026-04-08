@@ -186,3 +186,27 @@ Blockers or risks:
 Next recommended step:
 
 - implement `ITGManiaInputModule` and connect it to the current named pipe or FIFO protocol
+
+## 2026-04-08
+
+What changed:
+
+- added [ARCHITECTURE_GRAPH_BINDINGS.md](./ARCHITECTURE_GRAPH_BINDINGS.md) to capture the reusable graph-input and binding-profile design
+- implemented `ITGManiaInputModule` on top of the new input-module contracts
+- ported the current named pipe or FIFO reading approach into the new module
+- translated ITGMania state into normalized raw channels and snapshots for the core runtime
+
+Decisions made:
+
+- reusable graphs should eventually target graph-defined inputs plus binding profiles, not giant dynamic game-state nodes
+- raw game channels remain available for game-specific graphs
+- the first ITG module focuses on raw channels and parity, not semantic cross-game mapping
+
+Blockers or risks:
+
+- the ITG module currently exposes raw button, cabinet, and lights-mode channels only; richer timing data would need another source
+- the server host still needs to wire `ConfigManager`, `GameInputManager`, and `LightingManager` together in one runtime
+
+Next recommended step:
+
+- add the first ASP.NET Core hosted bootstrap for config, input modules, and lighting engine lifecycle

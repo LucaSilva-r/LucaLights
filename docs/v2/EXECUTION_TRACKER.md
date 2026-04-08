@@ -3,8 +3,8 @@
 ## Status Summary
 
 - Overall status: `in progress`
-- Current phase: `Phase 0 - Foundation`
-- Current implementation slice: `Phase 0.3 complete, Phase 0.4 next`
+- Current phase: `Phase 1 - Server Host`
+- Current implementation slice: `Phase 0 foundation complete, server host next`
 - Last updated: `2026-04-08`
 
 ## Milestones
@@ -15,7 +15,7 @@
 | Phase 0.1 - New solution skeleton | done | `src/LucaLights.Core` and `src/LucaLights.Server` exist and build |
 | Phase 0.2 - Core extraction | done | Lighting/device/settings code builds without Avalonia dependencies |
 | Phase 0.3 - Input module foundation | done | `IGameInputModule`, `GameInputManager`, `InputSnapshot`, and `InputDefinition` are implemented |
-| Phase 0.4 - ITG parity module | not started | Current ITGMania named-pipe behavior works through `ITGManiaInputModule` |
+| Phase 0.4 - ITG parity module | done | Current ITGMania named-pipe behavior works through `ITGManiaInputModule` |
 | Phase 1 - Server host | not started | ASP.NET Core host serves APIs, static UI assets, and WebSocket endpoints |
 | Phase 2 - Node engine | not started | Effects can render from compiled node graphs |
 | Phase 3 - SvelteKit UI | not started | Browser UI supports device management, preview, and graph editing |
@@ -54,6 +54,8 @@ Completed in this phase so far:
 - extracted portable core render loop: `LightingManager`, renderer interface, frame context, options, and event hooks
 - added generic game-input foundation: `InputSnapshot`, `InputDefinition`, `IGameInputModule`, and `GameInputManager`
 - connected `LightingManager` to real input activity state and carried `InputSnapshot` through `LightingFrameContext`
+- added `ITGManiaInputModule` with named pipe or FIFO reading and raw channel definitions
+- captured graph input and binding-profile design for future graph reuse
 
 ### Phase 1 - Server Host
 
@@ -111,15 +113,15 @@ Exit criteria:
 
 ## Next Recommended Slice
 
-Start `Phase 0.4 - ITG parity module`.
+Start `Phase 1 - Server Host`.
 
 Concrete target:
 
-- add `ITGManiaInputModule`
-- port the current named pipe or FIFO reader behind that module
-- translate legacy game-state data into normalized channels and snapshots
-- start `GameInputManager` from the configured active module id
+- add an ASP.NET Core hosted service that owns `ConfigManager`, `GameInputManager`, and `LightingManager`
+- register `ITGManiaInputModule` from settings and start the active module
+- add a first diagnostic endpoint to inspect input-module state
+- keep the server host thin while the browser UI does not exist yet
 
 Suggested checkpoint commit:
 
-- `v2: add itgmania input module`
+- `v2: add server-hosted engine bootstrap`

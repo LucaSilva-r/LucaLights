@@ -7,6 +7,7 @@ Use these files together:
 - [`PLAN.md`](../../PLAN.md): strategic target state and phased architecture plan
 - [`EXECUTION_TRACKER.md`](./EXECUTION_TRACKER.md): current implementation status, milestones, risks, and next slices
 - [`ARCHITECTURE_GAME_INPUTS.md`](./ARCHITECTURE_GAME_INPUTS.md): canonical design for game-agnostic input modules
+- [`ARCHITECTURE_GRAPH_BINDINGS.md`](./ARCHITECTURE_GRAPH_BINDINGS.md): design for reusable graph inputs and binding profiles
 - [`WORK_LOG.md`](./WORK_LOG.md): append-only session log for progress across multiple chats
 
 ## Working Rules
@@ -29,9 +30,9 @@ To keep the rewrite reviewable:
 
 ## Current Focus
 
-The current recommended starting point is Phase 0:
+The current recommended starting point is Phase 1:
 
-- establish the new solution structure
-- extract the UI-free core
-- introduce the game-input module abstraction early
-- preserve behavior with an `ITGManiaInputModule` as the first adapter
+- add the ASP.NET Core host bootstrap
+- start the engine and active input module from config
+- expose a thin diagnostics surface for early integration
+- keep the browser UI deferred until the backend lifecycle is stable
