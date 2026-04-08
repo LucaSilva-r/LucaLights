@@ -244,7 +244,7 @@ namespace LTEK_ULed.Code
                     }
                     if (counter == buffer.Length)
                     {
-                        if (!MainViewModel.Instance!.debug && Settings.Instance!.ActiveInputSource != InputSource.OsuPlayer)
+                        if (!MainViewModel.Instance!.debug && !(OsuPlayerEngine.Instance?.IsGameplay == true))
                         {
                             GameState.gameState.Parse(buffer);
                         }

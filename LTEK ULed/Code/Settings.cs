@@ -35,11 +35,7 @@ namespace LTEK_ULed.Code
             ? "StepMania-Lights-SextetStream"
             : Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.UserProfile), ".itgmania/Save/StepMania-Lights-SextetStream.out");
 
-        [ObservableProperty]
-        [property: JsonPropertyName("activeInputSource")]
-        public InputSource _activeInputSource = InputSource.ITGMania;
-
-        [ObservableProperty]
+[ObservableProperty]
         [property: JsonPropertyName("osuColumnMappings")]
         public Dictionary<int, List<ColumnMapping>> _osuColumnMappings = new();
 

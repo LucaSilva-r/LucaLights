@@ -22,6 +22,8 @@ public class OsuPlayerEngine : IDisposable
     private bool _isGameplay;
     private bool _isPaused;
 
+    public static OsuPlayerEngine? Instance { get; private set; }
+    public bool IsGameplay => _isGameplay;
     public bool IsConnected => _tosu.IsConnected;
 
     public event Action<string>? StatusChanged;
@@ -31,6 +33,7 @@ public class OsuPlayerEngine : IDisposable
 
     public void Start()
     {
+        Instance = this;
         _tosu.DataReceived += OnTosuData;
         _tosu.ConnectionChanged += connected =>
         {
@@ -146,7 +149,6 @@ public class OsuPlayerEngine : IDisposable
         if (_isGameplay) return;
         _isGameplay = true;
 
-        Settings.Instance!.ActiveInputSource = InputSource.OsuPlayer;
         GameState.gameState.SetConnectionStatus(true);
         lock (GameState.gameState.state)
         {
@@ -181,9 +183,6 @@ public class OsuPlayerEngine : IDisposable
             GameState.gameState.state.cabinetLight = CabinetLight.NONE;
         }
         GameState.gameState.SetConnectionStatus(false);
-
-        if (Settings.Instance != null)
-            Settings.Instance.ActiveInputSource = InputSource.ITGMania;
     }
 
     private void TimingLoop(CancellationToken ct)
