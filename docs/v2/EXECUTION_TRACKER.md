@@ -4,7 +4,7 @@
 
 - Overall status: `in progress`
 - Current phase: `Phase 0 - Foundation`
-- Current implementation slice: `Phase 0.2 model/config baseline extracted`
+- Current implementation slice: `Phase 0.2 complete, Phase 0.3 next`
 - Last updated: `2026-04-08`
 
 ## Milestones
@@ -13,7 +13,7 @@
 |---|---|---|
 | Docs scaffold | done | Repo contains plan, tracker, architecture note, and work log |
 | Phase 0.1 - New solution skeleton | done | `src/LucaLights.Core` and `src/LucaLights.Server` exist and build |
-| Phase 0.2 - Core extraction | in progress | Lighting/device/settings code builds without Avalonia dependencies |
+| Phase 0.2 - Core extraction | done | Lighting/device/settings code builds without Avalonia dependencies |
 | Phase 0.3 - Input module foundation | not started | `IGameInputModule`, `GameInputManager`, `InputSnapshot`, and `InputDefinition` are implemented |
 | Phase 0.4 - ITG parity module | not started | Current ITGMania named-pipe behavior works through `ITGManiaInputModule` |
 | Phase 1 - Server host | not started | ASP.NET Core host serves APIs, static UI assets, and WebSocket endpoints |
@@ -51,6 +51,7 @@ Completed in this phase so far:
 - extracted portable core models: `Segment`, `Device`, `Settings`, `Effect`, `NodeGraph`
 - extracted portable core persistence: `ConfigManager`
 - extracted portable core transport senders: DDP and UDP Realtime
+- extracted portable core render loop: `LightingManager`, renderer interface, frame context, options, and event hooks
 
 ### Phase 1 - Server Host
 
@@ -108,15 +109,16 @@ Exit criteria:
 
 ## Next Recommended Slice
 
-Start `Phase 0.2 - Core extraction`.
+Start `Phase 0.3 - Input module foundation`.
 
 Concrete target:
 
-- extract `LightingManager` into `LucaLights.Core.Engine`
-- remove Avalonia/MainWindow/MainViewModel dependencies from the extracted render loop
-- introduce event hooks or injected flags for preview/output instead of UI singleton calls
-- keep the old app building while the new core grows alongside it
+- add `InputSnapshot`
+- add `InputDefinition`
+- add `IGameInputModule`
+- add `GameInputManager`
+- connect the new core `LightingManager` to a real input activity source instead of ad hoc callbacks
 
 Suggested checkpoint commit:
 
-- `v2: extract core model and config baseline`
+- `v2: add game input module foundation`

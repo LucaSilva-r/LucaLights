@@ -26,6 +26,9 @@ public sealed class Settings
     public Dictionary<string, JsonObject> InputModuleSettings { get; set; } =
         new(StringComparer.OrdinalIgnoreCase);
 
+    [JsonIgnore]
+    public bool Dirty { get; private set; } = true;
+
     public void Normalize()
     {
         Devices ??= [];
@@ -38,6 +41,16 @@ public sealed class Settings
             : new Dictionary<string, JsonObject>(InputModuleSettings, StringComparer.OrdinalIgnoreCase);
 
         EnsureDefaults();
+    }
+
+    public void MarkDirty()
+    {
+        Dirty = true;
+    }
+
+    public void ClearDirty()
+    {
+        Dirty = false;
     }
 
     private void EnsureDefaults()

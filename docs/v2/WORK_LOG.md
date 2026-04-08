@@ -142,3 +142,25 @@ Blockers or risks:
 Next recommended step:
 
 - extract `LightingManager` into `LucaLights.Core.Engine`
+
+## 2026-04-08
+
+What changed:
+
+- extracted a new core `LightingManager` into `src/LucaLights.Core/Engine`
+- replaced legacy UI-singleton coupling with a renderer interface, runtime callbacks, and engine events
+- added a sync root and dirty-settings flow so the new engine can be driven safely by future server/input layers
+
+Decisions made:
+
+- the extracted core engine should not know about Avalonia, `MainWindow`, or desktop view models
+- effect rendering stays behind an interface for now so we can keep moving before the node engine lands
+
+Blockers or risks:
+
+- the new engine currently uses a generic renderer abstraction, so ITG-specific effect parity is not wired yet
+- the next phase needs to replace the temporary activity callback with a real input-module manager
+
+Next recommended step:
+
+- implement the input-module foundation in `LucaLights.Core`
