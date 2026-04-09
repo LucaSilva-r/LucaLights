@@ -2,6 +2,7 @@ using LucaLights.Core.Configuration;
 using LucaLights.Core.Engine;
 using LucaLights.Core.GameInput;
 using LucaLights.Core.Models;
+using LucaLights.Server.Endpoints;
 using LucaLights.Server.Services;
 
 var builder = WebApplication.CreateBuilder(args);
@@ -88,5 +89,7 @@ app.MapGet(
 app.MapGet(
     "/api/input-state",
     (GameInputManager inputManager) => Results.Ok(inputManager.LatestSnapshot));
+
+app.MapSettingsEndpoints();
 
 app.Run();

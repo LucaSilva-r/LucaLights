@@ -4,7 +4,7 @@
 
 - Overall status: `in progress`
 - Current phase: `Phase 1 - Server Host`
-- Current implementation slice: `Server-hosted engine bootstrap complete, REST APIs next`
+- Current implementation slice: `REST API baseline complete, WebSocket/event streams next`
 - Last updated: `2026-04-09`
 
 ## Milestones
@@ -75,6 +75,10 @@ Completed in this phase so far:
 - added diagnostic endpoints for root status, system status, input module definitions, and latest input state
 - fixed ITGMania input definition initialization so server endpoints can enumerate channels safely
 - added a bounded ITGMania shutdown wait so blocked FIFO reads do not hang server shutdown
+- added stable v2 device and segment IDs for browser-safe REST routes
+- added REST CRUD for devices, nested segments, and effects
+- added `GET /api/settings` and `PUT /api/settings` backed by the shared server settings instance
+- routed settings mutations through `LightingManager.SyncRoot`, dirty-state marking, and `ConfigManager.Save()`
 
 ### Phase 2 - Node Engine
 
@@ -126,10 +130,10 @@ Continue `Phase 1 - Server Host`.
 
 Concrete target:
 
-- add REST endpoints for devices, effects, and settings
-- route settings mutations through the shared `Settings` instance and `ConfigManager`
-- keep endpoints thin so the eventual browser UI can consume them without learning legacy desktop assumptions
+- add WebSocket plumbing for preview frames and runtime events
+- expose config/input changes as server-side events that the future browser UI can subscribe to
+- keep the first pass compatible with the temporary no-op renderer
 
 Suggested checkpoint commit:
 
-- `v2: add server settings api`
+- `v2: add server event streams`

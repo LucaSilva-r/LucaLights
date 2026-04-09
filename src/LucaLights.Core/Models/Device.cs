@@ -25,6 +25,9 @@ public sealed class Device : IDisposable
     [JsonPropertyName("name")]
     public string Name { get; set; } = "New Device";
 
+    [JsonPropertyName("id")]
+    public string Id { get; set; } = Guid.NewGuid().ToString("N");
+
     [JsonPropertyName("ip")]
     public string Ip { get; set; } = "192.168.1.1";
 

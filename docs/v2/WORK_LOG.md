@@ -234,3 +234,27 @@ Blockers or risks:
 Next recommended step:
 
 - add REST endpoints for devices, effects, and settings using the shared v2 `Settings` instance and `ConfigManager`
+
+## 2026-04-09
+
+What changed:
+
+- added stable IDs to v2 devices and segments so server routes do not depend on list indices
+- added REST CRUD endpoints for devices, nested device segments, and effects
+- added `GET /api/settings` and `PUT /api/settings`
+- routed settings mutations through the lighting manager sync root, dirty-state marking, and `ConfigManager.Save()`
+- smoke-tested the API against a temporary config directory so the test writes did not touch normal LucaLights settings
+
+Decisions made:
+
+- REST routes should use stable model IDs from the start because the browser UI will reorder and edit lists frequently
+- the first REST surface stays as thin minimal API endpoint groups instead of introducing controller ceremony this early
+
+Blockers or risks:
+
+- input module setting changes are persisted, but fully reloading a module's construction-time settings still belongs with a later engine restart or module hot-reload endpoint
+- `Settings.Dirty` currently means runtime settings still need to be applied by the render loop, so it can remain true while input is inactive even after the config file has been saved
+
+Next recommended step:
+
+- add WebSocket plumbing for preview frames and runtime events

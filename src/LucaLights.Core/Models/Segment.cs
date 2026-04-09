@@ -21,6 +21,9 @@ public sealed class Segment
     [JsonPropertyName("name")]
     public string Name { get; set; } = "New Segment";
 
+    [JsonPropertyName("id")]
+    public string Id { get; set; } = Guid.NewGuid().ToString("N");
+
     [JsonPropertyName("groupIds")]
     public List<int> GroupIds { get; set; } = [];
 
