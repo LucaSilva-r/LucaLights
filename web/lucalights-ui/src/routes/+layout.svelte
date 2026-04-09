@@ -10,6 +10,7 @@
 
 	const navItems = [
 		{ href: '/', label: 'Dashboard', icon: LayoutDashboard },
+		{ href: '/editor', label: 'Graph Editor', icon: Workflow },
 	] as const;
 
 	function isActive(href: string) {
@@ -41,13 +42,6 @@
 						{item.label}
 					</Button>
 				{/each}
-
-				{#if page.url.pathname.startsWith('/effects/')}
-					<Button variant="secondary" size="sm">
-						<Workflow class="size-4" />
-						Graph Editor
-					</Button>
-				{/if}
 			</nav>
 		</div>
 	</header>

@@ -4,7 +4,7 @@
 
 - Overall status: `in progress`
 - Current phase: `Phase 3 - Web UI`
-- Current implementation slice: `Graph editor shell implemented; device/effect management pages next`
+- Current implementation slice: `Single-graph architecture; graph editor at /editor; device management pages next`
 - Last updated: `2026-04-09`
 
 ## Milestones
@@ -135,6 +135,12 @@ Completed in this phase so far:
 - installed `@xyflow/svelte` and added SvelteFlow graph types to the API client
 - added `apiPut` helper and full node-type, graph-document, and graph-response TypeScript types
 - created graph editor route at `/effects/[id]` with SvelteFlow canvas, load/save, validation display, and Ctrl+S shortcut
+- **architecture change**: collapsed multi-effect model to a single unified graph on `Settings.Graph`
+- removed `Effect.cs`, `ActiveEffectId`, effects CRUD endpoints, and active-effect selection API
+- replaced `/api/effects/{id}/graph` endpoints with `/api/graph` (GET/PUT/validate)
+- moved graph editor to `/editor` route (no effect ID needed)
+- updated dashboard to show graph summary card with "Open Editor" button instead of effects list
+- added Editor link to the navigation layout
 
 ### Phase 4 - Packaging and Polish
 
@@ -161,6 +167,7 @@ Exit criteria:
 - Game-specific integrations are modules, not hardcoded branches in the lighting engine.
 - The first module is `ITGManiaInputModule` to preserve current behavior.
 - The browser UI is a consumer of backend-defined input channels, not a source of game-specific assumptions.
+- One unified graph per configuration, not multiple effects. Multiple output nodes in the same graph handle per-device routing. Scene switching deferred to future subgraph support.
 
 ## Next Recommended Slice
 
@@ -168,11 +175,11 @@ Continue `Phase 3 - SvelteKit UI`.
 
 Concrete target:
 
-- add device/effect CRUD management pages in the browser (create, edit, delete)
+- add device CRUD management pages in the browser (create, edit, delete)
 - add custom SvelteFlow node components per node type (color pickers, input selectors, etc.)
-- integrate the Svelte build output into `LucaLights.Server/wwwroot` static assets
 - add node palette / drag-to-add for the graph editor
+- integrate the Svelte build output into `LucaLights.Server/wwwroot` static assets
 
 Suggested checkpoint commit:
 
-- `v2: add graph editor shell and active-effect selection`
+- `v2: unify to single graph architecture`

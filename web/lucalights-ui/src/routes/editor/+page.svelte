@@ -1,5 +1,4 @@
 <script lang="ts">
-	import { page } from '$app/state';
 	import { onMount } from 'svelte';
 	import {
 		SvelteFlow,
@@ -33,15 +32,12 @@
 		apiGet,
 		apiPut,
 		toMessage,
-		type Effect,
 		type GraphResponse,
 		type NodeTypeDefinition,
 		type NodeTypesResponse,
 		type SvelteFlowGraphDocument
 	} from '$lib/lucalights';
 
-	let effectId = $derived(page.params.id);
-	let effect = $state<Effect | null>(null);
 	let nodeTypes = $state<NodeTypeDefinition[]>([]);
 	let nodeTypeMap = $derived(new Map(nodeTypes.map((nt) => [nt.typeId, nt])));
 
@@ -121,13 +117,11 @@
 		errorMessage = '';
 
 		try {
-			const [effectData, graphData, nodeTypesData] = await Promise.all([
-				apiGet<Effect>(`/api/effects/${effectId}`),
-				apiGet<GraphResponse>(`/api/effects/${effectId}/graph`),
+			const [graphData, nodeTypesData] = await Promise.all([
+				apiGet<GraphResponse>('/api/graph'),
 				apiGet<NodeTypesResponse>('/api/node-types')
 			]);
 
-			effect = effectData;
 			nodeTypes = nodeTypesData.nodeTypes;
 
 			const flow = graphDocumentToFlow(graphData.graph);
@@ -140,7 +134,6 @@
 
 			dirty = false;
 
-			// Delay setting initialized so the initial bind doesn't trigger dirty
 			requestAnimationFrame(() => {
 				initialized = true;
 			});
@@ -158,10 +151,7 @@
 
 		try {
 			const graphDoc = flowToGraphDocument();
-			const result = await apiPut<GraphResponse>(
-				`/api/effects/${effectId}/graph`,
-				graphDoc
-			);
+			const result = await apiPut<GraphResponse>('/api/graph', graphDoc);
 
 			validationErrors = result.validation.diagnostics
 				.filter((d) => d.severity === 'Error')
@@ -214,7 +204,7 @@
 </script>
 
 <svelte:head>
-	<title>{effect?.name ?? 'Graph Editor'} - LucaLights</title>
+	<title>Graph Editor - LucaLights</title>
 </svelte:head>
 
 <svelte:window onkeydown={handleKeydown} />
@@ -227,9 +217,7 @@
 				Dashboard
 			</Button>
 
-			{#if effect}
-				<span class="text-sm font-semibold">{effect.name}</span>
-			{/if}
+			<span class="text-sm font-semibold">Graph Editor</span>
 
 			{#if dirty}
 				<Badge variant="secondary">Unsaved changes</Badge>
@@ -284,8 +272,8 @@
 						Empty Graph
 					</CardTitle>
 					<CardDescription>
-						This effect has no nodes yet. The node graph editor will display nodes and
-						connections here once you add them via the API.
+						No nodes in the graph yet. Add nodes to start building your lighting
+						pipeline.
 					</CardDescription>
 				</CardHeader>
 				<CardContent>

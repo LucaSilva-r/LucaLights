@@ -2,11 +2,9 @@
 	import {
 		Activity,
 		Cable,
-		Check,
 		Cpu,
 		Gamepad2,
 		Layers3,
-		Pencil,
 		RefreshCw,
 		RotateCcw,
 		Workflow
@@ -35,14 +33,12 @@
 	import {
 		apiGet,
 		apiPost,
-		apiPut,
 		createSocket,
 		entriesOf,
 		formatAge,
 		rgb,
 		toMessage,
 		type Device,
-		type Effect,
 		type InputDefinition,
 		type InputSnapshot,
 		type NodeTypesResponse,
@@ -55,7 +51,6 @@
 	let inputSnapshot = $state<InputSnapshot | null>(null);
 	let inputModules = $state<InputDefinition[]>([]);
 	let devices = $state<Device[]>([]);
-	let effects = $state<Effect[]>([]);
 	let previewPayload = $state<PreviewPayload | null>(null);
 	let nodeTypeCount = $state(0);
 	let latestRuntimeEvent = $state<RuntimeEnvelope | null>(null);
@@ -83,9 +78,6 @@
 	let activeModuleDefinition = $derived(
 		inputModules.find((moduleDefinition) => moduleDefinition.moduleId === systemStatus?.input.activeModuleId)
 	);
-	let activeEffect = $derived(
-		effects.find((effect) => effect.id === systemStatus?.settings.activeEffectId)
-	);
 	let visibleActiveBoolEntries = $derived(activeBoolEntries.slice(0, 24));
 	let hiddenActiveBoolCount = $derived(
 		Math.max(0, activeBoolEntries.length - visibleActiveBoolEntries.length)
@@ -95,13 +87,12 @@
 		refreshing = true;
 
 		try {
-			const [status, snapshot, moduleDefinitions, deviceList, effectList, nodeTypes] =
+			const [status, snapshot, moduleDefinitions, deviceList, nodeTypes] =
 				await Promise.all([
 					apiGet<SystemStatus>("/api/system/status"),
 					apiGet<InputSnapshot>("/api/input-state"),
 					apiGet<InputDefinition[]>("/api/input-modules"),
 					apiGet<Device[]>("/api/devices"),
-					apiGet<Effect[]>("/api/effects"),
 					apiGet<NodeTypesResponse>("/api/node-types")
 				]);
 
@@ -109,7 +100,6 @@
 			inputSnapshot = snapshot;
 			inputModules = moduleDefinitions;
 			devices = deviceList;
-			effects = effectList;
 			nodeTypeCount = nodeTypes.nodeTypes.length;
 			errorMessage = "";
 		} catch (error) {
@@ -129,15 +119,6 @@
 			errorMessage = toMessage(error);
 		} finally {
 			restarting = false;
-		}
-	}
-
-	async function setActiveEffect(effectId: string) {
-		try {
-			await apiPut("/api/settings/active-effect", { activeEffectId: effectId });
-			await refreshDashboard();
-		} catch (error) {
-			errorMessage = toMessage(error);
 		}
 	}
 
@@ -228,10 +209,6 @@
 
 	function deviceLedCount(device: Device) {
 		return device.segments.reduce((total, segment) => total + segment.length, 0);
-	}
-
-	function graphSummary(effect: Effect) {
-		return `${effect.graph.nodes.length} nodes / ${effect.graph.connections.length} links`;
 	}
 
 	function moduleCategoryCount(moduleDefinition: InputDefinition) {
@@ -422,7 +399,7 @@
 					</CardAction>
 				</CardHeader>
 				<CardContent class="space-y-2 text-sm text-muted-foreground">
-					<p>Active effect: {activeEffect?.name ?? "None selected"}</p>
+					<p>Graph: {systemStatus?.settings.graphNodes ?? 0} nodes / {systemStatus?.settings.graphConnections ?? 0} connections</p>
 					<p>Latest event: {latestRuntimeEvent?.type ?? "Waiting for runtime stream"}</p>
 				</CardContent>
 			</Card>
@@ -450,7 +427,7 @@
 						Topology
 					</CardDescription>
 					<CardTitle class="text-2xl">
-						{systemStatus?.settings.devices ?? 0} devices / {systemStatus?.settings.effects ?? 0} effects
+						{systemStatus?.settings.devices ?? 0} devices
 					</CardTitle>
 				</CardHeader>
 				<CardContent class="space-y-2 text-sm text-muted-foreground">
@@ -746,44 +723,31 @@
 
 				<Card class="border-white/60 bg-white/82 shadow-sm backdrop-blur">
 					<CardHeader>
-						<CardTitle>Effects</CardTitle>
+						<CardTitle>Node Graph</CardTitle>
 						<CardDescription>
-							Current effect inventory and lightweight graph summaries.
+							The unified lighting graph driving all output devices.
 						</CardDescription>
 					</CardHeader>
 					<CardContent class="space-y-3">
-						{#if effects.length > 0}
-							{#each effects as effect}
-								{@const isActive = effect.id === systemStatus?.settings.activeEffectId}
-								<div class="rounded-2xl border {isActive ? 'border-primary/40 bg-primary/5' : 'border-border/70 bg-background/65'} p-4">
-									<div class="flex items-start justify-between gap-3">
-										<div>
-											<p class="text-base font-semibold">{effect.name}</p>
-											<p class="text-sm text-muted-foreground">{graphSummary(effect)}</p>
-										</div>
-										{#if isActive}
-											<Badge>Active</Badge>
-										{:else}
-											<Badge variant="outline">Stored</Badge>
-										{/if}
-									</div>
-									<div class="mt-3 flex items-center gap-2">
-										{#if !isActive}
-											<Button size="sm" variant="outline" onclick={() => setActiveEffect(effect.id)}>
-												<Check class="size-3.5" />
-												Activate
-											</Button>
-										{/if}
-										<Button size="sm" variant="outline" href="/effects/{effect.id}">
-											<Pencil class="size-3.5" />
-											Edit Graph
-										</Button>
-									</div>
+						<div class="rounded-2xl border border-border/70 bg-background/65 p-4">
+							<div class="flex items-start justify-between gap-3">
+								<div>
+									<p class="text-base font-semibold">
+										{systemStatus?.settings.graphNodes ?? 0} nodes
+									</p>
+									<p class="text-sm text-muted-foreground">
+										{systemStatus?.settings.graphConnections ?? 0} connections
+									</p>
 								</div>
-							{/each}
-						{:else}
-							<p class="text-sm text-muted-foreground">No effects configured yet.</p>
-						{/if}
+								<Badge variant="outline">{nodeTypeCount} types available</Badge>
+							</div>
+							<div class="mt-3">
+								<Button size="sm" href="/editor">
+									<Workflow class="size-3.5" />
+									Open Editor
+								</Button>
+							</div>
+						</div>
 					</CardContent>
 				</Card>
 

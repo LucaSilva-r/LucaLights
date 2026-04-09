@@ -4,8 +4,6 @@ using LucaLights.Core.GameInput;
 using LucaLights.Core.Models;
 using LucaLights.Core.NodeEngine;
 using LucaLights.Server.Services;
-using Microsoft.AspNetCore.Http;
-using Microsoft.AspNetCore.Routing;
 
 namespace LucaLights.Server.Endpoints;
 
@@ -15,8 +13,6 @@ public static class SettingsEndpoints
     {
         endpoints.MapGet("/api/settings", GetSettings);
         endpoints.MapPut("/api/settings", ReplaceSettings);
-
-        endpoints.MapPut("/api/settings/active-effect", SetActiveEffect);
 
         endpoints.MapGet("/api/devices", ListDevices);
         endpoints.MapPost("/api/devices", CreateDevice);
@@ -29,12 +25,6 @@ public static class SettingsEndpoints
         endpoints.MapGet("/api/devices/{deviceId}/segments/{segmentId}", GetSegment);
         endpoints.MapPut("/api/devices/{deviceId}/segments/{segmentId}", UpdateSegment);
         endpoints.MapDelete("/api/devices/{deviceId}/segments/{segmentId}", DeleteSegment);
-
-        endpoints.MapGet("/api/effects", ListEffects);
-        endpoints.MapPost("/api/effects", CreateEffect);
-        endpoints.MapGet("/api/effects/{effectId}", GetEffect);
-        endpoints.MapPut("/api/effects/{effectId}", UpdateEffect);
-        endpoints.MapDelete("/api/effects/{effectId}", DeleteEffect);
 
         return endpoints;
     }
@@ -67,7 +57,6 @@ public static class SettingsEndpoints
         NormalizeSettings(replacement);
 
         var activeInputModuleId = replacement.ActiveInputModuleId;
-        var activeEffectId = replacement.ActiveEffectId;
         var activeInputModuleChanged = false;
 
         lock (lightingManager.SyncRoot)
@@ -83,8 +72,7 @@ public static class SettingsEndpoints
             }
 
             settings.Devices = replacement.Devices;
-            settings.Effects = replacement.Effects;
-            settings.ActiveEffectId = activeEffectId;
+            settings.Graph = replacement.Graph;
             settings.ActiveInputModuleId = activeInputModuleId;
             settings.InputModuleSettings = replacement.InputModuleSettings;
 
@@ -97,33 +85,6 @@ public static class SettingsEndpoints
         }
 
         return Results.Ok(new SettingsResponse(configManager.SettingsPath, settings));
-    }
-
-    private static IResult SetActiveEffect(
-        ActiveEffectRequest request,
-        Settings settings,
-        ConfigManager configManager,
-        RuntimeEventBroadcaster eventBroadcaster,
-        LightingManager lightingManager)
-    {
-        if (request is null)
-        {
-            return Results.BadRequest("Request body is required.");
-        }
-
-        lock (lightingManager.SyncRoot)
-        {
-            if (!string.IsNullOrEmpty(request.ActiveEffectId)
-                && FindEffectIndex(settings, request.ActiveEffectId) < 0)
-            {
-                return Results.NotFound($"Effect not found: {request.ActiveEffectId}");
-            }
-
-            settings.ActiveEffectId = string.IsNullOrEmpty(request.ActiveEffectId) ? null : request.ActiveEffectId;
-            SaveDirty(settings, configManager, eventBroadcaster, "activeEffect.changed");
-        }
-
-        return Results.Ok(new { activeEffectId = settings.ActiveEffectId });
     }
 
     private static IResult ListDevices(Settings settings, LightingManager lightingManager)
@@ -379,112 +340,6 @@ public static class SettingsEndpoints
         return Results.NoContent();
     }
 
-    private static IResult ListEffects(Settings settings, LightingManager lightingManager)
-    {
-        lock (lightingManager.SyncRoot)
-        {
-            return Results.Ok(settings.Effects.ToArray());
-        }
-    }
-
-    private static IResult CreateEffect(
-        Effect effect,
-        Settings settings,
-        ConfigManager configManager,
-        RuntimeEventBroadcaster eventBroadcaster,
-        LightingManager lightingManager)
-    {
-        if (effect is null)
-        {
-            return Results.BadRequest("Effect body is required.");
-        }
-
-        NormalizeEffect(effect);
-
-        lock (lightingManager.SyncRoot)
-        {
-            if (FindEffectIndex(settings, effect.Id) >= 0)
-            {
-                return Results.Conflict($"Effect id already exists: {effect.Id}");
-            }
-
-            settings.Effects.Add(effect);
-            SaveDirty(settings, configManager, eventBroadcaster, "effect.created");
-        }
-
-        return Results.Created($"/api/effects/{Uri.EscapeDataString(effect.Id)}", effect);
-    }
-
-    private static IResult GetEffect(string effectId, Settings settings, LightingManager lightingManager)
-    {
-        lock (lightingManager.SyncRoot)
-        {
-            var index = FindEffectIndex(settings, effectId);
-            return index < 0
-                ? Results.NotFound()
-                : Results.Ok(settings.Effects[index]);
-        }
-    }
-
-    private static IResult UpdateEffect(
-        string effectId,
-        Effect effect,
-        Settings settings,
-        ConfigManager configManager,
-        RuntimeEventBroadcaster eventBroadcaster,
-        LightingManager lightingManager)
-    {
-        if (effect is null)
-        {
-            return Results.BadRequest("Effect body is required.");
-        }
-
-        if (!string.IsNullOrWhiteSpace(effect.Id)
-            && !string.Equals(effect.Id, effectId, StringComparison.OrdinalIgnoreCase))
-        {
-            return Results.BadRequest("Effect id in the body must match the route id.");
-        }
-
-        effect.Id = effectId;
-        NormalizeEffect(effect);
-
-        lock (lightingManager.SyncRoot)
-        {
-            var index = FindEffectIndex(settings, effectId);
-            if (index < 0)
-            {
-                return Results.NotFound();
-            }
-
-            settings.Effects[index] = effect;
-            SaveDirty(settings, configManager, eventBroadcaster, "effect.updated");
-        }
-
-        return Results.Ok(effect);
-    }
-
-    private static IResult DeleteEffect(
-        string effectId,
-        Settings settings,
-        ConfigManager configManager,
-        RuntimeEventBroadcaster eventBroadcaster,
-        LightingManager lightingManager)
-    {
-        lock (lightingManager.SyncRoot)
-        {
-            var index = FindEffectIndex(settings, effectId);
-            if (index < 0)
-            {
-                return Results.NotFound();
-            }
-
-            settings.Effects.RemoveAt(index);
-            SaveDirty(settings, configManager, eventBroadcaster, "effect.deleted");
-        }
-
-        return Results.NoContent();
-    }
-
     private static void SaveDirty(
         Settings settings,
         ConfigManager configManager,
@@ -500,15 +355,11 @@ public static class SettingsEndpoints
     private static void NormalizeSettings(Settings settings)
     {
         settings.Normalize();
+        NodeGraphCompiler.NormalizeGraph(settings.Graph);
 
         foreach (var device in settings.Devices)
         {
             NormalizeDevice(device);
-        }
-
-        foreach (var effect in settings.Effects)
-        {
-            NormalizeEffect(effect);
         }
     }
 
@@ -538,17 +389,6 @@ public static class SettingsEndpoints
         segment.Length = segment.Length;
     }
 
-    private static void NormalizeEffect(Effect effect)
-    {
-        if (string.IsNullOrWhiteSpace(effect.Id))
-        {
-            effect.Id = Guid.NewGuid().ToString("N");
-        }
-
-        effect.Graph ??= new NodeGraph();
-        NodeGraphCompiler.NormalizeGraph(effect.Graph);
-    }
-
     private static Device? FindDevice(Settings settings, string deviceId)
     {
         var index = FindDeviceIndex(settings, deviceId);
@@ -567,13 +407,5 @@ public static class SettingsEndpoints
             segment => string.Equals(segment.Id, segmentId, StringComparison.OrdinalIgnoreCase));
     }
 
-    private static int FindEffectIndex(Settings settings, string effectId)
-    {
-        return settings.Effects.FindIndex(
-            effect => string.Equals(effect.Id, effectId, StringComparison.OrdinalIgnoreCase));
-    }
-
     private sealed record SettingsResponse(string SettingsPath, Settings Settings);
-
-    private sealed record ActiveEffectRequest(string? ActiveEffectId);
 }

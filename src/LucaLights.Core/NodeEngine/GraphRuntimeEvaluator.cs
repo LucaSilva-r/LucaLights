@@ -17,14 +17,14 @@ public sealed class GraphRuntimeEvaluator
         _nodeTypeCatalog = nodeTypeCatalog;
     }
 
-    public PreparedGraphEffect? Prepare(Effect? effect)
+    public PreparedGraph? Prepare(NodeGraph? graph)
     {
-        if (effect is null)
+        if (graph is null)
         {
             return null;
         }
 
-        var compiled = _nodeGraphCompiler.Compile(effect.Graph);
+        var compiled = _nodeGraphCompiler.Compile(graph);
         var nodeTypesByNodeId = new Dictionary<string, NodeTypeDefinition>(StringComparer.OrdinalIgnoreCase);
         var inputConnectionsByNodeId = new Dictionary<string, Dictionary<string, RuntimeConnectionSource>>(StringComparer.OrdinalIgnoreCase);
 
@@ -49,9 +49,7 @@ public sealed class GraphRuntimeEvaluator
                 connection.SourcePortId);
         }
 
-        return new PreparedGraphEffect(
-            effect.Id,
-            effect.Name,
+        return new PreparedGraph(
             compiled,
             nodeTypesByNodeId,
             inputConnectionsByNodeId);
@@ -59,7 +57,7 @@ public sealed class GraphRuntimeEvaluator
 
     public void Render(
         Settings settings,
-        PreparedGraphEffect? preparedEffect,
+        PreparedGraph? preparedEffect,
         LightingFrameContext frameContext)
     {
         ArgumentNullException.ThrowIfNull(settings);
@@ -123,7 +121,7 @@ public sealed class GraphRuntimeEvaluator
     }
 
     private static bool GetInputBool(
-        PreparedGraphEffect preparedEffect,
+        PreparedGraph preparedEffect,
         Dictionary<string, RuntimeValue> outputs,
         string nodeId,
         string portId,
@@ -136,7 +134,7 @@ public sealed class GraphRuntimeEvaluator
     }
 
     private static Color GetInputColor(
-        PreparedGraphEffect preparedEffect,
+        PreparedGraph preparedEffect,
         Dictionary<string, RuntimeValue> outputs,
         string nodeId,
         string portId,
@@ -149,7 +147,7 @@ public sealed class GraphRuntimeEvaluator
     }
 
     private static bool TryGetInputValue(
-        PreparedGraphEffect preparedEffect,
+        PreparedGraph preparedEffect,
         Dictionary<string, RuntimeValue> outputs,
         string nodeId,
         string portId,
@@ -310,9 +308,7 @@ public sealed class GraphRuntimeEvaluator
     }
 }
 
-public sealed record PreparedGraphEffect(
-    string EffectId,
-    string Name,
+public sealed record PreparedGraph(
     CompiledNodeGraph CompiledGraph,
     IReadOnlyDictionary<string, NodeTypeDefinition> NodeTypesByNodeId,
     IReadOnlyDictionary<string, Dictionary<string, RuntimeConnectionSource>> InputConnectionsByNodeId)

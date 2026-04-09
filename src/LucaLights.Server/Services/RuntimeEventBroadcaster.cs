@@ -70,7 +70,8 @@ public sealed class RuntimeEventBroadcaster
         {
             reason,
             devices = settings.Devices.Count,
-            effects = settings.Effects.Count,
+            graphNodes = settings.Graph.Nodes.Count,
+            graphConnections = settings.Graph.Connections.Count,
             activeInputModuleId = settings.ActiveInputModuleId,
             dirty = settings.Dirty
         };

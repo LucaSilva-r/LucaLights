@@ -11,34 +11,26 @@ public static class GraphEndpoints
 {
     public static IEndpointRouteBuilder MapGraphEndpoints(this IEndpointRouteBuilder endpoints)
     {
-        endpoints.MapGet("/api/effects/{effectId}/graph", GetGraph);
-        endpoints.MapPut("/api/effects/{effectId}/graph", ReplaceGraph);
-        endpoints.MapPost("/api/effects/{effectId}/graph/validate", ValidateGraph);
+        endpoints.MapGet("/api/graph", GetGraph);
+        endpoints.MapPut("/api/graph", ReplaceGraph);
+        endpoints.MapPost("/api/graph/validate", ValidateGraph);
 
         return endpoints;
     }
 
     private static IResult GetGraph(
-        string effectId,
         Settings settings,
         LightingManager lightingManager,
         NodeGraphCompiler graphCompiler)
     {
         lock (lightingManager.SyncRoot)
         {
-            var effect = FindEffect(settings, effectId);
-            if (effect is null)
-            {
-                return Results.NotFound();
-            }
-
-            var compiled = graphCompiler.Compile(effect.Graph);
+            var compiled = graphCompiler.Compile(settings.Graph);
             return Results.Ok(CreateGraphResponse(compiled));
         }
     }
 
     private static IResult ReplaceGraph(
-        string effectId,
         SvelteFlowGraphDocument graph,
         Settings settings,
         ConfigManager configManager,
@@ -56,24 +48,15 @@ public static class GraphEndpoints
 
         lock (lightingManager.SyncRoot)
         {
-            var effect = FindEffect(settings, effectId);
-            if (effect is null)
-            {
-                return Results.NotFound();
-            }
-
-            effect.Graph = compiled.Graph;
-            SaveDirty(settings, configManager, eventBroadcaster, "effect.graph.replaced");
+            settings.Graph = compiled.Graph;
+            SaveDirty(settings, configManager, eventBroadcaster, "graph.replaced");
         }
 
         return Results.Ok(CreateGraphResponse(compiled));
     }
 
     private static IResult ValidateGraph(
-        string effectId,
         SvelteFlowGraphDocument graph,
-        Settings settings,
-        LightingManager lightingManager,
         NodeGraphCompiler graphCompiler)
     {
         if (graph is null)
@@ -82,15 +65,6 @@ public static class GraphEndpoints
         }
 
         var nodeGraph = SvelteFlowGraphAdapter.ToNodeGraph(graph);
-
-        lock (lightingManager.SyncRoot)
-        {
-            if (FindEffect(settings, effectId) is null)
-            {
-                return Results.NotFound();
-            }
-        }
-
         return Results.Ok(CreateGraphResponse(graphCompiler.Compile(nodeGraph)));
     }
 
@@ -102,12 +76,6 @@ public static class GraphEndpoints
             validation = compiled.Validation,
             evaluationOrder = compiled.EvaluationOrder.Select(node => node.Id).ToArray()
         };
-    }
-
-    private static Effect? FindEffect(Settings settings, string effectId)
-    {
-        return settings.Effects.FirstOrDefault(
-            effect => string.Equals(effect.Id, effectId, StringComparison.OrdinalIgnoreCase));
     }
 
     private static void SaveDirty(

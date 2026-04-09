@@ -25,20 +25,14 @@ export interface Device {
 	segments: Segment[];
 }
 
-export interface Effect {
-	id: string;
-	name: string;
-	graph: NodeGraph;
-}
-
 export interface SystemStatus {
 	lighting: {
 		running: boolean;
 	};
 	settings: {
 		devices: number;
-		effects: number;
-		activeEffectId: string | null;
+		graphNodes: number;
+		graphConnections: number;
 		activeInputModuleId: string;
 		dirty: boolean;
 	};

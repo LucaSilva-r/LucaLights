@@ -79,8 +79,8 @@ app.MapGet(
             settings = new
             {
                 devices = settings.Devices.Count,
-                effects = settings.Effects.Count,
-                activeEffectId = settings.ActiveEffectId,
+                graphNodes = settings.Graph.Nodes.Count,
+                graphConnections = settings.Graph.Connections.Count,
                 activeInputModuleId = settings.ActiveInputModuleId,
                 dirty = settings.Dirty
             },

@@ -16,11 +16,8 @@ public sealed class Settings
     [JsonPropertyName("devices")]
     public List<Device> Devices { get; set; } = [];
 
-    [JsonPropertyName("effects")]
-    public List<Effect> Effects { get; set; } = [];
-
-    [JsonPropertyName("activeEffectId")]
-    public string? ActiveEffectId { get; set; }
+    [JsonPropertyName("graph")]
+    public NodeGraph Graph { get; set; } = new();
 
     [JsonPropertyName("activeInputModuleId")]
     public string ActiveInputModuleId { get; set; } = DefaultInputModuleId;
@@ -35,24 +32,13 @@ public sealed class Settings
     public void Normalize()
     {
         Devices ??= [];
-        Effects ??= [];
-        ActiveEffectId = string.IsNullOrWhiteSpace(ActiveEffectId) ? null : ActiveEffectId.Trim();
+        Graph ??= new NodeGraph();
         ActiveInputModuleId = string.IsNullOrWhiteSpace(ActiveInputModuleId)
             ? DefaultInputModuleId
             : ActiveInputModuleId;
         InputModuleSettings = InputModuleSettings is null
             ? new Dictionary<string, JsonObject>(StringComparer.OrdinalIgnoreCase)
             : new Dictionary<string, JsonObject>(InputModuleSettings, StringComparer.OrdinalIgnoreCase);
-
-        if (Effects.Count == 0)
-        {
-            ActiveEffectId = null;
-        }
-        else if (string.IsNullOrWhiteSpace(ActiveEffectId)
-            || !Effects.Any(effect => string.Equals(effect.Id, ActiveEffectId, StringComparison.OrdinalIgnoreCase)))
-        {
-            ActiveEffectId = Effects[0].Id;
-        }
 
         EnsureDefaults();
     }
