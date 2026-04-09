@@ -2,6 +2,7 @@ using LucaLights.Core.Configuration;
 using LucaLights.Core.Engine;
 using LucaLights.Core.GameInput;
 using LucaLights.Core.Models;
+using LucaLights.Core.NodeEngine;
 using LucaLights.Server.Services;
 using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Routing;
@@ -514,8 +515,7 @@ public static class SettingsEndpoints
         }
 
         effect.Graph ??= new NodeGraph();
-        effect.Graph.Nodes ??= [];
-        effect.Graph.Connections ??= [];
+        NodeGraphCompiler.NormalizeGraph(effect.Graph);
     }
 
     private static Device? FindDevice(Settings settings, string deviceId)

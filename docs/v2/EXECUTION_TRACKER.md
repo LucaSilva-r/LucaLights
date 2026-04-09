@@ -4,7 +4,7 @@
 
 - Overall status: `in progress`
 - Current phase: `Phase 2 - Node Engine`
-- Current implementation slice: `Phase 1 complete, node engine foundation next`
+- Current implementation slice: `Node engine foundation complete, runtime evaluation next`
 - Last updated: `2026-04-09`
 
 ## Milestones
@@ -17,7 +17,7 @@
 | Phase 0.3 - Input module foundation | done | `IGameInputModule`, `GameInputManager`, `InputSnapshot`, and `InputDefinition` are implemented |
 | Phase 0.4 - ITG parity module | done | Current ITGMania named-pipe behavior works through `ITGManiaInputModule` |
 | Phase 1 - Server host | done | ASP.NET Core host serves APIs, static UI assets, and WebSocket endpoints |
-| Phase 2 - Node engine | not started | Effects can render from compiled node graphs |
+| Phase 2 - Node engine | in progress | Effects can render from compiled node graphs |
 | Phase 3 - SvelteKit UI | not started | Browser UI supports device management, preview, and graph editing |
 | Phase 4 - Packaging and polish | not started | Fresh v2 config works, publish flow works, and lifecycle controls are complete |
 
@@ -87,13 +87,22 @@ Completed in this phase so far:
 
 ### Phase 2 - Node Engine
 
-Status: `not started`
+Status: `in progress`
 
 Exit criteria:
 
 - node graph schema implemented
 - graph compilation with cycle detection
 - runtime evaluation wired into `Effect.Render()`
+
+Completed in this phase so far:
+
+- added node value, port, property, and type definition contracts
+- added a first default node catalog for constants, reusable graph inputs, simple color selection, and segment-color output
+- added `NodeGraphCompiler` with validation diagnostics and topological evaluation order
+- added connection IDs to the graph schema for SvelteFlow-friendly edge identity
+- changed `GET /api/node-types` to return the real catalog
+- added whole-document graph endpoints: `GET /api/effects/{id}/graph`, `PUT /api/effects/{id}/graph`, and `POST /api/effects/{id}/graph/validate`
 
 ### Phase 3 - Web UI
 
@@ -135,11 +144,11 @@ Start `Phase 2 - Node Engine`.
 
 Concrete target:
 
-- define runtime node type contracts and node port metadata
-- add a first node type catalog for simple color/value/input nodes
-- add graph validation and compilation skeleton with cycle detection
-- keep graph persistence document-style so SvelteFlow can save whole graphs atomically
+- add runtime node evaluation primitives
+- define how `output.segment-color` writes into device segment buffers
+- add active-effect selection if needed before rendering
+- replace the temporary `NoOpLightingRenderer` with a graph renderer
 
 Suggested checkpoint commit:
 
-- `v2: add node engine foundation`
+- `v2: add graph runtime evaluation`

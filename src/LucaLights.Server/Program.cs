@@ -2,6 +2,7 @@ using LucaLights.Core.Configuration;
 using LucaLights.Core.Engine;
 using LucaLights.Core.GameInput;
 using LucaLights.Core.Models;
+using LucaLights.Core.NodeEngine;
 using LucaLights.Server.Endpoints;
 using LucaLights.Server.Services;
 
@@ -21,6 +22,8 @@ builder.Services.AddSingleton(provider =>
 });
 builder.Services.AddSingleton<ILightingRenderer, NoOpLightingRenderer>();
 builder.Services.AddSingleton<LightingManagerOptions>();
+builder.Services.AddSingleton<INodeTypeCatalog, DefaultNodeTypeCatalog>();
+builder.Services.AddSingleton<NodeGraphCompiler>();
 builder.Services.AddSingleton<RuntimeEventBroadcaster>();
 builder.Services.AddSingleton(provider =>
 {
@@ -99,6 +102,7 @@ app.MapGet(
     (GameInputManager inputManager) => Results.Ok(inputManager.LatestSnapshot));
 
 app.MapSettingsEndpoints();
+app.MapGraphEndpoints();
 app.MapSystemEndpoints();
 app.MapRuntimeWebSockets();
 

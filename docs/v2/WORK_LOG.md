@@ -285,3 +285,30 @@ Blockers or risks:
 Next recommended step:
 
 - start Phase 2 by adding node type contracts, a small node catalog, graph validation, and the graph compilation skeleton
+
+## 2026-04-09
+
+What changed:
+
+- added [ARCHITECTURE_NODE_ENGINE.md](./ARCHITECTURE_NODE_ENGINE.md)
+- added core node-engine contracts for value types, ports, properties, node types, catalog lookup, diagnostics, and compiled graph results
+- added a default node catalog with constants, graph inputs, color selection, and segment-color output
+- added `NodeGraphCompiler` validation with port checks, duplicate input checks, cycle detection, and topological evaluation order
+- added stable connection IDs to the graph model
+- replaced the placeholder node-type API with the real catalog
+- added whole-document graph endpoints for load, save, and validation
+
+Decisions made:
+
+- effect graphs remain document-style resources, matching SvelteFlow full-snapshot saves
+- invalid graph drafts can be validated without being saved through `POST /graph/validate`
+- `PUT /graph` saves the graph and returns validation diagnostics, but runtime evaluation will decide later whether invalid graphs become active
+
+Blockers or risks:
+
+- runtime node evaluation is not implemented yet
+- there is still no active-effect selection model, so graph rendering needs one more design pass before replacing the no-op renderer
+
+Next recommended step:
+
+- implement runtime graph evaluation and wire `output.segment-color` into segment buffers

@@ -32,6 +32,9 @@ public sealed class NodeInstance
 
 public sealed class Connection
 {
+    [JsonPropertyName("id")]
+    public string Id { get; set; } = Guid.NewGuid().ToString("N");
+
     [JsonPropertyName("sourceNodeId")]
     public string SourceNodeId { get; set; } = string.Empty;
 

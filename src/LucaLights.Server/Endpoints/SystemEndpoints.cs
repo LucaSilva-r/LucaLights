@@ -1,6 +1,7 @@
 using LucaLights.Core.Engine;
 using LucaLights.Core.GameInput;
 using LucaLights.Core.Models;
+using LucaLights.Core.NodeEngine;
 using LucaLights.Server.Services;
 
 namespace LucaLights.Server.Endpoints;
@@ -16,12 +17,12 @@ public static class SystemEndpoints
         return endpoints;
     }
 
-    private static IResult GetNodeTypes()
+    private static IResult GetNodeTypes(INodeTypeCatalog nodeTypeCatalog)
     {
         return Results.Ok(new
         {
-            nodeTypes = Array.Empty<object>(),
-            status = "Node type catalog will be populated in Phase 2."
+            schemaVersion = 1,
+            nodeTypes = nodeTypeCatalog.GetNodeTypes()
         });
     }
 
