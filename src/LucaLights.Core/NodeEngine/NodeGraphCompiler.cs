@@ -48,6 +48,7 @@ public sealed class NodeGraphCompiler
     {
         graph.Nodes ??= [];
         graph.Connections ??= [];
+        graph.Viewport ??= new();
 
         foreach (var node in graph.Nodes)
         {

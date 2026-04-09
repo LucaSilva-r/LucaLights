@@ -1,7 +1,8 @@
 using LucaLights.Core.Configuration;
 using LucaLights.Core.Engine;
-using LucaLights.Core.Models;
 using LucaLights.Core.NodeEngine;
+using LucaLights.Core.Models;
+using LucaLights.Server.Graph;
 using LucaLights.Server.Services;
 
 namespace LucaLights.Server.Endpoints;
@@ -38,7 +39,7 @@ public static class GraphEndpoints
 
     private static IResult ReplaceGraph(
         string effectId,
-        NodeGraph graph,
+        SvelteFlowGraphDocument graph,
         Settings settings,
         ConfigManager configManager,
         LightingManager lightingManager,
@@ -50,7 +51,8 @@ public static class GraphEndpoints
             return Results.BadRequest("Graph body is required.");
         }
 
-        var compiled = graphCompiler.Compile(graph);
+        var nodeGraph = SvelteFlowGraphAdapter.ToNodeGraph(graph);
+        var compiled = graphCompiler.Compile(nodeGraph);
 
         lock (lightingManager.SyncRoot)
         {
@@ -60,7 +62,7 @@ public static class GraphEndpoints
                 return Results.NotFound();
             }
 
-            effect.Graph = graph;
+            effect.Graph = compiled.Graph;
             SaveDirty(settings, configManager, eventBroadcaster, "effect.graph.replaced");
         }
 
@@ -69,7 +71,7 @@ public static class GraphEndpoints
 
     private static IResult ValidateGraph(
         string effectId,
-        NodeGraph graph,
+        SvelteFlowGraphDocument graph,
         Settings settings,
         LightingManager lightingManager,
         NodeGraphCompiler graphCompiler)
@@ -79,6 +81,8 @@ public static class GraphEndpoints
             return Results.BadRequest("Graph body is required.");
         }
 
+        var nodeGraph = SvelteFlowGraphAdapter.ToNodeGraph(graph);
+
         lock (lightingManager.SyncRoot)
         {
             if (FindEffect(settings, effectId) is null)
@@ -87,14 +91,14 @@ public static class GraphEndpoints
             }
         }
 
-        return Results.Ok(CreateGraphResponse(graphCompiler.Compile(graph)));
+        return Results.Ok(CreateGraphResponse(graphCompiler.Compile(nodeGraph)));
     }
 
     private static object CreateGraphResponse(CompiledNodeGraph compiled)
     {
         return new
         {
-            graph = compiled.Graph,
+            graph = SvelteFlowGraphAdapter.FromNodeGraph(compiled.Graph),
             validation = compiled.Validation,
             evaluationOrder = compiled.EvaluationOrder.Select(node => node.Id).ToArray()
         };

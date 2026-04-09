@@ -60,7 +60,7 @@ Mapping rules:
 - `edge.sourceHandle` and `edge.targetHandle` map to source and target port IDs
 - `viewport` is editor state and should be saved with the graph, but it is ignored by runtime evaluation
 
-The C# core can still keep `NodeGraph` as a normalized compiler/runtime model with `typeId`, `connections`, and explicit port fields. Before building the real SvelteKit editor, the server graph endpoints should add a SvelteFlow adapter layer that converts:
+The C# core still keeps `NodeGraph` as a normalized compiler/runtime model with `typeId`, `connections`, and explicit port fields. The server graph endpoints adapt between SvelteFlow's document shape and the normalized model by converting:
 
 - SvelteFlow `nodes` into internal `NodeInstance`
 - SvelteFlow `edges` into internal `Connection`
@@ -102,8 +102,6 @@ The compiler returns a `CompiledNodeGraph` with validation diagnostics and a top
 
 ## Next Work
 
-- add a SvelteFlow graph document DTO and adapter before implementing the real graph editor
-- update graph endpoints to accept and return the SvelteFlow wire shape while compiling through the normalized core graph
 - add runtime node evaluation primitives
 - define how output nodes write into device segment buffers
 - add an active-effect selection model if multiple saved effects can exist

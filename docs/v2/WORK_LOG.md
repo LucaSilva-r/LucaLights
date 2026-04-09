@@ -335,3 +335,28 @@ Blockers or risks:
 Next recommended step:
 
 - add SvelteFlow graph DTOs and conversion helpers, then update graph endpoints to save and validate through that adapter
+
+## 2026-04-09
+
+What changed:
+
+- added SvelteFlow graph DTOs for `nodes`, `edges`, and `viewport`
+- added a server-side graph adapter from SvelteFlow documents to the normalized core `NodeGraph`
+- updated graph load, save, and validate endpoints to speak the SvelteFlow wire shape
+- added editor viewport state to the internal graph model so SvelteFlow `toObject()` data can round-trip
+- smoke-tested save, load, and validation through the API with a SvelteFlow-shaped graph document
+
+Decisions made:
+
+- graph endpoints now return the same graph document shape the SvelteFlow editor should keep in its store
+- runtime compilation remains based on the normalized core graph model
+- viewport is persisted as editor state, but it is ignored by node compilation and runtime evaluation
+
+Blockers or risks:
+
+- extra future UI-only node or edge metadata outside `node.data.properties` is not preserved yet
+- runtime node evaluation is still not implemented
+
+Next recommended step:
+
+- implement runtime graph evaluation and wire `output.segment-color` into segment buffers

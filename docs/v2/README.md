@@ -33,7 +33,7 @@ To keep the rewrite reviewable:
 
 The current recommended starting point is Phase 2:
 
-- add a SvelteFlow graph document DTO and adapter
-- update graph endpoints to accept and return SvelteFlow-style `nodes`, `edges`, and `viewport`
-- keep the core compiler on the normalized internal graph model
-- then continue into runtime node evaluation and segment output rendering
+- add runtime node evaluation primitives
+- define how `output.segment-color` writes into device segment buffers
+- add active-effect selection if needed before rendering
+- replace the temporary `NoOpLightingRenderer` with a graph renderer

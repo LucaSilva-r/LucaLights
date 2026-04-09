@@ -10,6 +10,9 @@ public sealed class NodeGraph
 
     [JsonPropertyName("connections")]
     public List<Connection> Connections { get; set; } = [];
+
+    [JsonPropertyName("viewport")]
+    public GraphViewport Viewport { get; set; } = new();
 }
 
 public sealed class NodeInstance
@@ -46,4 +49,16 @@ public sealed class Connection
 
     [JsonPropertyName("targetPortId")]
     public string TargetPortId { get; set; } = string.Empty;
+}
+
+public sealed class GraphViewport
+{
+    [JsonPropertyName("x")]
+    public float X { get; set; }
+
+    [JsonPropertyName("y")]
+    public float Y { get; set; }
+
+    [JsonPropertyName("zoom")]
+    public float Zoom { get; set; } = 1;
 }
