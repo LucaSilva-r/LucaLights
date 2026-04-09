@@ -4,7 +4,7 @@
 
 - Overall status: `in progress`
 - Current phase: `Phase 2 - Node Engine`
-- Current implementation slice: `Node engine foundation complete, runtime evaluation next`
+- Current implementation slice: `SvelteFlow graph contract documented, wire adapter next`
 - Last updated: `2026-04-09`
 
 ## Milestones
@@ -103,6 +103,7 @@ Completed in this phase so far:
 - added connection IDs to the graph schema for SvelteFlow-friendly edge identity
 - changed `GET /api/node-types` to return the real catalog
 - added whole-document graph endpoints: `GET /api/effects/{id}/graph`, `PUT /api/effects/{id}/graph`, and `POST /api/effects/{id}/graph/validate`
+- documented the SvelteFlow-native wire graph shape and its adapter boundary to the normalized core graph model
 
 ### Phase 3 - Web UI
 
@@ -144,6 +145,9 @@ Start `Phase 2 - Node Engine`.
 
 Concrete target:
 
+- add a SvelteFlow graph document DTO and adapter
+- update graph endpoints to accept and return SvelteFlow-style `nodes`, `edges`, and `viewport`
+- map SvelteFlow handle IDs to internal source and target port IDs
 - add runtime node evaluation primitives
 - define how `output.segment-color` writes into device segment buffers
 - add active-effect selection if needed before rendering
@@ -151,4 +155,4 @@ Concrete target:
 
 Suggested checkpoint commit:
 
-- `v2: add graph runtime evaluation`
+- `v2: align graph api with svelteflow`

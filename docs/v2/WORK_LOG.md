@@ -312,3 +312,26 @@ Blockers or risks:
 Next recommended step:
 
 - implement runtime graph evaluation and wire `output.segment-color` into segment buffers
+
+## 2026-04-09
+
+What changed:
+
+- reviewed the SvelteFlow API reference for the graph editor contract
+- documented the SvelteFlow-native wire shape in [ARCHITECTURE_NODE_ENGINE.md](./ARCHITECTURE_NODE_ENGINE.md)
+- updated the tracker and docs index so future work starts with the SvelteFlow adapter before the real editor
+
+Decisions made:
+
+- the browser-facing graph API should use SvelteFlow-style `nodes`, `edges`, and `viewport`
+- SvelteFlow `node.type` should map to backend node type IDs
+- SvelteFlow `edge.sourceHandle` and `edge.targetHandle` should map to backend port IDs
+- the C# compiler can keep the normalized internal graph shape behind a server-side adapter
+
+Blockers or risks:
+
+- the current graph endpoints still use the internal `NodeGraph` shape, so they should be adapted before the SvelteKit editor is built
+
+Next recommended step:
+
+- add SvelteFlow graph DTOs and conversion helpers, then update graph endpoints to save and validate through that adapter

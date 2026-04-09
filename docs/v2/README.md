@@ -33,7 +33,7 @@ To keep the rewrite reviewable:
 
 The current recommended starting point is Phase 2:
 
-- define the node type contracts and port metadata
-- add a first node type catalog for simple graph building
-- implement graph validation and compilation skeletons
-- keep graph saves document-style so SvelteFlow can submit whole graph snapshots
+- add a SvelteFlow graph document DTO and adapter
+- update graph endpoints to accept and return SvelteFlow-style `nodes`, `edges`, and `viewport`
+- keep the core compiler on the normalized internal graph model
+- then continue into runtime node evaluation and segment output rendering
