@@ -61,10 +61,29 @@
             "options": {
                 "cwd": "${workspaceFolder}/web/lucalights-ui"
             },
+            "isBackground": true,
             "presentation": {
                 "reveal": "always",
                 "panel": "dedicated"
             },
+            "problemMatcher": {
+                "pattern": {
+                    "regexp": "^$"
+                },
+                "background": {
+                    "activeOnStart": true,
+                    "beginsPattern": "VITE",
+                    "endsPattern": "ready in"
+                }
+            }
+        },
+        {
+            "label": "start v2 full stack",
+            "dependsOn": [
+                "build v2 server",
+                "dev v2 ui"
+            ],
+            "dependsOrder": "parallel",
             "problemMatcher": []
         },
         {

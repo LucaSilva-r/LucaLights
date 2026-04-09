@@ -16,6 +16,8 @@ public static class SettingsEndpoints
         endpoints.MapGet("/api/settings", GetSettings);
         endpoints.MapPut("/api/settings", ReplaceSettings);
 
+        endpoints.MapPut("/api/settings/active-effect", SetActiveEffect);
+
         endpoints.MapGet("/api/devices", ListDevices);
         endpoints.MapPost("/api/devices", CreateDevice);
         endpoints.MapGet("/api/devices/{deviceId}", GetDevice);
@@ -95,6 +97,33 @@ public static class SettingsEndpoints
         }
 
         return Results.Ok(new SettingsResponse(configManager.SettingsPath, settings));
+    }
+
+    private static IResult SetActiveEffect(
+        ActiveEffectRequest request,
+        Settings settings,
+        ConfigManager configManager,
+        RuntimeEventBroadcaster eventBroadcaster,
+        LightingManager lightingManager)
+    {
+        if (request is null)
+        {
+            return Results.BadRequest("Request body is required.");
+        }
+
+        lock (lightingManager.SyncRoot)
+        {
+            if (!string.IsNullOrEmpty(request.ActiveEffectId)
+                && FindEffectIndex(settings, request.ActiveEffectId) < 0)
+            {
+                return Results.NotFound($"Effect not found: {request.ActiveEffectId}");
+            }
+
+            settings.ActiveEffectId = string.IsNullOrEmpty(request.ActiveEffectId) ? null : request.ActiveEffectId;
+            SaveDirty(settings, configManager, eventBroadcaster, "activeEffect.changed");
+        }
+
+        return Results.Ok(new { activeEffectId = settings.ActiveEffectId });
     }
 
     private static IResult ListDevices(Settings settings, LightingManager lightingManager)
@@ -545,4 +574,6 @@ public static class SettingsEndpoints
     }
 
     private sealed record SettingsResponse(string SettingsPath, Settings Settings);
+
+    private sealed record ActiveEffectRequest(string? ActiveEffectId);
 }

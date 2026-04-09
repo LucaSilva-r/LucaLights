@@ -2,9 +2,11 @@
 	import {
 		Activity,
 		Cable,
+		Check,
 		Cpu,
 		Gamepad2,
 		Layers3,
+		Pencil,
 		RefreshCw,
 		RotateCcw,
 		Workflow
@@ -33,6 +35,7 @@
 	import {
 		apiGet,
 		apiPost,
+		apiPut,
 		createSocket,
 		entriesOf,
 		formatAge,
@@ -126,6 +129,15 @@
 			errorMessage = toMessage(error);
 		} finally {
 			restarting = false;
+		}
+	}
+
+	async function setActiveEffect(effectId: string) {
+		try {
+			await apiPut("/api/settings/active-effect", { activeEffectId: effectId });
+			await refreshDashboard();
+		} catch (error) {
+			errorMessage = toMessage(error);
 		}
 	}
 
@@ -356,17 +368,11 @@
 
 	<section class="relative mx-auto flex max-w-7xl flex-col gap-6 px-4 py-6 sm:px-6 lg:px-8 lg:py-10">
 		<div class="flex flex-col gap-5 lg:flex-row lg:items-end lg:justify-between">
-			<div class="max-w-3xl space-y-3">
-				<p class="text-xs font-semibold uppercase tracking-[0.35em] text-muted-foreground">
-					LucaLights v2
+			<div class="max-w-3xl space-y-2">
+				<h1 class="text-3xl font-semibold tracking-tight sm:text-4xl">Control Room</h1>
+				<p class="max-w-2xl text-sm leading-6 text-muted-foreground sm:text-base">
+					Live runtime console for game input, device topology, and preview output.
 				</p>
-				<div class="space-y-2">
-					<h1 class="text-3xl font-semibold tracking-tight sm:text-4xl">Control Room</h1>
-					<p class="max-w-2xl text-sm leading-6 text-muted-foreground sm:text-base">
-						A live runtime console for validating game input, checking device topology, and watching
-						preview output while the node-based workflow comes online.
-					</p>
-				</div>
 			</div>
 
 			<div class="flex flex-wrap items-center gap-2">
@@ -748,19 +754,31 @@
 					<CardContent class="space-y-3">
 						{#if effects.length > 0}
 							{#each effects as effect}
-								<div class="rounded-2xl border border-border/70 bg-background/65 p-4">
+								{@const isActive = effect.id === systemStatus?.settings.activeEffectId}
+								<div class="rounded-2xl border {isActive ? 'border-primary/40 bg-primary/5' : 'border-border/70 bg-background/65'} p-4">
 									<div class="flex items-start justify-between gap-3">
 										<div>
 											<p class="text-base font-semibold">{effect.name}</p>
 											<p class="text-sm text-muted-foreground">{graphSummary(effect)}</p>
 										</div>
-										{#if effect.id === systemStatus?.settings.activeEffectId}
+										{#if isActive}
 											<Badge>Active</Badge>
 										{:else}
 											<Badge variant="outline">Stored</Badge>
 										{/if}
 									</div>
-									<p class="mt-3 font-mono text-xs text-muted-foreground">{effect.id}</p>
+									<div class="mt-3 flex items-center gap-2">
+										{#if !isActive}
+											<Button size="sm" variant="outline" onclick={() => setActiveEffect(effect.id)}>
+												<Check class="size-3.5" />
+												Activate
+											</Button>
+										{/if}
+										<Button size="sm" variant="outline" href="/effects/{effect.id}">
+											<Pencil class="size-3.5" />
+											Edit Graph
+										</Button>
+									</div>
 								</div>
 							{/each}
 						{:else}

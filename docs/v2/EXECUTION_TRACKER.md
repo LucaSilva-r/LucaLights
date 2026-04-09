@@ -4,7 +4,7 @@
 
 - Overall status: `in progress`
 - Current phase: `Phase 3 - Web UI`
-- Current implementation slice: `SvelteKit runtime dashboard scaffolded; graph editor shell next`
+- Current implementation slice: `Graph editor shell implemented; device/effect management pages next`
 - Last updated: `2026-04-09`
 
 ## Milestones
@@ -128,6 +128,13 @@ Completed in this phase so far:
 - connected the dashboard to `/api/system/status`, `/api/input-state`, `/api/input-modules`, `/api/devices`, `/api/effects`, `/api/node-types`, `/ws/events`, and `/ws/preview`
 - added a fixed dev proxy target and VS Code launch/task updates so the Svelte app can talk to the v2 server on `http://127.0.0.1:5050`
 - verified the Svelte app with `npm run check` and `npm run build`
+- added `PUT /api/settings/active-effect` backend endpoint for lightweight active-effect switching
+- added active-effect selection UI to the dashboard effects card with activate and edit-graph buttons
+- added app-wide navigation layout with top nav bar
+- switched SvelteKit to SPA fallback mode (`adapter-static` with `fallback: 'index.html'`) for dynamic routes
+- installed `@xyflow/svelte` and added SvelteFlow graph types to the API client
+- added `apiPut` helper and full node-type, graph-document, and graph-response TypeScript types
+- created graph editor route at `/effects/[id]` with SvelteFlow canvas, load/save, validation display, and Ctrl+S shortcut
 
 ### Phase 4 - Packaging and Polish
 
@@ -161,10 +168,11 @@ Continue `Phase 3 - SvelteKit UI`.
 
 Concrete target:
 
-- add active-effect selection in the browser on top of `Settings.ActiveEffectId`
-- add a first graph editor shell that loads and saves SvelteFlow documents
-- integrate the Svelte build output into `LucaLights.Server` static assets once the first editor shell is usable
+- add device/effect CRUD management pages in the browser (create, edit, delete)
+- add custom SvelteFlow node components per node type (color pickers, input selectors, etc.)
+- integrate the Svelte build output into `LucaLights.Server/wwwroot` static assets
+- add node palette / drag-to-add for the graph editor
 
 Suggested checkpoint commit:
 
-- `v2: scaffold sveltekit ui`
+- `v2: add graph editor shell and active-effect selection`

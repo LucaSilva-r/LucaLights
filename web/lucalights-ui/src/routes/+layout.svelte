@@ -1,9 +1,58 @@
 <script lang="ts">
 	import './layout.css';
 	import favicon from '$lib/assets/favicon.svg';
+	import { page } from '$app/state';
+	import { Button } from '$lib/components/ui/button';
+	import { Separator } from '$lib/components/ui/separator';
+	import { LayoutDashboard, Workflow } from '@lucide/svelte';
 
 	let { children } = $props();
+
+	const navItems = [
+		{ href: '/', label: 'Dashboard', icon: LayoutDashboard },
+	] as const;
+
+	function isActive(href: string) {
+		if (href === '/') return page.url.pathname === '/';
+		return page.url.pathname.startsWith(href);
+	}
 </script>
 
 <svelte:head><link rel="icon" href={favicon} /></svelte:head>
-{@render children()}
+
+<div class="flex min-h-screen flex-col">
+	<header class="sticky top-0 z-50 border-b border-border/60 bg-background/80 backdrop-blur-lg">
+		<div class="mx-auto flex h-14 max-w-7xl items-center gap-4 px-4 sm:px-6 lg:px-8">
+			<a href="/" class="flex items-center gap-2 text-sm font-semibold tracking-tight">
+				<Workflow class="size-5 text-primary" />
+				LucaLights
+			</a>
+
+			<Separator orientation="vertical" class="!h-6" />
+
+			<nav class="flex items-center gap-1">
+				{#each navItems as item}
+					<Button
+						variant={isActive(item.href) ? 'secondary' : 'ghost'}
+						size="sm"
+						href={item.href}
+					>
+						<item.icon class="size-4" />
+						{item.label}
+					</Button>
+				{/each}
+
+				{#if page.url.pathname.startsWith('/effects/')}
+					<Button variant="secondary" size="sm">
+						<Workflow class="size-4" />
+						Graph Editor
+					</Button>
+				{/if}
+			</nav>
+		</div>
+	</header>
+
+	<main class="flex-1">
+		{@render children()}
+	</main>
+</div>

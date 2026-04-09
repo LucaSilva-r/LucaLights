@@ -85,14 +85,91 @@ export interface InputSnapshot {
 	metadata: Record<string, string>;
 }
 
-export interface NodeTypeDescriptor {
+export interface NodePortDefinition {
 	id: string;
-	displayName?: string;
+	label: string;
+	valueType: string;
+	direction: string;
+	description: string;
+	allowMultipleConnections?: boolean;
+}
+
+export interface NodePropertyDefinition {
+	key: string;
+	label: string;
+	valueType: string;
+	description: string;
+	defaultValue?: unknown;
+	minFloatValue?: number | null;
+	maxFloatValue?: number | null;
+}
+
+export interface NodeTypeDefinition {
+	typeId: string;
+	displayName: string;
+	category: string;
+	description: string;
+	inputs: NodePortDefinition[];
+	outputs: NodePortDefinition[];
+	properties: NodePropertyDefinition[];
 }
 
 export interface NodeTypesResponse {
 	schemaVersion: number;
-	nodeTypes: NodeTypeDescriptor[];
+	nodeTypes: NodeTypeDefinition[];
+}
+
+export interface SvelteFlowPosition {
+	x: number;
+	y: number;
+}
+
+export interface SvelteFlowNodeData {
+	properties: Record<string, unknown>;
+}
+
+export interface SvelteFlowNode {
+	id: string;
+	type: string;
+	position: SvelteFlowPosition;
+	data: SvelteFlowNodeData;
+}
+
+export interface SvelteFlowEdge {
+	id: string;
+	source: string;
+	sourceHandle: string;
+	target: string;
+	targetHandle: string;
+}
+
+export interface SvelteFlowViewport {
+	x: number;
+	y: number;
+	zoom: number;
+}
+
+export interface SvelteFlowGraphDocument {
+	nodes: SvelteFlowNode[];
+	edges: SvelteFlowEdge[];
+	viewport: SvelteFlowViewport;
+}
+
+export interface GraphDiagnostic {
+	severity: string;
+	message: string;
+	nodeId?: string | null;
+}
+
+export interface GraphValidationResult {
+	isValid: boolean;
+	diagnostics: GraphDiagnostic[];
+}
+
+export interface GraphResponse {
+	graph: SvelteFlowGraphDocument;
+	validation: GraphValidationResult;
+	evaluationOrder: string[];
 }
 
 export type RgbColor = [number, number, number];
@@ -144,6 +221,27 @@ export async function apiGet<T>(path: string): Promise<T> {
 export async function apiPost<T>(path: string, body?: unknown): Promise<T> {
 	const response = await fetch(path, {
 		method: 'POST',
+		headers: {
+			accept: 'application/json',
+			'content-type': 'application/json'
+		},
+		body: body === undefined ? undefined : JSON.stringify(body)
+	});
+
+	if (!response.ok) {
+		throw new Error(await buildErrorMessage(response, path));
+	}
+
+	if (response.status === 204) {
+		return undefined as T;
+	}
+
+	return (await response.json()) as T;
+}
+
+export async function apiPut<T>(path: string, body?: unknown): Promise<T> {
+	const response = await fetch(path, {
+		method: 'PUT',
 		headers: {
 			accept: 'application/json',
 			'content-type': 'application/json'

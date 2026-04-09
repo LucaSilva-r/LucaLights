@@ -36,6 +36,27 @@
             "stopAtEntry": false
         },
         {
+            "name": "Launch LucaLights v2 (Full Stack)",
+            "type": "coreclr",
+            "request": "launch",
+            "preLaunchTask": "start v2 full stack",
+            "program": "${workspaceFolder}/src/LucaLights.Server/bin/Debug/net10.0/LucaLights.Server",
+            "args": [],
+            "cwd": "${workspaceFolder}/src/LucaLights.Server",
+            "env": {
+                "ASPNETCORE_ENVIRONMENT": "Development",
+                "ASPNETCORE_URLS": "http://127.0.0.1:5050",
+                "DOTNET_ROOT": "${env:HOME}/.dotnet"
+            },
+            "serverReadyAction": {
+                "action": "openExternally",
+                "pattern": "\\bNow listening on:\\s+https?://\\S+",
+                "uriFormat": "http://127.0.0.1:5173"
+            },
+            "console": "internalConsole",
+            "stopAtEntry": false
+        },
+        {
             "name": "Attach to Process",
             "type": "coreclr",
             "request": "attach"
