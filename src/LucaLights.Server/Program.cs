@@ -21,6 +21,7 @@ builder.Services.AddSingleton(provider =>
 });
 builder.Services.AddSingleton<ILightingRenderer, NoOpLightingRenderer>();
 builder.Services.AddSingleton<LightingManagerOptions>();
+builder.Services.AddSingleton<RuntimeEventBroadcaster>();
 builder.Services.AddSingleton(provider =>
 {
     var settings = provider.GetRequiredService<Settings>();
@@ -37,12 +38,19 @@ builder.Services.AddSingleton(provider =>
         shouldSendOutput: () => true,
         log: message => logger.LogInformation("{Message}", message));
 });
+builder.Services.AddHostedService<RuntimeEventHostedService>();
+builder.Services.AddSingleton<PreviewBroadcaster>();
+builder.Services.AddHostedService(provider => provider.GetRequiredService<PreviewBroadcaster>());
 builder.Services.AddHostedService<EngineHostedService>();
 
 var app = builder.Build();
 
+app.UseDefaultFiles();
+app.UseStaticFiles();
+app.UseWebSockets();
+
 app.MapGet(
-    "/",
+    "/api",
     (LightingManager lightingManager, GameInputManager inputManager) => Results.Ok(
         new
         {
@@ -91,5 +99,7 @@ app.MapGet(
     (GameInputManager inputManager) => Results.Ok(inputManager.LatestSnapshot));
 
 app.MapSettingsEndpoints();
+app.MapSystemEndpoints();
+app.MapRuntimeWebSockets();
 
 app.Run();

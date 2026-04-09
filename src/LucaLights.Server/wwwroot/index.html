@@ -1,0 +1,109 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>LucaLights Runtime</title>
+  <link rel="stylesheet" href="/styles.css">
+</head>
+<body>
+  <main class="shell">
+    <section class="hero panel">
+      <p class="eyebrow">LucaLights v2</p>
+      <div class="hero-title">
+        <h1>Runtime Console</h1>
+        <span id="eventStatus" class="pill pill-warn">Events connecting</span>
+        <span id="previewStatus" class="pill pill-warn">Preview connecting</span>
+      </div>
+      <p class="lede">
+        A temporary diagnostics surface for Phase 1: watch game input, inspect active channels,
+        and confirm that the server WebSocket path is alive before the full Svelte UI lands.
+      </p>
+    </section>
+
+    <section class="grid">
+      <article class="panel status-card">
+        <h2>System</h2>
+        <dl class="metrics">
+          <div>
+            <dt>Lighting</dt>
+            <dd id="lightingRunning">...</dd>
+          </div>
+          <div>
+            <dt>Input module</dt>
+            <dd id="activeModule">...</dd>
+          </div>
+          <div>
+            <dt>Devices</dt>
+            <dd id="deviceCount">...</dd>
+          </div>
+          <div>
+            <dt>Effects</dt>
+            <dd id="effectCount">...</dd>
+          </div>
+        </dl>
+      </article>
+
+      <article class="panel status-card">
+        <h2>Latest Input</h2>
+        <dl class="metrics">
+          <div>
+            <dt>Connected</dt>
+            <dd id="inputConnected">...</dd>
+          </div>
+          <div>
+            <dt>Active</dt>
+            <dd id="inputActive">...</dd>
+          </div>
+          <div>
+            <dt>Sequence</dt>
+            <dd id="inputSequence">0</dd>
+          </div>
+          <div>
+            <dt>Last update</dt>
+            <dd id="inputTimestamp">...</dd>
+          </div>
+        </dl>
+      </article>
+    </section>
+
+    <section class="grid grid-wide">
+      <article class="panel">
+        <div class="section-head">
+          <h2>Active Boolean Channels</h2>
+          <span id="activeBoolCount" class="pill">0 active</span>
+        </div>
+        <div id="activeChannels" class="channel-list empty">Waiting for input snapshot...</div>
+      </article>
+
+      <article class="panel">
+        <div class="section-head">
+          <h2>Preview</h2>
+          <span id="previewFrame" class="pill">No frame yet</span>
+        </div>
+        <div id="previewDevices" class="preview-list empty">Waiting for preview frames...</div>
+      </article>
+    </section>
+
+    <section class="grid grid-wide">
+      <article class="panel">
+        <div class="section-head">
+          <h2>Input Module Catalog</h2>
+          <span id="moduleChannelCount" class="pill">0 channels</span>
+        </div>
+        <div id="moduleCatalog" class="catalog empty">Loading module definitions...</div>
+      </article>
+
+      <article class="panel">
+        <div class="section-head">
+          <h2>Runtime Events</h2>
+          <button id="clearEvents" class="ghost-button" type="button">Clear</button>
+        </div>
+        <ol id="eventLog" class="event-log"></ol>
+      </article>
+    </section>
+  </main>
+
+  <script src="/app.js" type="module"></script>
+</body>
+</html>

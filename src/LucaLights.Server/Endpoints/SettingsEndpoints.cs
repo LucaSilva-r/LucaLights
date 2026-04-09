@@ -2,6 +2,7 @@ using LucaLights.Core.Configuration;
 using LucaLights.Core.Engine;
 using LucaLights.Core.GameInput;
 using LucaLights.Core.Models;
+using LucaLights.Server.Services;
 using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Routing;
 
@@ -51,6 +52,7 @@ public static class SettingsEndpoints
         Settings settings,
         ConfigManager configManager,
         LightingManager lightingManager,
+        RuntimeEventBroadcaster eventBroadcaster,
         GameInputManager inputManager,
         CancellationToken cancellationToken)
     {
@@ -81,7 +83,7 @@ public static class SettingsEndpoints
             settings.ActiveInputModuleId = activeInputModuleId;
             settings.InputModuleSettings = replacement.InputModuleSettings;
 
-            SaveDirty(settings, configManager);
+            SaveDirty(settings, configManager, eventBroadcaster, "settings.replaced");
         }
 
         if (activeInputModuleChanged)
@@ -104,6 +106,7 @@ public static class SettingsEndpoints
         Device device,
         Settings settings,
         ConfigManager configManager,
+        RuntimeEventBroadcaster eventBroadcaster,
         LightingManager lightingManager)
     {
         if (device is null)
@@ -121,7 +124,7 @@ public static class SettingsEndpoints
             }
 
             settings.Devices.Add(device);
-            SaveDirty(settings, configManager);
+            SaveDirty(settings, configManager, eventBroadcaster, "device.created");
         }
 
         return Results.Created($"/api/devices/{Uri.EscapeDataString(device.Id)}", device);
@@ -143,6 +146,7 @@ public static class SettingsEndpoints
         Device device,
         Settings settings,
         ConfigManager configManager,
+        RuntimeEventBroadcaster eventBroadcaster,
         LightingManager lightingManager)
     {
         if (device is null)
@@ -169,7 +173,7 @@ public static class SettingsEndpoints
 
             settings.Devices[index].Dispose();
             settings.Devices[index] = device;
-            SaveDirty(settings, configManager);
+            SaveDirty(settings, configManager, eventBroadcaster, "device.updated");
         }
 
         return Results.Ok(device);
@@ -179,6 +183,7 @@ public static class SettingsEndpoints
         string deviceId,
         Settings settings,
         ConfigManager configManager,
+        RuntimeEventBroadcaster eventBroadcaster,
         LightingManager lightingManager)
     {
         lock (lightingManager.SyncRoot)
@@ -191,7 +196,7 @@ public static class SettingsEndpoints
 
             settings.Devices[index].Dispose();
             settings.Devices.RemoveAt(index);
-            SaveDirty(settings, configManager);
+            SaveDirty(settings, configManager, eventBroadcaster, "device.deleted");
         }
 
         return Results.NoContent();
@@ -216,6 +221,7 @@ public static class SettingsEndpoints
         Segment segment,
         Settings settings,
         ConfigManager configManager,
+        RuntimeEventBroadcaster eventBroadcaster,
         LightingManager lightingManager)
     {
         if (segment is null)
@@ -239,7 +245,7 @@ public static class SettingsEndpoints
             }
 
             device.Segments.Add(segment);
-            SaveDirty(settings, configManager);
+            SaveDirty(settings, configManager, eventBroadcaster, "segment.created");
         }
 
         return Results.Created(
@@ -274,6 +280,7 @@ public static class SettingsEndpoints
         Segment segment,
         Settings settings,
         ConfigManager configManager,
+        RuntimeEventBroadcaster eventBroadcaster,
         LightingManager lightingManager)
     {
         if (segment is null)
@@ -305,7 +312,7 @@ public static class SettingsEndpoints
             }
 
             device.Segments[segmentIndex] = segment;
-            SaveDirty(settings, configManager);
+            SaveDirty(settings, configManager, eventBroadcaster, "segment.updated");
         }
 
         return Results.Ok(segment);
@@ -316,6 +323,7 @@ public static class SettingsEndpoints
         string segmentId,
         Settings settings,
         ConfigManager configManager,
+        RuntimeEventBroadcaster eventBroadcaster,
         LightingManager lightingManager)
     {
         lock (lightingManager.SyncRoot)
@@ -333,7 +341,7 @@ public static class SettingsEndpoints
             }
 
             device.Segments.RemoveAt(segmentIndex);
-            SaveDirty(settings, configManager);
+            SaveDirty(settings, configManager, eventBroadcaster, "segment.deleted");
         }
 
         return Results.NoContent();
@@ -351,6 +359,7 @@ public static class SettingsEndpoints
         Effect effect,
         Settings settings,
         ConfigManager configManager,
+        RuntimeEventBroadcaster eventBroadcaster,
         LightingManager lightingManager)
     {
         if (effect is null)
@@ -368,7 +377,7 @@ public static class SettingsEndpoints
             }
 
             settings.Effects.Add(effect);
-            SaveDirty(settings, configManager);
+            SaveDirty(settings, configManager, eventBroadcaster, "effect.created");
         }
 
         return Results.Created($"/api/effects/{Uri.EscapeDataString(effect.Id)}", effect);
@@ -390,6 +399,7 @@ public static class SettingsEndpoints
         Effect effect,
         Settings settings,
         ConfigManager configManager,
+        RuntimeEventBroadcaster eventBroadcaster,
         LightingManager lightingManager)
     {
         if (effect is null)
@@ -415,7 +425,7 @@ public static class SettingsEndpoints
             }
 
             settings.Effects[index] = effect;
-            SaveDirty(settings, configManager);
+            SaveDirty(settings, configManager, eventBroadcaster, "effect.updated");
         }
 
         return Results.Ok(effect);
@@ -425,6 +435,7 @@ public static class SettingsEndpoints
         string effectId,
         Settings settings,
         ConfigManager configManager,
+        RuntimeEventBroadcaster eventBroadcaster,
         LightingManager lightingManager)
     {
         lock (lightingManager.SyncRoot)
@@ -436,17 +447,22 @@ public static class SettingsEndpoints
             }
 
             settings.Effects.RemoveAt(index);
-            SaveDirty(settings, configManager);
+            SaveDirty(settings, configManager, eventBroadcaster, "effect.deleted");
         }
 
         return Results.NoContent();
     }
 
-    private static void SaveDirty(Settings settings, ConfigManager configManager)
+    private static void SaveDirty(
+        Settings settings,
+        ConfigManager configManager,
+        RuntimeEventBroadcaster eventBroadcaster,
+        string reason)
     {
         settings.Normalize();
         settings.MarkDirty();
         configManager.Save(settings);
+        _ = eventBroadcaster.PublishSettingsChangedAsync(settings, reason).AsTask();
     }
 
     private static void NormalizeSettings(Settings settings)

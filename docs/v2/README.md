@@ -30,9 +30,9 @@ To keep the rewrite reviewable:
 
 ## Current Focus
 
-The current recommended starting point is Phase 1:
+The current recommended starting point is Phase 2:
 
-- add the ASP.NET Core host bootstrap
-- start the engine and active input module from config
-- expose a thin diagnostics surface for early integration
-- keep the browser UI deferred until the backend lifecycle is stable
+- define the node type contracts and port metadata
+- add a first node type catalog for simple graph building
+- implement graph validation and compilation skeletons
+- keep graph saves document-style so SvelteFlow can submit whole graph snapshots

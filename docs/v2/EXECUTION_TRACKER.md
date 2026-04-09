@@ -3,8 +3,8 @@
 ## Status Summary
 
 - Overall status: `in progress`
-- Current phase: `Phase 1 - Server Host`
-- Current implementation slice: `REST API baseline complete, WebSocket/event streams next`
+- Current phase: `Phase 2 - Node Engine`
+- Current implementation slice: `Phase 1 complete, node engine foundation next`
 - Last updated: `2026-04-09`
 
 ## Milestones
@@ -16,7 +16,7 @@
 | Phase 0.2 - Core extraction | done | Lighting/device/settings code builds without Avalonia dependencies |
 | Phase 0.3 - Input module foundation | done | `IGameInputModule`, `GameInputManager`, `InputSnapshot`, and `InputDefinition` are implemented |
 | Phase 0.4 - ITG parity module | done | Current ITGMania named-pipe behavior works through `ITGManiaInputModule` |
-| Phase 1 - Server host | in progress | ASP.NET Core host serves APIs, static UI assets, and WebSocket endpoints |
+| Phase 1 - Server host | done | ASP.NET Core host serves APIs, static UI assets, and WebSocket endpoints |
 | Phase 2 - Node engine | not started | Effects can render from compiled node graphs |
 | Phase 3 - SvelteKit UI | not started | Browser UI supports device management, preview, and graph editing |
 | Phase 4 - Packaging and polish | not started | Fresh v2 config works, publish flow works, and lifecycle controls are complete |
@@ -59,7 +59,7 @@ Completed in this phase so far:
 
 ### Phase 1 - Server Host
 
-Status: `in progress`
+Status: `done`
 
 Exit criteria:
 
@@ -79,6 +79,11 @@ Completed in this phase so far:
 - added REST CRUD for devices, nested segments, and effects
 - added `GET /api/settings` and `PUT /api/settings` backed by the shared server settings instance
 - routed settings mutations through `LightingManager.SyncRoot`, dirty-state marking, and `ConfigManager.Save()`
+- added static diagnostics UI assets for live runtime/input testing
+- added `/ws/events` for JSON runtime events and input snapshots
+- added `/ws/preview` for sampled LED preview snapshots
+- added placeholder `GET /api/node-types` until Phase 2 defines the real node catalog
+- added engine restart and shutdown endpoints
 
 ### Phase 2 - Node Engine
 
@@ -126,14 +131,15 @@ Exit criteria:
 
 ## Next Recommended Slice
 
-Continue `Phase 1 - Server Host`.
+Start `Phase 2 - Node Engine`.
 
 Concrete target:
 
-- add WebSocket plumbing for preview frames and runtime events
-- expose config/input changes as server-side events that the future browser UI can subscribe to
-- keep the first pass compatible with the temporary no-op renderer
+- define runtime node type contracts and node port metadata
+- add a first node type catalog for simple color/value/input nodes
+- add graph validation and compilation skeleton with cycle detection
+- keep graph persistence document-style so SvelteFlow can save whole graphs atomically
 
 Suggested checkpoint commit:
 
-- `v2: add server event streams`
+- `v2: add node engine foundation`

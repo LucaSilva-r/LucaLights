@@ -258,3 +258,30 @@ Blockers or risks:
 Next recommended step:
 
 - add WebSocket plumbing for preview frames and runtime events
+
+## 2026-04-09
+
+What changed:
+
+- added `/ws/events` for JSON runtime events, including input snapshots, module changes, settings changes, and system events
+- added `/ws/preview` for sampled LED preview snapshots from the current settings/device buffers
+- added static diagnostics UI assets under `src/LucaLights.Server/wwwroot`
+- changed `/` to serve the diagnostics UI and kept the old root status payload available at `/api`
+- added placeholder `GET /api/node-types` for the future node catalog
+- added `POST /api/system/restart-engine` and `POST /api/system/shutdown`
+- wired REST settings mutations into the runtime event stream
+
+Decisions made:
+
+- the Phase 1 UI should stay a disposable diagnostics surface, not the real SvelteKit/shadcn-svelte app
+- the real browser app should consume the same `/ws/events` contract introduced here
+- the node type catalog endpoint exists now but intentionally returns an empty catalog until Phase 2 defines real node types
+
+Blockers or risks:
+
+- preview frames currently reflect the temporary no-op renderer, so they prove the transport path but not final graph-rendered color output
+- ITGMania FIFO shutdown can still wait up to the bounded timeout when the reader is blocked
+
+Next recommended step:
+
+- start Phase 2 by adding node type contracts, a small node catalog, graph validation, and the graph compilation skeleton
