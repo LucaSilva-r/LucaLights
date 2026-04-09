@@ -38,6 +38,36 @@
             "problemMatcher": "$msCompile"
         },
         {
+            "label": "build v2 ui",
+            "command": "npm",
+            "type": "process",
+            "args": [
+                "run",
+                "build"
+            ],
+            "options": {
+                "cwd": "${workspaceFolder}/web/lucalights-ui"
+            },
+            "problemMatcher": []
+        },
+        {
+            "label": "dev v2 ui",
+            "command": "npm",
+            "type": "process",
+            "args": [
+                "run",
+                "dev"
+            ],
+            "options": {
+                "cwd": "${workspaceFolder}/web/lucalights-ui"
+            },
+            "presentation": {
+                "reveal": "always",
+                "panel": "dedicated"
+            },
+            "problemMatcher": []
+        },
+        {
             "label": "publish",
             "command": "dotnet",
             "type": "process",

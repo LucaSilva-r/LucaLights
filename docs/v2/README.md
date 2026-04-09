@@ -31,9 +31,9 @@ To keep the rewrite reviewable:
 
 ## Current Focus
 
-The current recommended starting point is Phase 3:
+The current recommended starting point is the next Phase 3 slice:
 
-- scaffold the SvelteKit app with shadcn-svelte as the UI foundation
-- build the first browser views for status, devices, and effects
-- surface active-effect selection and preview using the existing APIs
-- add the first SvelteFlow editor shell on top of the graph document endpoints
+- add browser active-effect selection on top of `Settings.ActiveEffectId`
+- build the first SvelteFlow editor shell against the graph document endpoints
+- keep the runtime dashboard useful for validating input, preview, and topology while editor work lands
+- integrate the Svelte build into `LucaLights.Server` static assets once the editor shell is stable

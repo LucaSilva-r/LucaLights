@@ -61,6 +61,9 @@ BenchmarkDotNet.Artifacts/
 project.lock.json
 project.fragment.lock.json
 artifacts/
+node_modules/
+dist/
+.svelte-kit/
 
 # LucaLights runtime settings fallback
 /src/LucaLights.Server/LucaLights/

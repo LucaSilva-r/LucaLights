@@ -317,6 +317,33 @@ Next recommended step:
 
 What changed:
 
+- scaffolded `web/lucalights-ui` with SvelteKit, Tailwind, and `shadcn-svelte`
+- added a live runtime dashboard for system status, devices, effects, input snapshots, and preview frames
+- wired the browser app to the existing REST endpoints plus `/ws/events` and `/ws/preview`
+- added Vite dev proxies and fixed the VS Code server launch to `http://127.0.0.1:5050`
+- added VS Code tasks for building and running the Svelte UI
+- verified the new frontend with `npm run check` and `npm run build`
+
+Decisions made:
+
+- the first UI slice is a standalone SvelteKit app under `web/` rather than immediately replacing the server-served diagnostics assets
+- the dashboard prioritizes validation of runtime plumbing before the graph editor exists
+- the frontend talks to the backend through same-origin paths and a Vite dev proxy so the eventual server integration does not need a client-side API rewrite
+
+Blockers or risks:
+
+- active-effect selection is still read-only because settings editing is not surfaced in the browser yet
+- the graph editor shell still does not exist, so Phase 3 is only partially complete
+- the frontend build is not yet copied into `LucaLights.Server/wwwroot`
+
+Next recommended step:
+
+- add browser active-effect selection and the first SvelteFlow editor shell on top of the current graph endpoints
+
+## 2026-04-09
+
+What changed:
+
 - added `GraphRuntimeEvaluator` for the bootstrap node set in `LucaLights.Core.NodeEngine`
 - added `NodeGraphLightingRenderer` and replaced the temporary no-op renderer in the server runtime
 - wired `output.segment-color` to fill targeted device segments during frame rendering

@@ -3,8 +3,8 @@
 ## Status Summary
 
 - Overall status: `in progress`
-- Current phase: `Phase 2 - Node Engine`
-- Current implementation slice: `Runtime graph evaluation complete, SvelteKit UI bootstrap next`
+- Current phase: `Phase 3 - Web UI`
+- Current implementation slice: `SvelteKit runtime dashboard scaffolded; graph editor shell next`
 - Last updated: `2026-04-09`
 
 ## Milestones
@@ -17,8 +17,8 @@
 | Phase 0.3 - Input module foundation | done | `IGameInputModule`, `GameInputManager`, `InputSnapshot`, and `InputDefinition` are implemented |
 | Phase 0.4 - ITG parity module | done | Current ITGMania named-pipe behavior works through `ITGManiaInputModule` |
 | Phase 1 - Server host | done | ASP.NET Core host serves APIs, static UI assets, and WebSocket endpoints |
-| Phase 2 - Node engine | in progress | Effects can render from compiled node graphs |
-| Phase 3 - SvelteKit UI | not started | Browser UI supports device management, preview, and graph editing |
+| Phase 2 - Node engine | done | Effects can render from compiled node graphs |
+| Phase 3 - SvelteKit UI | in progress | Browser UI supports device management, preview, and graph editing |
 | Phase 4 - Packaging and polish | not started | Fresh v2 config works, publish flow works, and lifecycle controls are complete |
 
 ## Phase Breakdown
@@ -87,7 +87,7 @@ Completed in this phase so far:
 
 ### Phase 2 - Node Engine
 
-Status: `in progress`
+Status: `done`
 
 Exit criteria:
 
@@ -112,13 +112,22 @@ Completed in this phase so far:
 
 ### Phase 3 - Web UI
 
-Status: `not started`
+Status: `in progress`
 
 Exit criteria:
 
 - SvelteKit app integrated into server
 - device/effect management available in browser
 - node editor consumes input definitions dynamically
+
+Completed in this phase so far:
+
+- scaffolded a standalone SvelteKit app in `web/lucalights-ui`
+- initialized `shadcn-svelte` with the `nova` preset and a taupe base palette
+- added a live runtime dashboard for system status, input snapshots, devices, effects, and preview output
+- connected the dashboard to `/api/system/status`, `/api/input-state`, `/api/input-modules`, `/api/devices`, `/api/effects`, `/api/node-types`, `/ws/events`, and `/ws/preview`
+- added a fixed dev proxy target and VS Code launch/task updates so the Svelte app can talk to the v2 server on `http://127.0.0.1:5050`
+- verified the Svelte app with `npm run check` and `npm run build`
 
 ### Phase 4 - Packaging and Polish
 
@@ -137,6 +146,7 @@ Exit criteria:
 - Runtime graph swaps must be thread-safe so the render loop never sees partially compiled state.
 - "Game agnostic" can regress into "ITG with abstraction wrappers" unless module boundaries stay strict.
 - Idle preview currently depends on an active input snapshot, which may be awkward while authoring graphs outside live gameplay.
+- The Svelte app is still a standalone project under `web/`; it is not yet built into `LucaLights.Server/wwwroot`.
 
 ## Decisions Locked In
 
@@ -147,14 +157,13 @@ Exit criteria:
 
 ## Next Recommended Slice
 
-Start `Phase 3 - SvelteKit UI`.
+Continue `Phase 3 - SvelteKit UI`.
 
 Concrete target:
 
-- scaffold the SvelteKit app with shadcn-svelte as the UI foundation
-- add a browser effect/device view that consumes the current REST and WebSocket APIs
 - add active-effect selection in the browser on top of `Settings.ActiveEffectId`
 - add a first graph editor shell that loads and saves SvelteFlow documents
+- integrate the Svelte build output into `LucaLights.Server` static assets once the first editor shell is usable
 
 Suggested checkpoint commit:
 
