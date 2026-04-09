@@ -4,7 +4,7 @@
 
 - Overall status: `in progress`
 - Current phase: `Phase 2 - Node Engine`
-- Current implementation slice: `SvelteFlow graph API adapter complete, runtime evaluation next`
+- Current implementation slice: `Runtime graph evaluation complete, SvelteKit UI bootstrap next`
 - Last updated: `2026-04-09`
 
 ## Milestones
@@ -106,6 +106,9 @@ Completed in this phase so far:
 - documented the SvelteFlow-native wire graph shape and its adapter boundary to the normalized core graph model
 - added SvelteFlow graph DTOs and an adapter that maps nodes, edges, handles, properties, and viewport into the internal graph model
 - updated graph endpoints to accept and return SvelteFlow-style `nodes`, `edges`, and `viewport`
+- added runtime graph evaluation for the current bootstrap node set
+- replaced the temporary no-op renderer with a graph-backed renderer wired through `LightingManager`
+- added `ActiveEffectId` selection with first-effect fallback for deterministic effect rendering
 
 ### Phase 3 - Web UI
 
@@ -133,6 +136,7 @@ Exit criteria:
 - Graph serialization can become brittle if node properties are left as unversioned `object` blobs.
 - Runtime graph swaps must be thread-safe so the render loop never sees partially compiled state.
 - "Game agnostic" can regress into "ITG with abstraction wrappers" unless module boundaries stay strict.
+- Idle preview currently depends on an active input snapshot, which may be awkward while authoring graphs outside live gameplay.
 
 ## Decisions Locked In
 
@@ -143,15 +147,15 @@ Exit criteria:
 
 ## Next Recommended Slice
 
-Start `Phase 2 - Node Engine`.
+Start `Phase 3 - SvelteKit UI`.
 
 Concrete target:
 
-- add runtime node evaluation primitives
-- define how `output.segment-color` writes into device segment buffers
-- add active-effect selection if needed before rendering
-- replace the temporary `NoOpLightingRenderer` with a graph renderer
+- scaffold the SvelteKit app with shadcn-svelte as the UI foundation
+- add a browser effect/device view that consumes the current REST and WebSocket APIs
+- add active-effect selection in the browser on top of `Settings.ActiveEffectId`
+- add a first graph editor shell that loads and saves SvelteFlow documents
 
 Suggested checkpoint commit:
 
-- `v2: add graph runtime evaluation`
+- `v2: scaffold sveltekit ui`

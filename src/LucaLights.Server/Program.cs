@@ -20,10 +20,11 @@ builder.Services.AddSingleton(provider =>
     var logger = provider.GetRequiredService<ILogger<GameInputManager>>();
     return new GameInputManager(message => logger.LogInformation("{Message}", message));
 });
-builder.Services.AddSingleton<ILightingRenderer, NoOpLightingRenderer>();
 builder.Services.AddSingleton<LightingManagerOptions>();
 builder.Services.AddSingleton<INodeTypeCatalog, DefaultNodeTypeCatalog>();
 builder.Services.AddSingleton<NodeGraphCompiler>();
+builder.Services.AddSingleton<GraphRuntimeEvaluator>();
+builder.Services.AddSingleton<ILightingRenderer, NodeGraphLightingRenderer>();
 builder.Services.AddSingleton<RuntimeEventBroadcaster>();
 builder.Services.AddSingleton(provider =>
 {
@@ -79,6 +80,7 @@ app.MapGet(
             {
                 devices = settings.Devices.Count,
                 effects = settings.Effects.Count,
+                activeEffectId = settings.ActiveEffectId,
                 activeInputModuleId = settings.ActiveInputModuleId,
                 dirty = settings.Dirty
             },

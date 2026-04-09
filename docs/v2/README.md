@@ -31,9 +31,9 @@ To keep the rewrite reviewable:
 
 ## Current Focus
 
-The current recommended starting point is Phase 2:
+The current recommended starting point is Phase 3:
 
-- add runtime node evaluation primitives
-- define how `output.segment-color` writes into device segment buffers
-- add active-effect selection if needed before rendering
-- replace the temporary `NoOpLightingRenderer` with a graph renderer
+- scaffold the SvelteKit app with shadcn-svelte as the UI foundation
+- build the first browser views for status, devices, and effects
+- surface active-effect selection and preview using the existing APIs
+- add the first SvelteFlow editor shell on top of the graph document endpoints

@@ -6,7 +6,6 @@ namespace LucaLights.Core.Models;
 public sealed class Device : IDisposable
 {
     private Color[] _data = [];
-    private bool _disposed;
 
     public Device()
     {
@@ -48,8 +47,6 @@ public sealed class Device : IDisposable
 
     public void Recalculate()
     {
-        ThrowIfDisposed();
-
         var ledCount = Segments.Sum(segment => segment.Length);
         _data = new Color[ledCount];
         Nleds = ledCount;
@@ -68,8 +65,6 @@ public sealed class Device : IDisposable
 
     public void Send()
     {
-        ThrowIfDisposed();
-
         var offset = 0;
         foreach (var segment in Segments)
         {
@@ -82,18 +77,7 @@ public sealed class Device : IDisposable
 
     public void Dispose()
     {
-        if (_disposed)
-        {
-            return;
-        }
-
         Transport?.Dispose();
         Transport = null;
-        _disposed = true;
-    }
-
-    private void ThrowIfDisposed()
-    {
-        ObjectDisposedException.ThrowIf(_disposed, this);
     }
 }

@@ -317,6 +317,33 @@ Next recommended step:
 
 What changed:
 
+- added `GraphRuntimeEvaluator` for the bootstrap node set in `LucaLights.Core.NodeEngine`
+- added `NodeGraphLightingRenderer` and replaced the temporary no-op renderer in the server runtime
+- wired `output.segment-color` to fill targeted device segments during frame rendering
+- added `Settings.ActiveEffectId` with a fallback to the first saved effect
+- updated system status to report the active effect ID
+- relaxed `Device` disposal semantics so settings round-trips and runtime restarts do not poison reusable device models
+- smoke-tested the core runtime with a temporary harness that flipped a segment from red to blue through `input.bool` and `logic.select-color`
+
+Decisions made:
+
+- the first runtime keeps output semantics simple: buffers are cleared every frame and later output nodes win when they overlap
+- effect selection is settings-driven for now instead of adding a dedicated effect-activation endpoint immediately
+- viewport remains editor-only state even after runtime landed
+
+Blockers or risks:
+
+- preview and rendering still depend on an active input snapshot, which may need a future authoring-friendly override
+- the runtime node library is still intentionally tiny and only covers the bootstrap node set
+
+Next recommended step:
+
+- start the SvelteKit UI scaffold and connect it to the now-live graph runtime and preview APIs
+
+## 2026-04-09
+
+What changed:
+
 - reviewed the SvelteFlow API reference for the graph editor contract
 - documented the SvelteFlow-native wire shape in [ARCHITECTURE_NODE_ENGINE.md](./ARCHITECTURE_NODE_ENGINE.md)
 - updated the tracker and docs index so future work starts with the SvelteFlow adapter before the real editor

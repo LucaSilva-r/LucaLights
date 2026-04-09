@@ -98,11 +98,29 @@ Graph inputs are graph-level keys. Binding profiles will eventually decide which
 - self-connections and graph cycles
 - missing output nodes as warnings
 
-The compiler returns a `CompiledNodeGraph` with validation diagnostics and a topological evaluation order. Runtime evaluation is intentionally not implemented in this slice.
+The compiler returns a `CompiledNodeGraph` with validation diagnostics and a topological evaluation order.
+
+## Runtime Evaluation
+
+The current runtime is now live for the first node set:
+
+- `constant.color`, `constant.float`, `constant.bool`
+- `input.bool`, `input.float`, `input.color`
+- `logic.select-color`
+- `output.segment-color`
+
+Runtime behavior in this slice:
+
+- the active effect is selected through `Settings.ActiveEffectId`, with a fallback to the first saved effect
+- settings changes trigger recompilation through `LightingManager` and `NodeGraphLightingRenderer`
+- segment buffers are cleared before each frame
+- `output.segment-color` fills all LEDs in matching target segments with one color
+- if multiple output nodes target the same LEDs, the later node in evaluation order wins
+- viewport state stays persisted for the editor, but it is ignored by runtime execution
 
 ## Next Work
 
-- add runtime node evaluation primitives
-- define how output nodes write into device segment buffers
-- add an active-effect selection model if multiple saved effects can exist
-- replace the temporary `NoOpLightingRenderer` with a node-graph renderer once compilation and evaluation are stable
+- expand the node runtime beyond the bootstrap set with math, timing, gradients, and animation nodes
+- expose active-effect selection cleanly in the browser UI
+- decide whether editor preview should be able to render while no input module is active
+- build the real SvelteKit node editor and management UI on top of the current graph/runtime APIs

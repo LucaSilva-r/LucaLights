@@ -65,6 +65,7 @@ public static class SettingsEndpoints
         NormalizeSettings(replacement);
 
         var activeInputModuleId = replacement.ActiveInputModuleId;
+        var activeEffectId = replacement.ActiveEffectId;
         var activeInputModuleChanged = false;
 
         lock (lightingManager.SyncRoot)
@@ -81,6 +82,7 @@ public static class SettingsEndpoints
 
             settings.Devices = replacement.Devices;
             settings.Effects = replacement.Effects;
+            settings.ActiveEffectId = activeEffectId;
             settings.ActiveInputModuleId = activeInputModuleId;
             settings.InputModuleSettings = replacement.InputModuleSettings;
 
