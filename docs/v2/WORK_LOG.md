@@ -210,3 +210,27 @@ Blockers or risks:
 Next recommended step:
 
 - add the first ASP.NET Core hosted bootstrap for config, input modules, and lighting engine lifecycle
+
+## 2026-04-09
+
+What changed:
+
+- added an ASP.NET Core hosted runtime bootstrap with `EngineHostedService`
+- registered config, input-module management, lighting engine lifecycle, and the temporary no-op renderer through server DI
+- added diagnostic endpoints for root status, system status, input-module definitions, and latest input state
+- fixed ITGMania input definition initialization so module definitions can be enumerated safely by API callers
+- bounded ITGMania shutdown waits so blocked FIFO reads do not freeze server shutdown
+
+Decisions made:
+
+- keep the first server bootstrap intentionally thin and diagnostic-focused before adding the full browser-facing API surface
+- keep the runtime owned by the ASP.NET Core host so future UI, WebSocket, and packaging work share one lifecycle
+
+Blockers or risks:
+
+- output rendering is still using `NoOpLightingRenderer`, so this host boots the runtime but does not yet drive real device output
+- Phase 1 still needs device/effect/settings REST endpoints, static UI serving, and WebSocket/event streams
+
+Next recommended step:
+
+- add REST endpoints for devices, effects, and settings using the shared v2 `Settings` instance and `ConfigManager`

@@ -10,7 +10,7 @@ public sealed class ITGManiaInputModule : IGameInputModule, IDisposable
     public const string ModuleIdValue = "itgmania";
     private const int FullSextetCount = 33;
 
-    private static readonly InputDefinition Definition = BuildDefinition();
+    private static readonly Lazy<InputDefinition> Definition = new(BuildDefinition);
 
     private static readonly (ItgCabinetLight Flag, string Key, string Label)[] CabinetChannels =
     [
@@ -109,7 +109,7 @@ public sealed class ITGManiaInputModule : IGameInputModule, IDisposable
 
     public InputDefinition GetDefinition()
     {
-        return Definition;
+        return Definition.Value;
     }
 
     public InputSnapshot GetLatestSnapshot()
@@ -163,15 +163,19 @@ public sealed class ITGManiaInputModule : IGameInputModule, IDisposable
 
         try
         {
-            await backgroundTask.WaitAsync(cancellationToken);
+            await backgroundTask.WaitAsync(TimeSpan.FromSeconds(2), cancellationToken);
         }
-        catch (OperationCanceledException)
+        catch (OperationCanceledException) when (cancellationToken.IsCancellationRequested)
         {
-            throw;
+            _log?.Invoke("ITGMania input module shutdown wait was cancelled.");
         }
-        catch (Exception)
+        catch (TimeoutException)
         {
-            // Background loop handles restart semantics; dispose flow should still continue.
+            _log?.Invoke("ITGMania input module did not stop within timeout; continuing shutdown.");
+        }
+        catch (Exception ex)
+        {
+            _log?.Invoke($"ITGMania input module stopped with error: {ex.Message}");
         }
         finally
         {

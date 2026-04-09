@@ -4,8 +4,8 @@
 
 - Overall status: `in progress`
 - Current phase: `Phase 1 - Server Host`
-- Current implementation slice: `Phase 0 foundation complete, server host next`
-- Last updated: `2026-04-08`
+- Current implementation slice: `Server-hosted engine bootstrap complete, REST APIs next`
+- Last updated: `2026-04-09`
 
 ## Milestones
 
@@ -16,7 +16,7 @@
 | Phase 0.2 - Core extraction | done | Lighting/device/settings code builds without Avalonia dependencies |
 | Phase 0.3 - Input module foundation | done | `IGameInputModule`, `GameInputManager`, `InputSnapshot`, and `InputDefinition` are implemented |
 | Phase 0.4 - ITG parity module | done | Current ITGMania named-pipe behavior works through `ITGManiaInputModule` |
-| Phase 1 - Server host | not started | ASP.NET Core host serves APIs, static UI assets, and WebSocket endpoints |
+| Phase 1 - Server host | in progress | ASP.NET Core host serves APIs, static UI assets, and WebSocket endpoints |
 | Phase 2 - Node engine | not started | Effects can render from compiled node graphs |
 | Phase 3 - SvelteKit UI | not started | Browser UI supports device management, preview, and graph editing |
 | Phase 4 - Packaging and polish | not started | Fresh v2 config works, publish flow works, and lifecycle controls are complete |
@@ -25,7 +25,7 @@
 
 ### Phase 0 - Foundation
 
-Status: `in progress`
+Status: `done`
 
 Scope:
 
@@ -59,13 +59,22 @@ Completed in this phase so far:
 
 ### Phase 1 - Server Host
 
-Status: `not started`
+Status: `in progress`
 
 Exit criteria:
 
 - engine hosted by ASP.NET Core
 - REST APIs for devices, effects, settings, and input modules
 - preview and event WebSockets working locally
+
+Completed in this phase so far:
+
+- added `EngineHostedService` to own runtime startup and shutdown
+- registered `ConfigManager`, `GameInputManager`, `LightingManager`, and the temporary no-op renderer in ASP.NET Core DI
+- registered and started `ITGManiaInputModule` from v2 settings
+- added diagnostic endpoints for root status, system status, input module definitions, and latest input state
+- fixed ITGMania input definition initialization so server endpoints can enumerate channels safely
+- added a bounded ITGMania shutdown wait so blocked FIFO reads do not hang server shutdown
 
 ### Phase 2 - Node Engine
 
@@ -113,15 +122,14 @@ Exit criteria:
 
 ## Next Recommended Slice
 
-Start `Phase 1 - Server Host`.
+Continue `Phase 1 - Server Host`.
 
 Concrete target:
 
-- add an ASP.NET Core hosted service that owns `ConfigManager`, `GameInputManager`, and `LightingManager`
-- register `ITGManiaInputModule` from settings and start the active module
-- add a first diagnostic endpoint to inspect input-module state
-- keep the server host thin while the browser UI does not exist yet
+- add REST endpoints for devices, effects, and settings
+- route settings mutations through the shared `Settings` instance and `ConfigManager`
+- keep endpoints thin so the eventual browser UI can consume them without learning legacy desktop assumptions
 
 Suggested checkpoint commit:
 
-- `v2: add server-hosted engine bootstrap`
+- `v2: add server settings api`
