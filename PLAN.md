@@ -25,9 +25,8 @@ LucaLights/
         Segment.cs                      # POCO (no ObservableObject)
         InputSnapshot.cs                # Normalized per-frame values exposed by game modules
         InputDefinition.cs              # Describes available channels/metadata for the editor
-        Effect.cs                       # Holds a NodeGraph reference
         NodeGraph.cs                    # Serializable graph definition
-        Settings.cs                     # Clean POCO config
+        Settings.cs                     # Clean POCO config (single Graph, no Effect list)
       Engine/
         LightingManager.cs              # 60fps render loop (preserved, stripped of Avalonia refs)
         ConfigManager.cs                # Load/Save JSON config
@@ -55,12 +54,12 @@ LucaLights/
     LucaLights.Server/                  # ASP.NET Core web host
       LucaLights.Server.csproj
       Program.cs                        # App builder, DI, startup, browser launch
-      Controllers/
-        DevicesController.cs            # REST CRUD for devices + segments
-        EffectsController.cs            # REST CRUD for effects + node graphs
-        NodeTypesController.cs          # GET available node types/metadata
-        SettingsController.cs           # GET/PUT global settings
-        InputsController.cs             # GET current input snapshot, module list, debug input
+      Endpoints/
+        DeviceEndpoints.cs              # REST CRUD for devices + segments
+        GraphEndpoints.cs               # GET/PUT /api/graph, POST /api/graph/validate
+        NodeTypesEndpoints.cs           # GET available node types/metadata
+        SettingsEndpoints.cs            # GET/PUT global settings
+        InputEndpoints.cs               # GET current input snapshot, module list
       WebSocket/
         PreviewWebSocket.cs             # Binary LED preview frames (~20fps)
         EventWebSocket.cs               # JSON input-state + module-status + config change events
@@ -78,7 +77,6 @@ LucaLights/
             websocket.ts                # WebSocket client (preview + events)
           stores/
             devices.ts                  # Device/segment state
-            effects.ts                  # Effect + node graph state
             inputState.ts               # Live input snapshot + module status
             preview.ts                  # LED preview binary data
           components/
@@ -93,8 +91,7 @@ LucaLights/
           +layout.svelte                # Main layout with nav + persistent preview panel
           +page.svelte                  # Dashboard
           devices/+page.svelte          # Device management
-          effects/+page.svelte          # Effect list
-          effects/[id]/+page.svelte     # Node editor for a specific effect
+          editor/+page.svelte           # Node graph editor (single unified graph)
 ```
 
 ---
@@ -118,7 +115,7 @@ LucaLights/
   - **PipeManager.cs**: Fold into `ITGManiaInputModule` or split into reusable transport helper + module; remove `MainViewModel.Instance!.debug` ref, accept config via constructor
   - **Settings.cs**: Remove `ObservableObject`, `ObservableProperty`, `ObservableCollection` -> plain POCO with `List<T>`. Extract Load/Save to `ConfigManager`
   - **DDPSend.cs**, **UdpRealtimeSend.cs**: Swap `Avalonia.Media.Color` for new `Color` struct
-  - **Effect.cs**: Strip Avalonia, keep gradient rendering temporarily (replaced in Phase 2)
+  - **Effect model**: Removed — replaced by single unified `NodeGraph` on `Settings`
 - Implement first module: `ITGManiaInputModule` backed by the current named pipe/FIFO protocol so behavior stays equivalent during extraction
 - Create `LucaLights.Server` project, minimal `Program.cs`
 - Verify: `dotnet build` succeeds
@@ -130,7 +127,7 @@ LucaLights/
 - **Game input hosting**: `GameInputManager` starts the configured module on startup, publishes snapshot updates, and supports hot-restart of the active module
 - **REST API Controllers:**
   - `GET/POST/PUT/DELETE /api/devices` (+ nested `/segments`)
-  - `GET/POST/PUT/DELETE /api/effects`
+  - `GET/PUT /api/graph` + `POST /api/graph/validate` (single unified graph)
   - `GET /api/node-types` (metadata for the frontend editor)
   - `GET /api/input-modules` (installed/available modules + their channel definitions)
   - `GET/PUT /api/settings`
@@ -206,7 +203,7 @@ Per-LED per-frame evaluation:
 
 For a 10-node graph, 300 LEDs, 60fps = ~180K evaluations/sec of simple float math. Well within budget.
 
-**Integration:** `Effect.Render()` switches from gradient code to `compiledGraph.Evaluate(snapshot, time, position)` per LED.
+**Integration:** `NodeGraphLightingRenderer` compiles and evaluates `Settings.Graph` each frame. Multiple output nodes in the same graph handle per-device routing.
 
 ### Phase 3: SvelteKit Frontend (overlaps with Phase 2)
 **Goal:** Complete web UI with node editor, device management, live preview.

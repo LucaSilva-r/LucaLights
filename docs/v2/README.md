@@ -33,7 +33,7 @@ To keep the rewrite reviewable:
 
 The current recommended starting point is the next Phase 3 slice:
 
-- add browser active-effect selection on top of `Settings.ActiveEffectId`
-- build the first SvelteFlow editor shell against the graph document endpoints
-- keep the runtime dashboard useful for validating input, preview, and topology while editor work lands
+- add device CRUD management pages in the browser
+- add custom SvelteFlow node components per node type (color pickers, input selectors, etc.)
+- add a node palette / drag-to-add for the graph editor
 - integrate the Svelte build into `LucaLights.Server` static assets once the editor shell is stable

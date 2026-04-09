@@ -414,3 +414,35 @@ Blockers or risks:
 Next recommended step:
 
 - implement runtime graph evaluation and wire `output.segment-color` into segment buffers
+
+## 2026-04-09
+
+What changed:
+
+- collapsed multi-effect model to a single unified graph on `Settings.Graph`
+- removed `Effect.cs`, `ActiveEffectId`, effects CRUD endpoints, and active-effect selection API
+- replaced `/api/effects/{id}/graph` endpoints with `/api/graph` (GET/PUT/validate)
+- simplified `NodeGraphLightingRenderer` to use `settings.Graph` directly
+- renamed `PreparedGraphEffect` to `PreparedGraph`, removed effect-specific fields
+- moved graph editor from `/effects/[id]` to `/editor` route (no effect ID needed)
+- updated dashboard to show graph summary card instead of effects list
+- added app-wide navigation layout with top nav bar (Dashboard, Graph Editor)
+- updated all architecture docs, execution tracker, plan, and README for the new single-graph model
+
+Decisions made:
+
+- one unified graph per configuration instead of a list of separate effects
+- multiple output nodes in the same graph handle per-device routing
+- scene switching deferred to future subgraph support
+- effects that interact (e.g. overrides, counters, sequencers) are naturally supported within a single graph
+
+Blockers or risks:
+
+- the Svelte app is still a standalone project under `web/`; not yet built into `LucaLights.Server/wwwroot`
+- idle preview depends on an active input snapshot, which may be awkward while authoring graphs outside live gameplay
+
+Next recommended step:
+
+- add device CRUD management pages in the browser
+- add custom SvelteFlow node components per node type (color pickers, input selectors, etc.)
+- add node palette / drag-to-add for the graph editor

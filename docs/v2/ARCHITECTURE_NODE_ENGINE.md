@@ -12,11 +12,11 @@ This document captures the Phase 2 node-engine direction.
 
 ## Graph API Shape
 
-The graph editor should treat the effect graph as a document:
+The graph editor treats the graph as a single document on `Settings.Graph`:
 
-- `GET /api/effects/{effectId}/graph` returns the saved graph, validation result, and compiled evaluation order
-- `PUT /api/effects/{effectId}/graph` replaces the whole saved graph and returns validation diagnostics
-- `POST /api/effects/{effectId}/graph/validate` validates a proposed graph without saving it
+- `GET /api/graph` returns the saved graph, validation result, and compiled evaluation order
+- `PUT /api/graph` replaces the whole saved graph and returns validation diagnostics
+- `POST /api/graph/validate` validates a proposed graph without saving it
 
 Fine-grained per-node endpoints are intentionally deferred. SvelteFlow naturally produces a full nodes-plus-edges snapshot, and whole-graph validation makes cycle detection and port compatibility checks simpler.
 
@@ -71,7 +71,7 @@ This keeps the compiler free to use engine-friendly names while letting the UI s
 Validation should also be split by cost:
 
 - on drag, the UI can use SvelteFlow's `isValidConnection` hook with local catalog metadata for fast type and direction checks
-- on save or explicit validation, the UI should call `POST /api/effects/{effectId}/graph/validate` so the backend remains authoritative for cycles, missing outputs, and future runtime-only constraints
+- on save or explicit validation, the UI should call `POST /api/graph/validate` so the backend remains authoritative for cycles, missing outputs, and future runtime-only constraints
 
 ## Node Catalog
 
@@ -111,7 +111,7 @@ The current runtime is now live for the first node set:
 
 Runtime behavior in this slice:
 
-- the active effect is selected through `Settings.ActiveEffectId`, with a fallback to the first saved effect
+- there is one unified graph on `Settings.Graph` — no effect selection needed
 - settings changes trigger recompilation through `LightingManager` and `NodeGraphLightingRenderer`
 - segment buffers are cleared before each frame
 - `output.segment-color` fills all LEDs in matching target segments with one color
@@ -121,6 +121,6 @@ Runtime behavior in this slice:
 ## Next Work
 
 - expand the node runtime beyond the bootstrap set with math, timing, gradients, and animation nodes
-- expose active-effect selection cleanly in the browser UI
+- add custom SvelteFlow node components per node type (color pickers, input selectors, etc.)
+- add a node palette / drag-to-add for the graph editor
 - decide whether editor preview should be able to render while no input module is active
-- build the real SvelteKit node editor and management UI on top of the current graph/runtime APIs
