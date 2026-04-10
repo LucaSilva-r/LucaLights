@@ -17,11 +17,13 @@ export interface Segment {
 	length: number;
 }
 
+export type DeviceProtocol = number | 'DDP' | 'UdpRealtime';
+
 export interface Device {
 	id: string;
 	name: string;
 	ip: string;
-	protocol: string;
+	protocol: DeviceProtocol;
 	segments: Segment[];
 }
 
@@ -179,7 +181,7 @@ export interface PreviewDevice {
 	id: string;
 	name: string;
 	ip: string;
-	protocol: string;
+	protocol: DeviceProtocol;
 	ledCount: number;
 	segments: PreviewSegment[];
 }
@@ -233,6 +235,25 @@ export async function apiPost<T>(path: string, body?: unknown): Promise<T> {
 	return (await response.json()) as T;
 }
 
+export async function apiDelete<T>(path: string): Promise<T> {
+	const response = await fetch(path, {
+		method: 'DELETE',
+		headers: {
+			accept: 'application/json'
+		}
+	});
+
+	if (!response.ok) {
+		throw new Error(await buildErrorMessage(response, path));
+	}
+
+	if (response.status === 204) {
+		return undefined as T;
+	}
+
+	return (await response.json()) as T;
+}
+
 export async function apiPut<T>(path: string, body?: unknown): Promise<T> {
 	const response = await fetch(path, {
 		method: 'PUT',
@@ -270,6 +291,35 @@ export function entriesOf<T>(record: Record<string, T> | null | undefined): Arra
 export function rgb(value: RgbColor | ColorValue): string {
 	const [red, green, blue] = Array.isArray(value) ? value : [value.r, value.g, value.b];
 	return `rgb(${red} ${green} ${blue})`;
+}
+
+export const DEVICE_PROTOCOL_OPTIONS = [
+	{ value: 0, label: 'DDP' },
+	{ value: 1, label: 'UDP Realtime' }
+] as const;
+
+export function normalizeProtocol(value: DeviceProtocol | null | undefined): number {
+	if (typeof value === 'number' && Number.isFinite(value)) {
+		return value;
+	}
+
+	if (typeof value === 'string') {
+		switch (value.trim().toLowerCase()) {
+			case 'udprealtime':
+			case 'udp realtime':
+			case 'udp_realtime':
+				return 1;
+			case 'ddp':
+			default:
+				return 0;
+		}
+	}
+
+	return 0;
+}
+
+export function protocolLabel(value: DeviceProtocol | null | undefined): string {
+	return DEVICE_PROTOCOL_OPTIONS.find((option) => option.value === normalizeProtocol(value))?.label ?? 'DDP';
 }
 
 export function toMessage(error: unknown): string {

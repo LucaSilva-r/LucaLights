@@ -36,6 +36,7 @@
 		createSocket,
 		entriesOf,
 		formatAge,
+		protocolLabel,
 		rgb,
 		toMessage,
 		type Device,
@@ -649,12 +650,12 @@
 								{#each previewDevices as device}
 									<div class="rounded-2xl border border-border/70 bg-background/65 p-4 shadow-sm">
 										<div class="flex flex-col gap-3 sm:flex-row sm:items-start sm:justify-between">
-											<div>
-												<p class="text-base font-semibold">{device.name}</p>
-												<p class="text-sm text-muted-foreground">
-													{device.ip} · {device.protocol} · {device.ledCount} LEDs
-												</p>
-											</div>
+										<div>
+											<p class="text-base font-semibold">{device.name}</p>
+											<p class="text-sm text-muted-foreground">
+													{device.ip} · {protocolLabel(device.protocol)} · {device.ledCount} LEDs
+											</p>
+										</div>
 											<Badge variant="outline">{device.segments.length} segments</Badge>
 										</div>
 										<div class="mt-4 space-y-3">
@@ -692,6 +693,12 @@
 						<CardDescription>
 							Physical targets currently configured in the runtime settings.
 						</CardDescription>
+						<CardAction>
+							<Button size="sm" variant="outline" href="/devices">
+								<Cable class="size-3.5" />
+								Manage
+							</Button>
+						</CardAction>
 					</CardHeader>
 					<CardContent class="space-y-3">
 						{#if devices.length > 0}
@@ -701,7 +708,7 @@
 										<div>
 											<p class="text-base font-semibold">{device.name}</p>
 											<p class="text-sm text-muted-foreground">
-												{device.ip} · {device.protocol}
+												{device.ip} · {protocolLabel(device.protocol)}
 											</p>
 										</div>
 										<Badge variant="outline">{deviceLedCount(device)} LEDs</Badge>

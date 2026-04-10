@@ -446,3 +446,28 @@ Next recommended step:
 - add device CRUD management pages in the browser
 - add custom SvelteFlow node components per node type (color pickers, input selectors, etc.)
 - add node palette / drag-to-add for the graph editor
+
+## 2026-04-10
+
+What changed:
+
+- added a dedicated browser device manager at `/devices`
+- added create, edit, and delete flows for devices in the SvelteKit app
+- added nested segment create, edit, and delete flows so device topology can be managed without leaving the browser
+- added a Devices link to the app navigation and a dashboard shortcut into the new page
+- normalized frontend transport labels so DDP and UDP Realtime display consistently
+
+Decisions made:
+
+- device details and segment edits should be separate save flows so top-level device updates do not accidentally overwrite in-progress segment edits
+- new devices should start with one default segment so the topology editor is immediately usable
+
+Blockers or risks:
+
+- the graph editor still uses generic SvelteFlow nodes, so authoring ergonomics are still limited compared to the new device manager
+- the Svelte app is still standalone under `web/` and not yet built into `LucaLights.Server/wwwroot`
+
+Next recommended step:
+
+- add custom SvelteFlow node components per node type
+- add a node palette / drag-to-add workflow for the graph editor

@@ -4,12 +4,13 @@
 	import { page } from '$app/state';
 	import { Button } from '$lib/components/ui/button';
 	import { Separator } from '$lib/components/ui/separator';
-	import { LayoutDashboard, Workflow } from '@lucide/svelte';
+	import { Cable, LayoutDashboard, Workflow } from '@lucide/svelte';
 
 	let { children } = $props();
 
 	const navItems = [
 		{ href: '/', label: 'Dashboard', icon: LayoutDashboard },
+		{ href: '/devices', label: 'Devices', icon: Cable },
 		{ href: '/editor', label: 'Graph Editor', icon: Workflow },
 	] as const;
 

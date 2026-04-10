@@ -4,8 +4,8 @@
 
 - Overall status: `in progress`
 - Current phase: `Phase 3 - Web UI`
-- Current implementation slice: `Single-graph architecture; graph editor at /editor; device management pages next`
-- Last updated: `2026-04-09`
+- Current implementation slice: `Browser device CRUD landed; custom node components and node palette next`
+- Last updated: `2026-04-10`
 
 ## Milestones
 
@@ -141,6 +141,8 @@ Completed in this phase so far:
 - moved graph editor to `/editor` route (no effect ID needed)
 - updated dashboard to show graph summary card with "Open Editor" button instead of effects list
 - added Editor link to the navigation layout
+- added browser device management at `/devices` with create, edit, and delete flows for devices plus nested segment CRUD
+- normalized frontend transport labels so DDP and UDP Realtime display consistently across the dashboard and device manager
 
 ### Phase 4 - Packaging and Polish
 
@@ -175,11 +177,10 @@ Continue `Phase 3 - SvelteKit UI`.
 
 Concrete target:
 
-- add device CRUD management pages in the browser (create, edit, delete)
 - add custom SvelteFlow node components per node type (color pickers, input selectors, etc.)
 - add node palette / drag-to-add for the graph editor
 - integrate the Svelte build output into `LucaLights.Server/wwwroot` static assets
 
 Suggested checkpoint commit:
 
-- `v2: unify to single graph architecture`
+- `v2: add browser device management`
