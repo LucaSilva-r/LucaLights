@@ -110,6 +110,21 @@ public sealed class GraphRuntimeEvaluator
                     break;
                 }
 
+                case "logic.mix-color":
+                {
+                    var colorA = GetInputColor(preparedEffect, outputs, node.Id, "a");
+                    var colorB = GetInputColor(preparedEffect, outputs, node.Id, "b");
+                    var factor = GetInputFloat(
+                        preparedEffect,
+                        outputs,
+                        node.Id,
+                        "factor",
+                        ReadFloat(node.Properties, "factor", 0.5f));
+                    outputs[BuildOutputKey(node.Id, "color")] = RuntimeValue.FromColor(
+                        MixColors(colorA, colorB, factor));
+                    break;
+                }
+
                 case "output.segment-color":
                     ApplySegmentColor(
                         settings,
@@ -144,6 +159,19 @@ public sealed class GraphRuntimeEvaluator
             && value.Type == NodeValueType.Color
             ? value.ColorValue
             : defaultValue ?? Color.Black;
+    }
+
+    private static float GetInputFloat(
+        PreparedGraph preparedEffect,
+        Dictionary<string, RuntimeValue> outputs,
+        string nodeId,
+        string portId,
+        float defaultValue = 0f)
+    {
+        return TryGetInputValue(preparedEffect, outputs, nodeId, portId, out var value)
+            && value.Type == NodeValueType.Float
+            ? value.FloatValue
+            : defaultValue;
     }
 
     private static bool TryGetInputValue(
@@ -212,6 +240,21 @@ public sealed class GraphRuntimeEvaluator
             ReadByte(properties, "r", 255),
             ReadByte(properties, "g", 255),
             ReadByte(properties, "b", 255));
+    }
+
+    private static Color MixColors(Color a, Color b, float factor)
+    {
+        var clamped = Math.Clamp(factor, 0f, 1f);
+        return Color.FromRgb(
+            LerpByte(a.R, b.R, clamped),
+            LerpByte(a.G, b.G, clamped),
+            LerpByte(a.B, b.B, clamped));
+    }
+
+    private static byte LerpByte(byte start, byte end, float factor)
+    {
+        var value = start + ((end - start) * factor);
+        return (byte)Math.Clamp((int)MathF.Round(value), byte.MinValue, byte.MaxValue);
     }
 
     private static byte ReadByte(JsonObject properties, string key, byte defaultValue)

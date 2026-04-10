@@ -45,6 +45,28 @@
 		return data.properties[property.key] ?? property.defaultValue ?? defaultValueForType(property.valueType);
 	}
 
+	function floatStepFor(property: NodePropertyDefinition) {
+		const defaultValue = property.defaultValue;
+		const hasFractionalBounds =
+			(property.minFloatValue !== null &&
+				property.minFloatValue !== undefined &&
+				!Number.isInteger(property.minFloatValue)) ||
+			(property.maxFloatValue !== null &&
+				property.maxFloatValue !== undefined &&
+				!Number.isInteger(property.maxFloatValue));
+		const hasFractionalDefault =
+			typeof defaultValue === 'number' && Number.isFinite(defaultValue) && !Number.isInteger(defaultValue);
+		const isNormalizedRange =
+			property.minFloatValue !== null &&
+			property.minFloatValue !== undefined &&
+			property.maxFloatValue !== null &&
+			property.maxFloatValue !== undefined &&
+			property.minFloatValue >= 0 &&
+			property.maxFloatValue <= 1;
+
+		return hasFractionalBounds || hasFractionalDefault || isNormalizedRange ? '0.01' : '1';
+	}
+
 	function defaultValueForType(valueType: string): unknown {
 		switch (valueType) {
 			case 'Bool':
@@ -337,7 +359,7 @@
 							type="number"
 							min={property.minFloatValue ?? undefined}
 							max={property.maxFloatValue ?? undefined}
-							step="1"
+							step={floatStepFor(property)}
 							value={numberValue(property.key, Number(valueFor(property) ?? 0))}
 							oninput={(event) => setProperty(property.key, Number((event.currentTarget as HTMLInputElement).value))}
 						/>
@@ -348,7 +370,7 @@
 								type="range"
 								min={property.minFloatValue}
 								max={property.maxFloatValue}
-								step="1"
+								step={floatStepFor(property)}
 								value={numberValue(property.key, Number(valueFor(property) ?? 0))}
 								oninput={(event) => setProperty(property.key, Number((event.currentTarget as HTMLInputElement).value))}
 							/>
