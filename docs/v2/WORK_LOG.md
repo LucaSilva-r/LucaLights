@@ -519,3 +519,31 @@ Next recommended step:
 
 - integrate the Svelte build into `LucaLights.Server/wwwroot`
 - add the next small batch of math and timing nodes using the new authoring guide
+
+## 2026-04-10
+
+What changed:
+
+- integrated the SvelteKit production build into `LucaLights.Server` so `dotnet build` now produces hosted SPA assets under server `wwwroot`
+- routed hosted frontend assets through the ASP.NET static web assets pipeline while still generating a local `wwwroot` copy for `dotnet run`
+- added ASP.NET SPA fallback routing so browser routes like `/editor` and `/devices` resolve to the built frontend
+- removed the old hand-written diagnostics static assets from `src/LucaLights.Server/wwwroot`
+- verified sequential `dotnet build`, `dotnet publish`, and local route smoke tests against `/`, `/editor`, and `/devices`
+- updated the tracker to mark `Phase 3 - Web UI` complete and move focus to packaging/polish
+
+Decisions made:
+
+- the server project owns frontend asset generation for hosted runs instead of relying on manually copied files
+- generated `wwwroot` output should stay untracked in git and be recreated by the build pipeline
+- unknown SPA routes should fall back to `index.html`, but `/api` and `/ws` paths should still return proper 404 behavior when unmatched
+
+Blockers or risks:
+
+- building `LucaLights.Server` now assumes a working Node/npm toolchain is available
+- the build and publish flow is now verified, but it still needs a small documentation pass for repeatable release packaging
+- authoring preview behavior without a live input module is still undecided
+
+Next recommended step:
+
+- document the verified build and publish flow
+- decide whether editor preview should render while no input module is active

@@ -3,8 +3,8 @@
 ## Status Summary
 
 - Overall status: `in progress`
-- Current phase: `Phase 3 - Web UI`
-- Current implementation slice: `Graph authoring is expanding with richer runtime nodes; server static asset integration next`
+- Current phase: `Phase 4 - Packaging and polish`
+- Current implementation slice: `Hosted SPA integration landed; preview behavior and publish polish next`
 - Last updated: `2026-04-10`
 
 ## Milestones
@@ -18,8 +18,8 @@
 | Phase 0.4 - ITG parity module | done | Current ITGMania named-pipe behavior works through `ITGManiaInputModule` |
 | Phase 1 - Server host | done | ASP.NET Core host serves APIs, static UI assets, and WebSocket endpoints |
 | Phase 2 - Node engine | done | Effects can render from compiled node graphs |
-| Phase 3 - SvelteKit UI | in progress | Browser UI supports device management, preview, and graph editing |
-| Phase 4 - Packaging and polish | not started | Fresh v2 config works, publish flow works, and lifecycle controls are complete |
+| Phase 3 - SvelteKit UI | done | Browser UI supports device management, preview, and graph editing |
+| Phase 4 - Packaging and polish | in progress | Fresh v2 config works, publish flow works, and lifecycle controls are complete |
 
 ## Phase Breakdown
 
@@ -112,12 +112,12 @@ Completed in this phase so far:
 
 ### Phase 3 - Web UI
 
-Status: `in progress`
+Status: `done`
 
 Exit criteria:
 
 - SvelteKit app integrated into server
-- device/effect management available in browser
+- device management and preview available in browser
 - node editor consumes input definitions dynamically
 
 Completed in this phase so far:
@@ -148,10 +148,11 @@ Completed in this phase so far:
 - added local connection validation plus saved viewport round-tripping in the graph editor
 - added the first math-category authoring slice with `Mix Color` plus driven-property hiding in the editor
 - added a dedicated node authoring guide for future catalog/runtime/editor node work
+- integrated the Svelte build into the ASP.NET static web assets pipeline, generated server `wwwroot` for local runs, and added SPA fallback routing in the host
 
 ### Phase 4 - Packaging and Polish
 
-Status: `not started`
+Status: `in progress`
 
 Exit criteria:
 
@@ -166,7 +167,7 @@ Exit criteria:
 - Runtime graph swaps must be thread-safe so the render loop never sees partially compiled state.
 - "Game agnostic" can regress into "ITG with abstraction wrappers" unless module boundaries stay strict.
 - Idle preview currently depends on an active input snapshot, which may be awkward while authoring graphs outside live gameplay.
-- The Svelte app is still a standalone project under `web/`; it is not yet built into `LucaLights.Server/wwwroot`.
+- Server builds now depend on a working Node/npm toolchain when `LucaLights.Server` is built.
 
 ## Decisions Locked In
 
@@ -175,16 +176,18 @@ Exit criteria:
 - The first module is `ITGManiaInputModule` to preserve current behavior.
 - The browser UI is a consumer of backend-defined input channels, not a source of game-specific assumptions.
 - One unified graph per configuration, not multiple effects. Multiple output nodes in the same graph handle per-device routing. Scene switching deferred to future subgraph support.
+- `LucaLights.Server` is responsible for building and serving the Svelte SPA static assets.
+- Hosted frontend assets come from the Svelte build output via the ASP.NET static web assets pipeline, with a generated local `wwwroot` copy kept only for source-run static file hosting.
 
 ## Next Recommended Slice
 
-Continue `Phase 3 - SvelteKit UI`.
+Continue `Phase 4 - Packaging and polish`.
 
 Concrete target:
 
-- integrate the Svelte build output into `LucaLights.Server/wwwroot` static assets
 - decide whether authoring preview should render while no input module is active
+- document the verified build and publish flow now that the frontend build is host-integrated
 
 Suggested checkpoint commit:
 
-- `v2: improve graph editor authoring`
+- `v2: integrate hosted svelte assets`

@@ -64,6 +64,7 @@ artifacts/
 node_modules/
 dist/
 .svelte-kit/
+/src/LucaLights.Server/wwwroot/
 
 # LucaLights runtime settings fallback
 /src/LucaLights.Server/LucaLights/

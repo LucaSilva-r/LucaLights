@@ -7,6 +7,8 @@ using LucaLights.Server.Endpoints;
 using LucaLights.Server.Services;
 
 var builder = WebApplication.CreateBuilder(args);
+builder.WebHost.UseStaticWebAssets();
+Directory.CreateDirectory(Path.Combine(builder.Environment.ContentRootPath, "wwwroot"));
 
 builder.Services.AddSingleton<ConfigManager>();
 builder.Services.AddSingleton(provider =>
@@ -48,6 +50,7 @@ builder.Services.AddHostedService(provider => provider.GetRequiredService<Previe
 builder.Services.AddHostedService<EngineHostedService>();
 
 var app = builder.Build();
+var webRootFileProvider = app.Environment.WebRootFileProvider;
 
 app.UseDefaultFiles();
 app.UseStaticFiles();
@@ -107,5 +110,36 @@ app.MapSettingsEndpoints();
 app.MapGraphEndpoints();
 app.MapSystemEndpoints();
 app.MapRuntimeWebSockets();
+app.MapFallback(async context =>
+{
+    if (context.Request.Path.StartsWithSegments("/api")
+        || context.Request.Path.StartsWithSegments("/ws")
+        || (!HttpMethods.IsGet(context.Request.Method) && !HttpMethods.IsHead(context.Request.Method)))
+    {
+        context.Response.StatusCode = StatusCodes.Status404NotFound;
+        return;
+    }
+
+    var spaIndexFile = webRootFileProvider.GetFileInfo("index.html");
+
+    if (!spaIndexFile.Exists)
+    {
+        context.Response.StatusCode = StatusCodes.Status404NotFound;
+        await context.Response.WriteAsync("Frontend assets are missing. Build LucaLights.Server to generate hosted static assets.");
+        return;
+    }
+
+    context.Response.StatusCode = StatusCodes.Status200OK;
+    context.Response.ContentType = "text/html; charset=utf-8";
+    context.Response.ContentLength = spaIndexFile.Length;
+
+    if (HttpMethods.IsHead(context.Request.Method))
+    {
+        return;
+    }
+
+    await using var stream = spaIndexFile.CreateReadStream();
+    await stream.CopyToAsync(context.Response.Body, context.RequestAborted);
+});
 
 app.Run();

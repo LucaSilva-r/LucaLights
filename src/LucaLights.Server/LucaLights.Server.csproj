@@ -4,9 +4,40 @@
     <Nullable>enable</Nullable>
     <ImplicitUsings>enable</ImplicitUsings>
     <LangVersion>latest</LangVersion>
+    <SpaRoot>..\..\web\lucalights-ui\</SpaRoot>
+    <SpaBuildOutputDir>$(SpaRoot)build\</SpaBuildOutputDir>
+    <GeneratedWebRootDir>$(MSBuildProjectDirectory)\wwwroot\</GeneratedWebRootDir>
+    <GeneratedCompressedStaticAssetsDir>$(IntermediateOutputPath)compressed\</GeneratedCompressedStaticAssetsDir>
+    <ShouldBuildFrontendAssets Condition="'$(ShouldBuildFrontendAssets)' == ''">true</ShouldBuildFrontendAssets>
+    <EnableDefaultCompressionFormats>false</EnableDefaultCompressionFormats>
+    <DisableBuildCompression>true</DisableBuildCompression>
   </PropertyGroup>
 
   <ItemGroup>
     <ProjectReference Include="..\LucaLights.Core\LucaLights.Core.csproj" />
+    <Content Remove="wwwroot/**" />
   </ItemGroup>
+
+  <Target
+    Name="SyncFrontendStaticAssets"
+    BeforeTargets="ResolveStaticWebAssetsInputs"
+    Condition="'$(DesignTimeBuild)' != 'true' and '$(ShouldBuildFrontendAssets)' == 'true' and Exists('$(SpaRoot)package.json')">
+    <Message Importance="high" Text="Building LucaLights Svelte frontend for hosted static assets..." />
+    <Exec WorkingDirectory="$(SpaRoot)" Command="npm ci" Condition="!Exists('$(SpaRoot)node_modules')" />
+    <Exec WorkingDirectory="$(SpaRoot)" Command="npm run build" />
+    <RemoveDir Directories="$(GeneratedCompressedStaticAssetsDir)" Condition="Exists('$(GeneratedCompressedStaticAssetsDir)')" />
+    <RemoveDir Directories="$(GeneratedWebRootDir)" Condition="Exists('$(GeneratedWebRootDir)')" />
+    <MakeDir Directories="$(GeneratedWebRootDir)" />
+    <ItemGroup>
+      <FrontendStaticFiles Include="$(SpaBuildOutputDir)**\*" />
+      <Content
+        Include="@(FrontendStaticFiles)"
+        Link="wwwroot/%(RecursiveDir)%(Filename)%(Extension)"
+        CopyToOutputDirectory="PreserveNewest"
+        CopyToPublishDirectory="PreserveNewest" />
+    </ItemGroup>
+    <Copy
+      SourceFiles="@(FrontendStaticFiles)"
+      DestinationFiles="@(FrontendStaticFiles->'$(GeneratedWebRootDir)%(RecursiveDir)%(Filename)%(Extension)')" />
+  </Target>
 </Project>

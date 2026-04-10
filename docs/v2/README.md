@@ -32,7 +32,7 @@ To keep the rewrite reviewable:
 
 ## Current Focus
 
-The current recommended starting point is the next Phase 3 slice:
+The current recommended starting point is the next v2 slice:
 
-- integrate the Svelte build into `LucaLights.Server` static assets once the editor shell is stable
 - decide whether authoring preview should render while no input module is active
+- document and polish the server build and publish flow now that the Svelte app is integrated into the host

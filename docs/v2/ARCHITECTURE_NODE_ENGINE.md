@@ -131,5 +131,4 @@ Runtime behavior in this slice:
 ## Next Work
 
 - expand the node runtime beyond the bootstrap set with math, timing, gradients, and animation nodes
-- integrate the Svelte build output into `LucaLights.Server/wwwroot`
 - decide whether editor preview should be able to render while no input module is active
