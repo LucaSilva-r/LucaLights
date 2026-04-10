@@ -4,7 +4,7 @@
 
 - Overall status: `in progress`
 - Current phase: `Phase 4 - Packaging and polish`
-- Current implementation slice: `Hosted build and publish flow documented; preview behavior and lifecycle polish next`
+- Current implementation slice: `Node catalog expanded to 28 nodes; preview behavior and lifecycle polish next`
 - Last updated: `2026-04-10`
 
 ## Milestones

@@ -211,11 +211,51 @@
 				return 'bg-cyan-600 text-white';
 			case 'Logic':
 				return 'bg-violet-500 text-white';
+			case 'Time':
+				return 'bg-orange-500 text-white';
+			case 'Color':
+				return 'bg-rose-500 text-white';
 			case 'Outputs':
 				return 'bg-emerald-500 text-white';
 			default:
 				return 'bg-zinc-700 text-white';
 		}
+	}
+
+	function isOutputNode(typeId: string) {
+		return typeId === 'output.segment-color' || typeId === 'output.segment-gradient';
+	}
+
+	type EnumOption = { value: string; label: string };
+
+	const edgeOptions: EnumOption[] = [
+		{ value: 'rising', label: 'Rising edge' },
+		{ value: 'falling', label: 'Falling edge' }
+	];
+
+	const enumOptions: Record<string, Record<string, EnumOption[]>> = {
+		'time.oscillator': {
+			waveform: [
+				{ value: 'sine', label: 'Sine' },
+				{ value: 'square', label: 'Square' },
+				{ value: 'triangle', label: 'Triangle' },
+				{ value: 'sawtooth', label: 'Sawtooth' }
+			]
+		},
+		'time.pulse': {
+			edge: edgeOptions
+		},
+		'logic.compare': {
+			mode: [
+				{ value: 'greater', label: 'Greater than' },
+				{ value: 'less', label: 'Less than' },
+				{ value: 'equal', label: 'Equal' }
+			]
+		}
+	};
+
+	function getEnumOptions(typeId: string, propertyKey: string): EnumOption[] | undefined {
+		return enumOptions[typeId]?.[propertyKey];
 	}
 
 	function nodeTooltip() {
@@ -238,7 +278,7 @@
 </script>
 
 <div
-	class={`w-[15.5rem] overflow-visible rounded-[1.05rem] border bg-white/95 text-left shadow-lg backdrop-blur ${
+	class={`w-[15.5rem] overflow-visible rounded-[1.05rem] border bg-surface-node text-left shadow-lg backdrop-blur ${
 		selected ? 'border-primary ring-2 ring-primary/20' : 'border-border/70'
 	}`}
 >
@@ -255,7 +295,7 @@
 		<div class="border-b border-border/60 px-0 py-1">
 			{#each data.inputs as input}
 				<div
-					class="relative flex min-h-7 items-center px-3 pl-4 text-foreground/90 transition hover:bg-black/[0.03]"
+					class="relative flex min-h-7 items-center px-3 pl-4 text-foreground/90 transition hover:bg-surface-subtle-hover"
 					title={portTooltip(input.label, input.valueType, input.description)}
 				>
 					<Handle
@@ -263,7 +303,7 @@
 						id={input.id}
 						position={Position.Left}
 						style="left: 0; top: 50%; transform: translate(-50%, -50%);"
-						class={`${handleTone(input.valueType)} !h-4 !w-4 !border-[3px] !border-white !shadow-sm`}
+						class={`${handleTone(input.valueType)} !h-4 !w-4 !border-[3px] !border-node-handle-border !shadow-sm`}
 					/>
 					<p class="min-w-0 flex-1 truncate text-[12px] font-medium">{input.label}</p>
 				</div>
@@ -352,6 +392,16 @@
 							<option value={option.key}>{option.label} · {option.key}</option>
 						{/each}
 					</select>
+				{:else if getEnumOptions(data.typeId, property.key)}
+					<select
+						class={interactiveClass}
+						value={stringValue(property.key, String(valueFor(property) ?? ''))}
+						onchange={(event) => setProperty(property.key, (event.currentTarget as HTMLSelectElement).value)}
+					>
+						{#each getEnumOptions(data.typeId, property.key) ?? [] as option}
+							<option value={option.value}>{option.label}</option>
+						{/each}
+					</select>
 				{:else if property.valueType === 'Bool'}
 					<label class="flex items-center gap-2 rounded-md border border-border/70 bg-background/80 px-2.5 py-1.5 text-[11px] font-medium">
 						<input
@@ -395,7 +445,7 @@
 					/>
 				{/if}
 
-				{#if data.typeId === 'output.segment-color' && property.key === 'deviceIds' && data.deviceOptions.length > 0}
+				{#if isOutputNode(data.typeId) && property.key === 'deviceIds' && data.deviceOptions.length > 0}
 					<div class="flex flex-wrap gap-1">
 						{#each data.deviceOptions as device}
 							<button
@@ -413,7 +463,7 @@
 					</div>
 				{/if}
 
-				{#if data.typeId === 'output.segment-color' && property.key === 'segmentIds' && data.segmentOptions.length > 0}
+				{#if isOutputNode(data.typeId) && property.key === 'segmentIds' && data.segmentOptions.length > 0}
 					<div class="flex flex-wrap gap-1">
 						{#each data.segmentOptions as segment}
 							<button
@@ -432,7 +482,7 @@
 					</div>
 				{/if}
 
-				{#if data.typeId === 'output.segment-color' && property.key === 'groupIds' && data.groupOptions.length > 0}
+				{#if isOutputNode(data.typeId) && property.key === 'groupIds' && data.groupOptions.length > 0}
 					<div class="flex flex-wrap gap-1">
 						{#each data.groupOptions as groupId}
 							<button
@@ -457,7 +507,7 @@
 		<div class="border-t border-border/60 px-0 py-1">
 			{#each data.outputs as output}
 				<div
-					class="relative flex min-h-7 items-center justify-end px-3 pr-4 text-right text-foreground/90 transition hover:bg-black/[0.03]"
+					class="relative flex min-h-7 items-center justify-end px-3 pr-4 text-right text-foreground/90 transition hover:bg-surface-subtle-hover"
 					title={portTooltip(output.label, output.valueType, output.description)}
 				>
 					<p class="min-w-0 flex-1 truncate text-[12px] font-medium">{output.label}</p>
@@ -466,7 +516,7 @@
 						id={output.id}
 						position={Position.Right}
 						style="right: 0; top: 50%; transform: translate(50%, -50%);"
-						class={`${handleTone(output.valueType)} !h-4 !w-4 !border-[3px] !border-white !shadow-sm`}
+						class={`${handleTone(output.valueType)} !h-4 !w-4 !border-[3px] !border-node-handle-border !shadow-sm`}
 					/>
 				</div>
 			{/each}

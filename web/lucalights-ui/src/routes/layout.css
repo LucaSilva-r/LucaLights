@@ -38,6 +38,18 @@
 	--sidebar-accent-foreground: oklch(0.214 0.009 43.1);
 	--sidebar-border: oklch(0.922 0.005 34.3);
 	--sidebar-ring: oklch(0.714 0.014 41.2);
+	--page-gradient: linear-gradient(180deg, #f8f5f0 0%, #f2ede5 35%, #ece6de 100%);
+	--page-overlay: radial-gradient(circle at top left, rgba(50,35,20,0.14), transparent 34%), radial-gradient(circle at top right, rgba(150,117,83,0.18), transparent 28%);
+	--surface-card: rgba(255, 255, 255, 0.8);
+	--surface-card-alt: rgba(255, 255, 255, 0.82);
+	--surface-card-border: rgba(255, 255, 255, 0.6);
+	--editor-sidebar: linear-gradient(180deg, #fbf8f3 0%, #f4efe7 100%);
+	--editor-canvas: linear-gradient(180deg, #f7f4ef 0%, #f1ece3 100%);
+	--surface-glass: rgba(255, 255, 255, 0.9);
+	--surface-glass-hover: rgba(255, 255, 255, 1);
+	--surface-node: rgba(255, 255, 255, 0.95);
+	--surface-subtle-hover: rgba(0, 0, 0, 0.03);
+	--node-handle-border: white;
 }
 
 .dark {
@@ -72,6 +84,18 @@
 	--sidebar-accent-foreground: oklch(0.986 0.002 67.8);
 	--sidebar-border: oklch(1 0 0 / 10%);
 	--sidebar-ring: oklch(0.547 0.021 43.1);
+	--page-gradient: linear-gradient(180deg, #1a1816 0%, #151311 35%, #111010 100%);
+	--page-overlay: radial-gradient(circle at top left, rgba(50,35,20,0.06), transparent 34%), radial-gradient(circle at top right, rgba(150,117,83,0.06), transparent 28%);
+	--surface-card: rgba(255, 255, 255, 0.04);
+	--surface-card-alt: rgba(255, 255, 255, 0.05);
+	--surface-card-border: rgba(255, 255, 255, 0.06);
+	--editor-sidebar: linear-gradient(180deg, #1a1816 0%, #151311 100%);
+	--editor-canvas: linear-gradient(180deg, #161412 0%, #121110 100%);
+	--surface-glass: rgba(255, 255, 255, 0.08);
+	--surface-glass-hover: rgba(255, 255, 255, 0.12);
+	--surface-node: rgba(30, 28, 26, 0.95);
+	--surface-subtle-hover: rgba(255, 255, 255, 0.04);
+	--node-handle-border: oklch(0.214 0.009 43.1);
 }
 
 @theme inline {
@@ -107,6 +131,14 @@
 	--color-card: var(--card);
 	--color-foreground: var(--foreground);
 	--color-background: var(--background);
+	--color-surface-card: var(--surface-card);
+	--color-surface-card-alt: var(--surface-card-alt);
+	--color-surface-card-border: var(--surface-card-border);
+	--color-surface-glass: var(--surface-glass);
+	--color-surface-glass-hover: var(--surface-glass-hover);
+	--color-surface-node: var(--surface-node);
+	--color-surface-subtle-hover: var(--surface-subtle-hover);
+	--color-node-handle-border: var(--node-handle-border);
 	--radius-sm: calc(var(--radius) * 0.6);
 	--radius-md: calc(var(--radius) * 0.8);
 	--radius-lg: var(--radius);

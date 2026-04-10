@@ -341,8 +341,8 @@
 	/>
 </svelte:head>
 
-<div class="relative min-h-screen overflow-hidden bg-[linear-gradient(180deg,#f8f5f0_0%,#f2ede5_35%,#ece6de_100%)] text-foreground">
-	<div class="pointer-events-none absolute inset-0 bg-[radial-gradient(circle_at_top_left,rgba(50,35,20,0.14),transparent_34%),radial-gradient(circle_at_top_right,rgba(150,117,83,0.18),transparent_28%)]"></div>
+<div class="relative min-h-screen overflow-hidden bg-(image:--page-gradient) text-foreground">
+	<div class="pointer-events-none absolute inset-0 bg-(image:--page-overlay)"></div>
 
 	<section class="relative mx-auto flex max-w-7xl flex-col gap-6 px-4 py-6 sm:px-6 lg:px-8 lg:py-10">
 		<div class="flex flex-col gap-5 lg:flex-row lg:items-end lg:justify-between">
@@ -384,7 +384,7 @@
 		{/if}
 
 		<div class="grid gap-4 md:grid-cols-2 xl:grid-cols-4">
-			<Card class="border-white/60 bg-white/80 shadow-sm backdrop-blur">
+			<Card class="border-surface-card-border bg-surface-card shadow-sm backdrop-blur">
 				<CardHeader>
 					<CardDescription class="flex items-center gap-2">
 						<Cpu class="size-4" />
@@ -405,7 +405,7 @@
 				</CardContent>
 			</Card>
 
-			<Card class="border-white/60 bg-white/80 shadow-sm backdrop-blur">
+			<Card class="border-surface-card-border bg-surface-card shadow-sm backdrop-blur">
 				<CardHeader>
 					<CardDescription class="flex items-center gap-2">
 						<Gamepad2 class="size-4" />
@@ -421,7 +421,7 @@
 				</CardContent>
 			</Card>
 
-			<Card class="border-white/60 bg-white/80 shadow-sm backdrop-blur">
+			<Card class="border-surface-card-border bg-surface-card shadow-sm backdrop-blur">
 				<CardHeader>
 					<CardDescription class="flex items-center gap-2">
 						<Layers3 class="size-4" />
@@ -437,7 +437,7 @@
 				</CardContent>
 			</Card>
 
-			<Card class="border-white/60 bg-white/80 shadow-sm backdrop-blur">
+			<Card class="border-surface-card-border bg-surface-card shadow-sm backdrop-blur">
 				<CardHeader>
 					<CardDescription class="flex items-center gap-2">
 						<Workflow class="size-4" />
@@ -454,7 +454,7 @@
 
 		<div class="grid gap-6 xl:grid-cols-[minmax(0,1.15fr)_minmax(22rem,0.85fr)]">
 			<div class="space-y-6">
-				<Card class="border-white/60 bg-white/82 shadow-sm backdrop-blur">
+				<Card class="border-surface-card-border bg-surface-card-alt shadow-sm backdrop-blur">
 					<CardHeader class="space-y-3">
 						<div class="flex flex-col gap-3 sm:flex-row sm:items-start sm:justify-between">
 							<div class="space-y-1">
@@ -636,7 +636,7 @@
 					</CardContent>
 				</Card>
 
-				<Card class="border-white/60 bg-white/82 shadow-sm backdrop-blur">
+				<Card class="border-surface-card-border bg-surface-card-alt shadow-sm backdrop-blur">
 					<CardHeader>
 						<CardTitle>Preview stream</CardTitle>
 						<CardDescription>
@@ -687,7 +687,7 @@
 			</div>
 
 			<div class="space-y-6">
-				<Card class="border-white/60 bg-white/82 shadow-sm backdrop-blur">
+				<Card class="border-surface-card-border bg-surface-card-alt shadow-sm backdrop-blur">
 					<CardHeader>
 						<CardTitle>Devices</CardTitle>
 						<CardDescription>
@@ -728,7 +728,7 @@
 					</CardContent>
 				</Card>
 
-				<Card class="border-white/60 bg-white/82 shadow-sm backdrop-blur">
+				<Card class="border-surface-card-border bg-surface-card-alt shadow-sm backdrop-blur">
 					<CardHeader>
 						<CardTitle>Node Graph</CardTitle>
 						<CardDescription>
@@ -758,7 +758,7 @@
 					</CardContent>
 				</Card>
 
-				<Card class="border-white/60 bg-white/82 shadow-sm backdrop-blur">
+				<Card class="border-surface-card-border bg-surface-card-alt shadow-sm backdrop-blur">
 					<CardHeader>
 						<CardTitle>Input modules</CardTitle>
 						<CardDescription>

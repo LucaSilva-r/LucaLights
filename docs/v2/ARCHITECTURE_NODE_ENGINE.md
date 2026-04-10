@@ -75,13 +75,15 @@ Validation should also be split by cost:
 
 ## Node Catalog
 
-The first catalog is intentionally small:
+The catalog contains 28 nodes across 7 categories:
 
-- constants: `constant.color`, `constant.float`, `constant.bool`
-- reusable graph inputs: `input.bool`, `input.float`, `input.color`
-- logic: `logic.select-color`
-- math: `logic.mix-color`
-- output: `output.segment-color`
+- **Constants** (3): `constant.color`, `constant.float`, `constant.bool`
+- **Graph Inputs** (3): `input.bool`, `input.float`, `input.color`
+- **Logic** (6): `logic.select-color`, `logic.select-float`, `logic.not`, `logic.and`, `logic.or`, `logic.compare`
+- **Math** (8): `logic.mix-color`, `math.add`, `math.multiply`, `math.clamp`, `math.remap`, `math.modulo`, `math.abs`, `math.step`, `math.smooth-step`
+- **Color** (2): `color.brightness`, `color.hsv`
+- **Time** (3): `time.elapsed`, `time.oscillator`, `time.pulse`
+- **Outputs** (2): `output.segment-color`, `output.segment-gradient`
 
 Graph inputs are graph-level keys. Binding profiles will eventually decide which game channels feed those keys. This keeps reusable graphs from hardcoding ITGMania, osu!, or any other module-specific channel names.
 
@@ -91,7 +93,7 @@ The browser editor now layers custom node renderers on top of this catalog:
 
 - `constant.color` exposes an inline color picker plus RGB controls
 - `input.bool`, `input.float`, and `input.color` expose channel selectors from the active module definition
-- `output.segment-color` exposes inline target filters plus device, segment, and group quick-picks
+- `output.segment-color` and `output.segment-gradient` expose inline target filters plus device, segment, and group quick-picks
 - the node palette groups catalog entries by category and supports click-to-add and drag-to-add
 
 ## Validation
@@ -112,23 +114,22 @@ The compiler returns a `CompiledNodeGraph` with validation diagnostics and a top
 
 ## Runtime Evaluation
 
-The current runtime is now live for the first node set:
+All 28 catalog nodes have runtime evaluation implemented in `GraphRuntimeEvaluator.Render()`.
 
-- `constant.color`, `constant.float`, `constant.bool`
-- `input.bool`, `input.float`, `input.color`
-- `logic.select-color`, `logic.mix-color`
-- `output.segment-color`
-
-Runtime behavior in this slice:
+Runtime behavior:
 
 - there is one unified graph on `Settings.Graph` — no effect selection needed
 - settings changes trigger recompilation through `LightingManager` and `NodeGraphLightingRenderer`
 - segment buffers are cleared before each frame
 - `output.segment-color` fills all LEDs in matching target segments with one color
+- `output.segment-gradient` fills target segments with a two-color gradient, scrollable via offset input
 - if multiple output nodes target the same LEDs, the later node in evaluation order wins
 - viewport state stays persisted for the editor, but it is ignored by runtime execution
+- time nodes use `LightingFrameContext.TotalElapsed` for stateless animation (oscillator, elapsed)
+- `time.pulse` maintains per-node state across frames via `PulseState` on `PreparedGraph` for rising-edge trigger detection
+- `time.oscillator` supports four waveforms: sine, square, triangle, sawtooth
 
 ## Next Work
 
-- expand the node runtime beyond the bootstrap set with math, timing, gradients, and animation nodes
 - decide whether editor preview should be able to render while no input module is active
+- add custom editor UI for oscillator waveform selection (dropdown) and compare mode selection

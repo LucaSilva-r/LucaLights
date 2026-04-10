@@ -572,3 +572,39 @@ Next recommended step:
 
 - decide whether editor preview should render while no input module is active
 - polish lifecycle and startup behavior for packaged runs
+
+---
+
+## 2026-04-10 — Node catalog expansion (all tiers)
+
+What changed:
+
+- expanded node catalog from 9 bootstrap nodes to 28 nodes across 7 categories
+- added Logic nodes: `logic.select-float`, `logic.not`, `logic.and`, `logic.or`, `logic.compare`
+- added Math nodes: `math.add`, `math.multiply`, `math.clamp`, `math.remap`, `math.modulo`, `math.abs`, `math.step`, `math.smooth-step`
+- added Color nodes: `color.brightness`, `color.hsv` (new category)
+- added Time nodes: `time.elapsed`, `time.oscillator`, `time.pulse` (new category)
+- added Output node: `output.segment-gradient` for two-color gradient fills with scrollable offset
+- implemented runtime evaluation for all 19 new nodes in `GraphRuntimeEvaluator.Render()`
+- added `PulseState` class on `PreparedGraph` for `time.pulse` per-node rising-edge trigger state
+- added `ScaleColor`, `HsvToColor`, `EvaluateWaveform`, `ApplySegmentGradient`, `FillSegmentGradient` runtime helpers
+- added Time and Color category header colors in the editor
+- extended output node chip pickers (device/segment/group) to also apply to `output.segment-gradient`
+
+Decisions made:
+
+- time nodes derive from `LightingFrameContext.TotalElapsed` — oscillator and elapsed are stateless
+- `time.pulse` is the only stateful node; uses `PulseState` dictionary on `PreparedGraph` keyed by node ID
+- oscillator waveform selection uses a string property (sine/square/triangle/sawtooth) — custom dropdown editor deferred
+- `logic.compare` equality uses epsilon of 0.0001 for float comparison
+- `output.segment-gradient` wraps offset with modulo so it loops naturally when driven by oscillator
+
+Blockers or risks:
+
+- oscillator waveform and compare mode properties use plain string text inputs in the editor; a dropdown would be better UX
+- `time.pulse` state lives on `PreparedGraph` which is recreated on recompilation — pulse state resets when graph is edited
+
+Next recommended step:
+
+- add custom editor dropdowns for oscillator waveform and compare mode
+- decide whether editor preview should render while no input module is active

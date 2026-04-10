@@ -4,7 +4,8 @@
 	import { page } from '$app/state';
 	import { Button } from '$lib/components/ui/button';
 	import { Separator } from '$lib/components/ui/separator';
-	import { Cable, LayoutDashboard, Workflow } from '@lucide/svelte';
+	import { Cable, LayoutDashboard, Moon, Sun, Workflow } from '@lucide/svelte';
+	import { theme } from '$lib/theme.svelte';
 
 	let { children } = $props();
 
@@ -44,6 +45,16 @@
 					</Button>
 				{/each}
 			</nav>
+
+			<div class="ml-auto">
+				<Button variant="ghost" size="sm" onclick={() => theme.toggle()}>
+					{#if theme.resolved === 'dark'}
+						<Sun class="size-4" />
+					{:else}
+						<Moon class="size-4" />
+					{/if}
+				</Button>
+			</div>
 		</div>
 	</header>
 

@@ -7,6 +7,13 @@
 		%sveltekit.head%
 	</head>
 	<body data-sveltekit-preload-data="hover">
+		<script>
+			(function() {
+				var p = localStorage.getItem('lucalights-theme');
+				var dark = p === 'dark' || (p !== 'light' && matchMedia('(prefers-color-scheme: dark)').matches);
+				if (dark) document.documentElement.classList.add('dark');
+			})();
+		</script>
 		<div style="display: contents">%sveltekit.body%</div>
 	</body>
 </html>

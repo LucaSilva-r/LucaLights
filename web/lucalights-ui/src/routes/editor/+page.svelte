@@ -23,6 +23,7 @@
 		TriangleAlert,
 		Workflow
 	} from '@lucide/svelte';
+	import { theme } from '$lib/theme.svelte';
 	import GraphNode from '$lib/components/editor/GraphNode.svelte';
 	import type {
 		EditorDeviceOption,
@@ -660,7 +661,7 @@
 	{/if}
 
 	<div class="grid min-h-0 flex-1 xl:grid-cols-[20rem_minmax(0,1fr)]">
-		<aside class="overflow-auto border-r border-border/60 bg-[linear-gradient(180deg,#fbf8f3_0%,#f4efe7_100%)]">
+		<aside class="overflow-auto border-r border-border/60 bg-(image:--editor-sidebar)">
 			<div class="space-y-5 p-4">
 				<div class="space-y-2">
 					<h2 class="text-sm font-semibold tracking-tight">Node Palette</h2>
@@ -672,7 +673,7 @@
 				<label class="relative block">
 					<Search class="pointer-events-none absolute left-3 top-1/2 size-4 -translate-y-1/2 text-muted-foreground" />
 					<input
-						class="h-10 w-full rounded-xl border border-border/70 bg-white/90 pl-9 pr-3 text-sm shadow-sm outline-none transition focus:border-ring focus:ring-4 focus:ring-ring/20"
+						class="h-10 w-full rounded-xl border border-border/70 bg-surface-glass pl-9 pr-3 text-sm shadow-sm outline-none transition focus:border-ring focus:ring-4 focus:ring-ring/20"
 						bind:value={paletteFilter}
 						placeholder="Search nodes"
 					/>
@@ -693,7 +694,7 @@
 									<button
 										type="button"
 										draggable="true"
-										class="w-full rounded-2xl border border-border/70 bg-white/90 p-3 text-left shadow-sm transition hover:border-primary/40 hover:bg-white"
+										class="w-full rounded-2xl border border-border/70 bg-surface-glass p-3 text-left shadow-sm transition hover:border-primary/40 hover:bg-surface-glass-hover"
 										onclick={() => addNodeFromType(nodeType.typeId)}
 										ondragstart={(event) => handlePaletteDragStart(event, nodeType.typeId)}
 									>
@@ -713,7 +714,7 @@
 					{/each}
 
 					{#if paletteGroups.length === 0}
-						<div class="rounded-2xl border border-dashed border-border/80 bg-white/70 px-4 py-8 text-center text-sm text-muted-foreground">
+						<div class="rounded-2xl border border-dashed border-border/80 bg-surface-card px-4 py-8 text-center text-sm text-muted-foreground">
 							No nodes match the current filter.
 						</div>
 					{/if}
@@ -732,7 +733,7 @@
 			bind:this={canvasHost}
 			role="presentation"
 			aria-label="Graph canvas"
-			class="relative min-h-0 bg-[linear-gradient(180deg,#f7f4ef_0%,#f1ece3_100%)]"
+			class="relative min-h-0 bg-(image:--editor-canvas)"
 			ondragover={handleCanvasDragOver}
 			ondrop={handleCanvasDrop}
 		>
@@ -749,6 +750,7 @@
 					bind:edges
 					bind:viewport
 					nodeTypes={flowNodeTypes}
+					colorMode={theme.resolved}
 					onconnect={handleConnect}
 					ondelete={handleDelete}
 					onnodedragstop={handleNodeDragStop}
@@ -763,7 +765,7 @@
 
 				{#if nodes.length === 0 && edges.length === 0}
 					<div class="pointer-events-none absolute inset-0 flex items-center justify-center p-6">
-						<Card class="max-w-md border-white/70 bg-white/90 shadow-xl">
+						<Card class="max-w-md border-surface-card-border bg-surface-glass shadow-xl">
 							<CardHeader>
 								<CardTitle class="flex items-center gap-2">
 									<Workflow class="size-5" />
