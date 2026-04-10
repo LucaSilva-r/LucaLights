@@ -52,6 +52,9 @@ export type InputValueType = number | 'Bool' | 'Float' | 'Color' | 'String';
 export interface InputChannelDefinition {
 	key: string;
 	label: string;
+	group: string;
+	moduleId?: string;
+	moduleDisplayName?: string;
 	valueType: InputValueType;
 	category: string;
 	description: string;

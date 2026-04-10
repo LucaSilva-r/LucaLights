@@ -1,5 +1,6 @@
 using System.Text.Json.Nodes;
 using LucaLights.Core.Engine;
+using LucaLights.Core.GameInput;
 using LucaLights.Core.Models;
 
 namespace LucaLights.Core.NodeEngine;
@@ -88,17 +89,17 @@ public sealed class GraphRuntimeEvaluator
 
                 case "input.bool":
                     outputs[BuildOutputKey(node.Id, "value")] = RuntimeValue.FromBool(
-                        frameContext.InputSnapshot.GetBool(ReadString(node.Properties, "key", "input")));
+                        ReadMergedBool(frameContext.InputSnapshot, node.Properties));
                     break;
 
                 case "input.float":
                     outputs[BuildOutputKey(node.Id, "value")] = RuntimeValue.FromFloat(
-                        frameContext.InputSnapshot.GetFloat(ReadString(node.Properties, "key", "input")));
+                        ReadMergedFloat(frameContext.InputSnapshot, node.Properties));
                     break;
 
                 case "input.color":
                     outputs[BuildOutputKey(node.Id, "value")] = RuntimeValue.FromColor(
-                        frameContext.InputSnapshot.GetColor(ReadString(node.Properties, "key", "input"), Color.Black));
+                        ReadMergedColor(frameContext.InputSnapshot, node.Properties));
                     break;
 
                 case "logic.select-color":
@@ -415,6 +416,83 @@ public sealed class GraphRuntimeEvaluator
         }
     }
 
+    private static bool ReadMergedBool(InputSnapshot snapshot, JsonObject properties)
+    {
+        var keys = ReadStringList(properties, "key");
+        if (keys.Count == 0)
+        {
+            return false;
+        }
+
+        var values = keys.Select(key => snapshot.GetBool(key)).ToArray();
+        var mergeMode = ReadString(properties, "mergeMode", "any");
+
+        return mergeMode switch
+        {
+            "all" => values.All(static value => value),
+            _ => values.Any(static value => value)
+        };
+    }
+
+    private static float ReadMergedFloat(InputSnapshot snapshot, JsonObject properties)
+    {
+        var keys = ReadStringList(properties, "key");
+        if (keys.Count == 0)
+        {
+            return 0f;
+        }
+
+        var values = keys.Select(key => snapshot.GetFloat(key)).ToArray();
+        var mergeMode = ReadString(properties, "mergeMode", "max");
+
+        return mergeMode switch
+        {
+            "min" => values.Min(),
+            "average" => values.Average(),
+            _ => values.Max()
+        };
+    }
+
+    private static Color ReadMergedColor(InputSnapshot snapshot, JsonObject properties)
+    {
+        var keys = ReadStringList(properties, "key");
+        if (keys.Count == 0)
+        {
+            return Color.Black;
+        }
+
+        var colors = keys.Select(key => snapshot.GetColor(key, Color.Black)).ToArray();
+        var mergeMode = ReadString(properties, "mergeMode", "average");
+
+        if (mergeMode == "additive")
+        {
+            var totalRed = 0;
+            var totalGreen = 0;
+            var totalBlue = 0;
+
+            foreach (var color in colors)
+            {
+                totalRed += color.R;
+                totalGreen += color.G;
+                totalBlue += color.B;
+            }
+
+            return Color.FromRgb(
+                (byte)Math.Clamp(totalRed, byte.MinValue, byte.MaxValue),
+                (byte)Math.Clamp(totalGreen, byte.MinValue, byte.MaxValue),
+                (byte)Math.Clamp(totalBlue, byte.MinValue, byte.MaxValue));
+        }
+
+        var averageRed = (int)Math.Round(colors.Average(color => color.R));
+        var averageGreen = (int)Math.Round(colors.Average(color => color.G));
+        var averageBlue = (int)Math.Round(colors.Average(color => color.B));
+
+        return Color.FromRgb(
+            (byte)Math.Clamp(averageRed, byte.MinValue, byte.MaxValue),
+            (byte)Math.Clamp(averageGreen, byte.MinValue, byte.MaxValue),
+            (byte)Math.Clamp(averageBlue, byte.MinValue, byte.MaxValue));
+    }
+
     private static Color ReadColor(JsonObject properties)
     {
         return Color.FromRgb(
@@ -598,6 +676,14 @@ public sealed class GraphRuntimeEvaluator
         }
 
         return defaultValue;
+    }
+
+    private static IReadOnlyList<string> ReadStringList(JsonObject properties, string key)
+    {
+        return ReadString(properties, key, string.Empty)
+            .Split(',', StringSplitOptions.TrimEntries | StringSplitOptions.RemoveEmptyEntries)
+            .Distinct(StringComparer.OrdinalIgnoreCase)
+            .ToArray();
     }
 
     private static HashSet<string> ParseStringSet(string value)

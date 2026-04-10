@@ -12,62 +12,62 @@ public sealed class ITGManiaInputModule : IGameInputModule, IDisposable
 
     private static readonly Lazy<InputDefinition> Definition = new(BuildDefinition);
 
-    private static readonly (ItgCabinetLight Flag, string Key, string Label)[] CabinetChannels =
+    private static readonly (ItgCabinetLight Flag, string Key, string Label, string Group)[] CabinetChannels =
     [
-        (ItgCabinetLight.MarqueeUpLeft, "raw.itgmania.cabinet.marquee_up_left", "Marquee Up Left"),
-        (ItgCabinetLight.MarqueeUpRight, "raw.itgmania.cabinet.marquee_up_right", "Marquee Up Right"),
-        (ItgCabinetLight.MarqueeLowerLeft, "raw.itgmania.cabinet.marquee_lower_left", "Marquee Lower Left"),
-        (ItgCabinetLight.MarqueeLowerRight, "raw.itgmania.cabinet.marquee_lower_right", "Marquee Lower Right"),
-        (ItgCabinetLight.BassLeft, "raw.itgmania.cabinet.bass_left", "Bass Left"),
-        (ItgCabinetLight.BassRight, "raw.itgmania.cabinet.bass_right", "Bass Right")
+        (ItgCabinetLight.MarqueeUpLeft, "raw.itgmania.cabinet.marquee_up_left", "Marquee Up Left", "Cabinet Marquee"),
+        (ItgCabinetLight.MarqueeUpRight, "raw.itgmania.cabinet.marquee_up_right", "Marquee Up Right", "Cabinet Marquee"),
+        (ItgCabinetLight.MarqueeLowerLeft, "raw.itgmania.cabinet.marquee_lower_left", "Marquee Lower Left", "Cabinet Marquee"),
+        (ItgCabinetLight.MarqueeLowerRight, "raw.itgmania.cabinet.marquee_lower_right", "Marquee Lower Right", "Cabinet Marquee"),
+        (ItgCabinetLight.BassLeft, "raw.itgmania.cabinet.bass_left", "Bass Left", "Cabinet Bass"),
+        (ItgCabinetLight.BassRight, "raw.itgmania.cabinet.bass_right", "Bass Right", "Cabinet Bass")
     ];
 
-    private static readonly (ItgGameButton Flag, string Key, string Label)[] ButtonChannels =
+    private static readonly (ItgGameButton Flag, string Key, string Label, string Group)[] ButtonChannels =
     [
-        (ItgGameButton.MenuLeft, "raw.itgmania.button.menu_left", "Menu Left"),
-        (ItgGameButton.MenuRight, "raw.itgmania.button.menu_right", "Menu Right"),
-        (ItgGameButton.MenuUp, "raw.itgmania.button.menu_up", "Menu Up"),
-        (ItgGameButton.MenuDown, "raw.itgmania.button.menu_down", "Menu Down"),
-        (ItgGameButton.Start, "raw.itgmania.button.start", "Start"),
-        (ItgGameButton.Select, "raw.itgmania.button.select", "Select"),
-        (ItgGameButton.Back, "raw.itgmania.button.back", "Back"),
-        (ItgGameButton.Coin, "raw.itgmania.button.coin", "Coin"),
-        (ItgGameButton.Operator, "raw.itgmania.button.operator", "Operator"),
-        (ItgGameButton.EffectUp, "raw.itgmania.button.effect_up", "Effect Up"),
-        (ItgGameButton.EffectDown, "raw.itgmania.button.effect_down", "Effect Down"),
-        (ItgGameButton.P1Left, "raw.itgmania.button.p1_left", "P1 Left"),
-        (ItgGameButton.P1Right, "raw.itgmania.button.p1_right", "P1 Right"),
-        (ItgGameButton.P1Up, "raw.itgmania.button.p1_up", "P1 Up"),
-        (ItgGameButton.P1Down, "raw.itgmania.button.p1_down", "P1 Down"),
-        (ItgGameButton.P1UpLeftSolo, "raw.itgmania.button.p1_up_left_solo", "P1 Up Left Solo"),
-        (ItgGameButton.P1UpRightSolo, "raw.itgmania.button.p1_up_right_solo", "P1 Up Right Solo"),
-        (ItgGameButton.P1Custom07, "raw.itgmania.button.p1_custom_07", "P1 Custom 07"),
-        (ItgGameButton.P1Custom08, "raw.itgmania.button.p1_custom_08", "P1 Custom 08"),
-        (ItgGameButton.P1Custom09, "raw.itgmania.button.p1_custom_09", "P1 Custom 09"),
-        (ItgGameButton.P2Left, "raw.itgmania.button.p2_left", "P2 Left"),
-        (ItgGameButton.P2Right, "raw.itgmania.button.p2_right", "P2 Right"),
-        (ItgGameButton.P2Up, "raw.itgmania.button.p2_up", "P2 Up"),
-        (ItgGameButton.P2Down, "raw.itgmania.button.p2_down", "P2 Down"),
-        (ItgGameButton.P2UpLeftSolo, "raw.itgmania.button.p2_up_left_solo", "P2 Up Left Solo"),
-        (ItgGameButton.P2UpRightSolo, "raw.itgmania.button.p2_up_right_solo", "P2 Up Right Solo"),
-        (ItgGameButton.P2Custom07, "raw.itgmania.button.p2_custom_07", "P2 Custom 07"),
-        (ItgGameButton.P2Custom08, "raw.itgmania.button.p2_custom_08", "P2 Custom 08"),
-        (ItgGameButton.P2Custom09, "raw.itgmania.button.p2_custom_09", "P2 Custom 09"),
-        (ItgGameButton.P2Custom10, "raw.itgmania.button.p2_custom_10", "P2 Custom 10")
+        (ItgGameButton.MenuLeft, "raw.itgmania.button.menu_left", "Menu Left", "Menu Buttons"),
+        (ItgGameButton.MenuRight, "raw.itgmania.button.menu_right", "Menu Right", "Menu Buttons"),
+        (ItgGameButton.MenuUp, "raw.itgmania.button.menu_up", "Menu Up", "Menu Buttons"),
+        (ItgGameButton.MenuDown, "raw.itgmania.button.menu_down", "Menu Down", "Menu Buttons"),
+        (ItgGameButton.Start, "raw.itgmania.button.start", "Start", "System Buttons"),
+        (ItgGameButton.Select, "raw.itgmania.button.select", "Select", "System Buttons"),
+        (ItgGameButton.Back, "raw.itgmania.button.back", "Back", "System Buttons"),
+        (ItgGameButton.Coin, "raw.itgmania.button.coin", "Coin", "System Buttons"),
+        (ItgGameButton.Operator, "raw.itgmania.button.operator", "Operator", "System Buttons"),
+        (ItgGameButton.EffectUp, "raw.itgmania.button.effect_up", "Effect Up", "Effect Buttons"),
+        (ItgGameButton.EffectDown, "raw.itgmania.button.effect_down", "Effect Down", "Effect Buttons"),
+        (ItgGameButton.P1Left, "raw.itgmania.button.p1_left", "P1 Left", "Player 1 Pad"),
+        (ItgGameButton.P1Right, "raw.itgmania.button.p1_right", "P1 Right", "Player 1 Pad"),
+        (ItgGameButton.P1Up, "raw.itgmania.button.p1_up", "P1 Up", "Player 1 Pad"),
+        (ItgGameButton.P1Down, "raw.itgmania.button.p1_down", "P1 Down", "Player 1 Pad"),
+        (ItgGameButton.P1UpLeftSolo, "raw.itgmania.button.p1_up_left_solo", "P1 Up Left Solo", "Player 1 Solo"),
+        (ItgGameButton.P1UpRightSolo, "raw.itgmania.button.p1_up_right_solo", "P1 Up Right Solo", "Player 1 Solo"),
+        (ItgGameButton.P1Custom07, "raw.itgmania.button.p1_custom_07", "P1 Custom 07", "Player 1 Custom"),
+        (ItgGameButton.P1Custom08, "raw.itgmania.button.p1_custom_08", "P1 Custom 08", "Player 1 Custom"),
+        (ItgGameButton.P1Custom09, "raw.itgmania.button.p1_custom_09", "P1 Custom 09", "Player 1 Custom"),
+        (ItgGameButton.P2Left, "raw.itgmania.button.p2_left", "P2 Left", "Player 2 Pad"),
+        (ItgGameButton.P2Right, "raw.itgmania.button.p2_right", "P2 Right", "Player 2 Pad"),
+        (ItgGameButton.P2Up, "raw.itgmania.button.p2_up", "P2 Up", "Player 2 Pad"),
+        (ItgGameButton.P2Down, "raw.itgmania.button.p2_down", "P2 Down", "Player 2 Pad"),
+        (ItgGameButton.P2UpLeftSolo, "raw.itgmania.button.p2_up_left_solo", "P2 Up Left Solo", "Player 2 Solo"),
+        (ItgGameButton.P2UpRightSolo, "raw.itgmania.button.p2_up_right_solo", "P2 Up Right Solo", "Player 2 Solo"),
+        (ItgGameButton.P2Custom07, "raw.itgmania.button.p2_custom_07", "P2 Custom 07", "Player 2 Custom"),
+        (ItgGameButton.P2Custom08, "raw.itgmania.button.p2_custom_08", "P2 Custom 08", "Player 2 Custom"),
+        (ItgGameButton.P2Custom09, "raw.itgmania.button.p2_custom_09", "P2 Custom 09", "Player 2 Custom"),
+        (ItgGameButton.P2Custom10, "raw.itgmania.button.p2_custom_10", "P2 Custom 10", "Player 2 Custom")
     ];
 
-    private static readonly (ItgLightsMode Mode, string Key, string Label)[] LightsModeChannels =
+    private static readonly (ItgLightsMode Mode, string Key, string Label, string Group)[] LightsModeChannels =
     [
-        (ItgLightsMode.Attract, "raw.itgmania.lights_mode.attract", "Attract"),
-        (ItgLightsMode.Joining, "raw.itgmania.lights_mode.joining", "Joining"),
-        (ItgLightsMode.MenuStartOnly, "raw.itgmania.lights_mode.menu_start_only", "Menu Start Only"),
-        (ItgLightsMode.MenuStartAndDirections, "raw.itgmania.lights_mode.menu_start_and_directions", "Menu Start And Directions"),
-        (ItgLightsMode.Demonstration, "raw.itgmania.lights_mode.demonstration", "Demonstration"),
-        (ItgLightsMode.Gameplay, "raw.itgmania.lights_mode.gameplay", "Gameplay"),
-        (ItgLightsMode.Stage, "raw.itgmania.lights_mode.stage", "Stage"),
-        (ItgLightsMode.AllCleared, "raw.itgmania.lights_mode.all_cleared", "All Cleared"),
-        (ItgLightsMode.TestAutoCycle, "raw.itgmania.lights_mode.test_auto_cycle", "Test Auto Cycle"),
-        (ItgLightsMode.TestManualCycle, "raw.itgmania.lights_mode.test_manual_cycle", "Test Manual Cycle")
+        (ItgLightsMode.Attract, "raw.itgmania.lights_mode.attract", "Attract", "Lights Modes"),
+        (ItgLightsMode.Joining, "raw.itgmania.lights_mode.joining", "Joining", "Lights Modes"),
+        (ItgLightsMode.MenuStartOnly, "raw.itgmania.lights_mode.menu_start_only", "Menu Start Only", "Lights Modes"),
+        (ItgLightsMode.MenuStartAndDirections, "raw.itgmania.lights_mode.menu_start_and_directions", "Menu Start And Directions", "Lights Modes"),
+        (ItgLightsMode.Demonstration, "raw.itgmania.lights_mode.demonstration", "Demonstration", "Lights Modes"),
+        (ItgLightsMode.Gameplay, "raw.itgmania.lights_mode.gameplay", "Gameplay", "Lights Modes"),
+        (ItgLightsMode.Stage, "raw.itgmania.lights_mode.stage", "Stage", "Lights Modes"),
+        (ItgLightsMode.AllCleared, "raw.itgmania.lights_mode.all_cleared", "All Cleared", "Lights Modes"),
+        (ItgLightsMode.TestAutoCycle, "raw.itgmania.lights_mode.test_auto_cycle", "Test Auto Cycle", "Lights Modes"),
+        (ItgLightsMode.TestManualCycle, "raw.itgmania.lights_mode.test_manual_cycle", "Test Manual Cycle", "Lights Modes")
     ];
 
     private readonly string _pipeName;
@@ -502,6 +502,7 @@ public sealed class ITGManiaInputModule : IGameInputModule, IDisposable
         {
             Key = "raw.itgmania.connected",
             Label = "Connected",
+            Group = "System",
             ValueType = InputValueType.Bool,
             Category = "Raw / System",
             Description = "True while the ITGMania input stream is connected."
@@ -511,6 +512,7 @@ public sealed class ITGManiaInputModule : IGameInputModule, IDisposable
         {
             Key = "raw.itgmania.lights_mode_index",
             Label = "Lights Mode Index",
+            Group = "Lights Modes",
             ValueType = InputValueType.Float,
             Category = "Raw / Lights Mode",
             Description = "Current ITGMania lights mode as a numeric enum value."
@@ -522,6 +524,7 @@ public sealed class ITGManiaInputModule : IGameInputModule, IDisposable
             {
                 Key = channel.Key,
                 Label = channel.Label,
+                Group = channel.Group,
                 ValueType = InputValueType.Bool,
                 Category = "Raw / Lights Mode",
                 Description = $"True when ITGMania is in lights mode {channel.Label}."
@@ -534,6 +537,7 @@ public sealed class ITGManiaInputModule : IGameInputModule, IDisposable
             {
                 Key = channel.Key,
                 Label = channel.Label,
+                Group = channel.Group,
                 ValueType = InputValueType.Bool,
                 Category = "Raw / Cabinet",
                 Description = $"Raw ITGMania cabinet light state for {channel.Label}."
@@ -546,6 +550,7 @@ public sealed class ITGManiaInputModule : IGameInputModule, IDisposable
             {
                 Key = channel.Key,
                 Label = channel.Label,
+                Group = channel.Group,
                 ValueType = InputValueType.Bool,
                 Category = "Raw / Buttons",
                 Description = $"Raw ITGMania button state for {channel.Label}."

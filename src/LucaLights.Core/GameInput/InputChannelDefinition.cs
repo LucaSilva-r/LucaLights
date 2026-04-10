@@ -6,6 +6,8 @@ public sealed class InputChannelDefinition
 
     public string Label { get; set; } = string.Empty;
 
+    public string Group { get; set; } = string.Empty;
+
     public InputValueType ValueType { get; set; }
 
     public string Category { get; set; } = "General";

@@ -103,10 +103,13 @@ public sealed class DefaultNodeTypeCatalog : INodeTypeCatalog
             "input.bool",
             "Boolean Input",
             "Graph Inputs",
-            "Reads a graph-level boolean input. Binding profiles decide which game channels feed it.",
+            "Reads one or more boolean input channels and merges them into a single boolean value.",
             [],
             [Output("value", "Value", NodeValueType.Bool, "The resolved input value.")],
-            [Property("key", "Input Key", NodeValueType.String, "Graph-level input key.", "input")]);
+            [
+                Property("mergeMode", "Merge", NodeValueType.String, "How multiple selected channels are merged.", "any"),
+                Property("key", "Channels", NodeValueType.String, "Comma-separated input channel keys.", string.Empty)
+            ]);
     }
 
     private static NodeTypeDefinition GraphFloatInput()
@@ -115,10 +118,13 @@ public sealed class DefaultNodeTypeCatalog : INodeTypeCatalog
             "input.float",
             "Number Input",
             "Graph Inputs",
-            "Reads a graph-level numeric input. Binding profiles decide which game channels feed it.",
+            "Reads one or more numeric input channels and merges them into a single value.",
             [],
             [Output("value", "Value", NodeValueType.Float, "The resolved input value.")],
-            [Property("key", "Input Key", NodeValueType.String, "Graph-level input key.", "input")]);
+            [
+                Property("mergeMode", "Merge", NodeValueType.String, "How multiple selected channels are merged.", "max"),
+                Property("key", "Channels", NodeValueType.String, "Comma-separated input channel keys.", string.Empty)
+            ]);
     }
 
     private static NodeTypeDefinition GraphColorInput()
@@ -127,10 +133,13 @@ public sealed class DefaultNodeTypeCatalog : INodeTypeCatalog
             "input.color",
             "Color Input",
             "Graph Inputs",
-            "Reads a graph-level color input. Binding profiles decide which game channels feed it.",
+            "Reads one or more color input channels and merges them into a single color value.",
             [],
             [Output("value", "Value", NodeValueType.Color, "The resolved input value.")],
-            [Property("key", "Input Key", NodeValueType.String, "Graph-level input key.", "input")]);
+            [
+                Property("mergeMode", "Merge", NodeValueType.String, "How multiple selected channels are merged.", "average"),
+                Property("key", "Channels", NodeValueType.String, "Comma-separated input channel keys.", string.Empty)
+            ]);
     }
 
     private static NodeTypeDefinition SelectColor()

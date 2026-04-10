@@ -1,6 +1,7 @@
 <script lang="ts">
 	import { Handle, Position, type NodeProps } from '@xyflow/svelte';
 	import type { NodePortDefinition, NodePropertyDefinition } from '$lib/lucalights';
+	import InputChannelPicker from './InputChannelPicker.svelte';
 	import type { EditorFlowNode } from './types';
 
 	let { id, data, selected = false }: NodeProps<EditorFlowNode> = $props();
@@ -256,6 +257,25 @@
 	];
 
 	const enumOptions: Record<string, Record<string, EnumOption[]>> = {
+		'input.bool': {
+			mergeMode: [
+				{ value: 'any', label: 'Any selected' },
+				{ value: 'all', label: 'All selected' }
+			]
+		},
+		'input.float': {
+			mergeMode: [
+				{ value: 'max', label: 'Highest value' },
+				{ value: 'min', label: 'Lowest value' },
+				{ value: 'average', label: 'Average value' }
+			]
+		},
+		'input.color': {
+			mergeMode: [
+				{ value: 'average', label: 'Average colors' },
+				{ value: 'additive', label: 'Additive blend' }
+			]
+		},
 		'time.oscillator': {
 			waveform: [
 				{ value: 'sine', label: 'Sine' },
@@ -368,16 +388,11 @@
 
 {#snippet inlineEditor(property: NodePropertyDefinition, label: string)}
 	{#if data.typeId.startsWith('input.') && property.key === 'key'}
-		<select
-			class={inlineInputClass}
+		<InputChannelPicker
 			value={stringValue(property.key, String(valueFor(property) ?? ''))}
-			onchange={(event) => setProperty(property.key, (event.currentTarget as HTMLSelectElement).value)}
-		>
-			<option value="">Select channel</option>
-			{#each inputKeyOptions as option}
-				<option value={option.key}>{option.label}</option>
-			{/each}
-		</select>
+			channels={inputKeyOptions}
+			onChange={(nextValue) => setProperty(property.key, nextValue)}
+		/>
 	{:else if getEnumOptions(data.typeId, property.key)}
 		<select
 			class={inlineInputClass}

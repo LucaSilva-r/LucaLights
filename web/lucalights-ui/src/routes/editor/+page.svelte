@@ -164,14 +164,22 @@
 
 	function buildInputChannelOptions() {
 		if (activeInputDefinition) {
-			return activeInputDefinition.channels;
+			return activeInputDefinition.channels.map((channel) => ({
+				...channel,
+				moduleId: activeInputDefinition.moduleId,
+				moduleDisplayName: activeInputDefinition.displayName
+			}));
 		}
 
 		const channelsByKey = new Map<string, InputChannelDefinition>();
 		for (const definition of inputDefinitions) {
 			for (const channel of definition.channels) {
 				if (!channelsByKey.has(channel.key)) {
-					channelsByKey.set(channel.key, channel);
+					channelsByKey.set(channel.key, {
+						...channel,
+						moduleId: definition.moduleId,
+						moduleDisplayName: definition.displayName
+					});
 				}
 			}
 		}
