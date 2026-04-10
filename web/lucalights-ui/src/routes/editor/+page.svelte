@@ -5,7 +5,6 @@
 		Controls,
 		MiniMap,
 		SvelteFlow,
-		addEdge,
 		type Connection,
 		type Edge,
 		type NodeTypes,
@@ -227,8 +226,15 @@
 		properties: Record<string, unknown>,
 		edgeList: Edge[] = edges
 	): EditorNodeData {
+		const label =
+			nodeType?.typeId === 'annotation.comment' &&
+			typeof properties.title === 'string' &&
+			properties.title.trim().length > 0
+				? properties.title.trim()
+				: nodeType?.displayName ?? nodeId;
+
 		return {
-			label: nodeType?.displayName ?? nodeId,
+			label,
 			typeId: nodeType?.typeId ?? 'unknown',
 			category: nodeType?.category ?? 'Unknown',
 			description: nodeType?.description ?? 'Unknown node type.',
@@ -310,16 +316,28 @@
 	function updateNodeProperty(nodeId: string, key: string, value: unknown) {
 		nodes = nodes.map((node) =>
 			node.id === nodeId
-				? {
-						...node,
-						data: {
-							...node.data,
-							properties: {
-								...node.data.properties,
-								[key]: value
+				? (() => {
+						const nextProperties = {
+							...node.data.properties,
+							[key]: value
+						};
+						const nodeType = nodeTypeMap.get(node.data.typeId);
+						const nextLabel =
+							node.data.typeId === 'annotation.comment' &&
+							typeof nextProperties.title === 'string' &&
+							nextProperties.title.trim().length > 0
+								? nextProperties.title.trim()
+								: nodeType?.displayName ?? node.id;
+
+						return {
+							...node,
+							data: {
+								...node.data,
+								label: nextLabel,
+								properties: nextProperties
 							}
-						}
-					}
+						};
+					})()
 				: node
 		);
 		markDirty();
@@ -420,6 +438,53 @@
 		return collection.find((port) => port.id === handleId) ?? null;
 	}
 
+	function conflictingTargetEdges(
+		connection: { target: string | null | undefined; targetHandle?: string | null | undefined },
+		excludedEdgeIds: string[] = [],
+		edgeList: Edge[] = edges
+	) {
+		const targetHandle = connection.targetHandle ?? undefined;
+		if (!connection.target || !targetHandle) {
+			return [];
+		}
+
+		return edgeList.filter(
+			(edge) =>
+				edge.target === connection.target &&
+				edge.targetHandle === targetHandle &&
+				!excludedEdgeIds.includes(edge.id)
+		);
+	}
+
+	function createEdgeFromConnection(connection: Connection): Edge {
+		return {
+			...connection,
+			id: createNodeId('edge'),
+			animated: false
+		};
+	}
+
+	function resolveTargetPort(connection: {
+		target: string | null | undefined;
+		targetHandle?: string | null | undefined;
+	}) {
+		const targetHandle = connection.targetHandle ?? undefined;
+		const targetNode = nodes.find((node) => node.id === connection.target);
+		return getPort(targetNode, targetHandle, 'input');
+	}
+
+	function removeConflictingTargetEdges(
+		connection: { target: string | null | undefined; targetHandle?: string | null | undefined },
+		excludedEdgeIds: string[] = []
+	) {
+		const conflicts = conflictingTargetEdges(connection, excludedEdgeIds);
+		if (conflicts.length === 0) {
+			return;
+		}
+
+		edges = edges.filter((edge) => !conflicts.some((conflict) => conflict.id === edge.id));
+	}
+
 	function isValidConnection(connection: Connection | Edge) {
 		const sourceHandle = connection.sourceHandle ?? undefined;
 		const targetHandle = connection.targetHandle ?? undefined;
@@ -452,16 +517,6 @@
 					edge.sourceHandle === sourceHandle &&
 					edge.target === connection.target &&
 					edge.targetHandle === targetHandle
-			)
-		) {
-			return false;
-		}
-
-		if (
-			targetPort.allowMultipleConnections !== true &&
-			edges.some(
-				(edge) =>
-					edge.target === connection.target && edge.targetHandle === targetHandle
 			)
 		) {
 			return false;
@@ -527,21 +582,49 @@
 		}
 	}
 
-	function handleConnect(connection: Connection) {
+	function handleBeforeConnect(connection: Connection) {
 		if (!isValidConnection(connection)) {
-			return;
+			return false;
 		}
 
-		const nextEdges = addEdge(
-			{
-				...connection,
-				id: createNodeId('edge'),
-				animated: false
-			},
-			edges
-		);
+		const targetPort = resolveTargetPort(connection);
+		if (!targetPort) {
+			return false;
+		}
 
-		edges = nextEdges;
+		if (targetPort.allowMultipleConnections !== true) {
+			removeConflictingTargetEdges(connection);
+		}
+
+		return createEdgeFromConnection(connection);
+	}
+
+	function handleConnect(_connection: Connection) {
+		markDirty();
+	}
+
+	function handleBeforeReconnect(nextEdge: Edge, previousEdge: Edge) {
+		if (!isValidConnection(nextEdge)) {
+			return false;
+		}
+
+		const targetPort = resolveTargetPort(nextEdge);
+		if (!targetPort) {
+			return false;
+		}
+
+		if (targetPort.allowMultipleConnections !== true) {
+			removeConflictingTargetEdges(nextEdge, [previousEdge.id]);
+		}
+
+		return {
+			...nextEdge,
+			id: previousEdge.id,
+			animated: false
+		};
+	}
+
+	function handleReconnect(_previousEdge: Edge, _nextConnection: Connection) {
 		markDirty();
 	}
 
@@ -674,7 +757,7 @@
 				<div class="space-y-2">
 					<h2 class="text-sm font-semibold tracking-tight">Node Palette</h2>
 					<p class="text-sm leading-5 text-muted-foreground">
-						Click a node to add it at the center of the current view, or drag it onto the canvas.
+						Drag a node onto the canvas to place it exactly where you want it.
 					</p>
 				</div>
 
@@ -702,8 +785,7 @@
 									<button
 										type="button"
 										draggable="true"
-										class="w-full rounded-2xl border border-border/70 bg-surface-glass p-3 text-left shadow-sm transition hover:border-primary/40 hover:bg-surface-glass-hover"
-										onclick={() => addNodeFromType(nodeType.typeId)}
+										class="w-full cursor-grab rounded-2xl border border-border/70 bg-surface-glass p-3 text-left shadow-sm transition hover:border-primary/40 hover:bg-surface-glass-hover active:cursor-grabbing"
 										ondragstart={(event) => handlePaletteDragStart(event, nodeType.typeId)}
 									>
 										<div class="flex items-start justify-between gap-3">
@@ -759,10 +841,13 @@
 					bind:viewport
 					nodeTypes={flowNodeTypes}
 					colorMode={theme.resolved}
+					onbeforeconnect={handleBeforeConnect}
+					onbeforereconnect={handleBeforeReconnect}
 					onconnect={handleConnect}
 					ondelete={handleDelete}
 					onnodedragstop={handleNodeDragStop}
 					onmoveend={handleMoveEnd}
+					onreconnect={handleReconnect}
 					isValidConnection={isValidConnection}
 					class="h-full bg-transparent"
 				>

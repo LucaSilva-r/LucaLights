@@ -226,6 +226,8 @@
 
 	function categoryHeaderTone(category: string) {
 		switch (category) {
+			case 'Annotations':
+				return 'bg-amber-200 text-amber-950 dark:bg-amber-500/25 dark:text-amber-100';
 			case 'Constants':
 				return 'bg-amber-500 text-white';
 			case 'Graph Inputs':
@@ -247,6 +249,14 @@
 
 	function isOutputNode(typeId: string) {
 		return typeId === 'output.segment-color' || typeId === 'output.segment-gradient';
+	}
+
+	function isCommentNode(typeId: string) {
+		return typeId === 'annotation.comment';
+	}
+
+	function commentProperty(key: string) {
+		return propertyMap.get(key);
 	}
 
 	type EnumOption = { value: string; label: string };
@@ -488,8 +498,18 @@
 {/snippet}
 
 <div
-	class={`w-[15.5rem] overflow-visible rounded-[1.05rem] border bg-surface-node text-left shadow-lg backdrop-blur ${
-		selected ? 'border-primary ring-2 ring-primary/20' : 'border-border/70'
+	class={`overflow-visible rounded-[1.05rem] border text-left shadow-lg backdrop-blur ${
+		isCommentNode(data.typeId)
+			? 'w-[19rem] bg-surface-card text-foreground'
+			: 'w-[15.5rem] bg-surface-node'
+	} ${
+		selected
+			? isCommentNode(data.typeId)
+				? 'border-amber-300 ring-2 ring-amber-200/50 dark:border-amber-500/40 dark:ring-amber-500/20'
+				: 'border-primary ring-2 ring-primary/20'
+			: isCommentNode(data.typeId)
+				? 'border-amber-200/80 dark:border-amber-500/25'
+				: 'border-border/70'
 	}`}
 >
 	<!-- Header -->
@@ -497,9 +517,11 @@
 		<h3 class="min-w-0 flex-1 truncate text-[13px] font-semibold tracking-tight" title={nodeTooltip()}>
 			{data.label}
 		</h3>
-		<span class="rounded-full border border-white/15 bg-black/10 px-1.5 py-0.5 font-mono text-[10px] text-white/80">
-				{data.inputs.length}:{data.outputs.length}
-		</span>
+		{#if !isCommentNode(data.typeId)}
+			<span class="rounded-full border border-white/15 bg-black/10 px-1.5 py-0.5 font-mono text-[10px] text-white/80">
+					{data.inputs.length}:{data.outputs.length}
+			</span>
+		{/if}
 	</div>
 
 	<!-- Outputs (top, right-aligned, inline editor when property exists) -->
@@ -611,7 +633,37 @@
 	{/if}
 
 	<!-- Standalone properties (no matching input or output handle) -->
-	{#if standaloneProperties.length > 0}
+	{#if isCommentNode(data.typeId)}
+		<div class="space-y-3 px-3 py-3">
+			{#if commentProperty('title')}
+				<label class="block space-y-1" title={propertyTooltip(commentProperty('title')!)}>
+					<span class="text-[11px] font-semibold uppercase tracking-[0.18em] text-amber-900/70 dark:text-amber-100/70">
+						{commentProperty('title')?.label}
+					</span>
+					<input
+						class="nodrag nopan h-8 w-full rounded-md border border-amber-200/80 bg-background/90 px-2 text-[12px] font-medium shadow-sm outline-none transition focus:border-ring focus:ring-4 focus:ring-ring/20 dark:border-amber-500/25 dark:bg-input/30"
+						type="text"
+						value={stringValue(commentProperty('title')?.key ?? 'title', String(valueFor(commentProperty('title')!) ?? ''))}
+						oninput={(event) => setProperty(commentProperty('title')?.key ?? 'title', (event.currentTarget as HTMLInputElement).value)}
+					/>
+				</label>
+			{/if}
+
+			{#if commentProperty('body')}
+				<label class="block space-y-1" title={propertyTooltip(commentProperty('body')!)}>
+					<span class="text-[11px] font-semibold uppercase tracking-[0.18em] text-amber-900/70 dark:text-amber-100/70">
+						{commentProperty('body')?.label}
+					</span>
+					<textarea
+						class="nodrag nopan min-h-28 w-full rounded-lg border border-amber-200/80 bg-background/90 px-2.5 py-2 text-[12px] leading-5 shadow-sm outline-none transition focus:border-ring focus:ring-4 focus:ring-ring/20 dark:border-amber-500/25 dark:bg-input/30"
+						placeholder="Describe what this section does, leave a TODO, or explain why the graph is wired this way."
+						value={stringValue(commentProperty('body')?.key ?? 'body', String(valueFor(commentProperty('body')!) ?? ''))}
+						oninput={(event) => setProperty(commentProperty('body')?.key ?? 'body', (event.currentTarget as HTMLTextAreaElement).value)}
+					></textarea>
+				</label>
+			{/if}
+		</div>
+	{:else if standaloneProperties.length > 0}
 		<div class="space-y-1 border-t border-border/60 px-3 py-2">
 			{#each standaloneProperties as property}
 				<div class="space-y-1" title={propertyTooltip(property)}>

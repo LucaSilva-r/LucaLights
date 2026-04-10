@@ -11,6 +11,7 @@ public sealed class DefaultNodeTypeCatalog : INodeTypeCatalog
     {
         _nodeTypes =
         [
+            CommentNote(),
             ConstantColor(),
             ConstantFloat(),
             ConstantBool(),
@@ -55,6 +56,21 @@ public sealed class DefaultNodeTypeCatalog : INodeTypeCatalog
     public bool TryGetNodeType(string typeId, out NodeTypeDefinition? nodeType)
     {
         return _nodeTypesById.TryGetValue(typeId, out nodeType);
+    }
+
+    private static NodeTypeDefinition CommentNote()
+    {
+        return new NodeTypeDefinition(
+            "annotation.comment",
+            "Comment",
+            "Annotations",
+            "Adds a visual note to the graph without affecting evaluation.",
+            [],
+            [],
+            [
+                Property("title", "Title", NodeValueType.String, "Short heading shown in the node header.", "Comment"),
+                Property("body", "Comment", NodeValueType.String, "Long-form note for documenting intent, TODOs, or context.", string.Empty)
+            ]);
     }
 
     private static NodeTypeDefinition ConstantColor()

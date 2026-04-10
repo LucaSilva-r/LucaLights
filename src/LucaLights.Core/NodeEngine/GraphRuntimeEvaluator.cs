@@ -75,6 +75,9 @@ public sealed class GraphRuntimeEvaluator
         {
             switch (node.TypeId)
             {
+                case "annotation.comment":
+                    break;
+
                 case "constant.color":
                     outputs[BuildOutputKey(node.Id, "color")] = RuntimeValue.FromColor(ReadColor(node.Properties));
                     break;
