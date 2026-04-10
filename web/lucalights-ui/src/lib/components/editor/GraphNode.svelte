@@ -207,6 +207,8 @@
 				return 'bg-amber-500 text-white';
 			case 'Graph Inputs':
 				return 'bg-sky-500 text-white';
+			case 'Math':
+				return 'bg-cyan-600 text-white';
 			case 'Logic':
 				return 'bg-violet-500 text-white';
 			case 'Outputs':

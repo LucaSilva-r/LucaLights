@@ -495,3 +495,27 @@ Next recommended step:
 
 - integrate the Svelte build into `LucaLights.Server/wwwroot`
 - decide whether the editor should support preview while no input module is active
+
+## 2026-04-10
+
+What changed:
+
+- reclassified `Mix Color` under a dedicated `Math` category instead of grouping it with boolean-style logic nodes
+- added a dedicated node authoring guide at `docs/v2/NODE_AUTHORING_GUIDE.md`
+- documented the distinction between stable type IDs and editor-facing categories
+
+Decisions made:
+
+- node categories are UI organization metadata, not runtime behavior switches
+- existing shipped type IDs should stay stable even if their editor category changes
+- future arithmetic, blending, scaling, and interpolation nodes should prefer the `Math` category
+
+Blockers or risks:
+
+- the Svelte app is still standalone under `web/` and not yet built into `LucaLights.Server/wwwroot`
+- the node runtime still has only one math node, so broader category patterns will keep evolving as more nodes land
+
+Next recommended step:
+
+- integrate the Svelte build into `LucaLights.Server/wwwroot`
+- add the next small batch of math and timing nodes using the new authoring guide

@@ -80,9 +80,12 @@ The first catalog is intentionally small:
 - constants: `constant.color`, `constant.float`, `constant.bool`
 - reusable graph inputs: `input.bool`, `input.float`, `input.color`
 - logic: `logic.select-color`
+- math: `logic.mix-color`
 - output: `output.segment-color`
 
 Graph inputs are graph-level keys. Binding profiles will eventually decide which game channels feed those keys. This keeps reusable graphs from hardcoding ITGMania, osu!, or any other module-specific channel names.
+
+Node `Category` values are editor-facing organization metadata. They control palette grouping and node header styling, but they do not change runtime semantics on their own.
 
 The browser editor now layers custom node renderers on top of this catalog:
 
@@ -113,7 +116,7 @@ The current runtime is now live for the first node set:
 
 - `constant.color`, `constant.float`, `constant.bool`
 - `input.bool`, `input.float`, `input.color`
-- `logic.select-color`
+- `logic.select-color`, `logic.mix-color`
 - `output.segment-color`
 
 Runtime behavior in this slice:

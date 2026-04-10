@@ -9,6 +9,7 @@ Use these files together:
 - [`ARCHITECTURE_GAME_INPUTS.md`](./ARCHITECTURE_GAME_INPUTS.md): canonical design for game-agnostic input modules
 - [`ARCHITECTURE_GRAPH_BINDINGS.md`](./ARCHITECTURE_GRAPH_BINDINGS.md): design for reusable graph inputs and binding profiles
 - [`ARCHITECTURE_NODE_ENGINE.md`](./ARCHITECTURE_NODE_ENGINE.md): design for node catalog, graph validation, and graph compilation
+- [`NODE_AUTHORING_GUIDE.md`](./NODE_AUTHORING_GUIDE.md): practical checklist for adding new runtime and editor nodes
 - [`WORK_LOG.md`](./WORK_LOG.md): append-only session log for progress across multiple chats
 
 ## Working Rules

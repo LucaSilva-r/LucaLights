@@ -4,7 +4,7 @@
 
 - Overall status: `in progress`
 - Current phase: `Phase 3 - Web UI`
-- Current implementation slice: `Graph palette and custom nodes landed; server static asset integration next`
+- Current implementation slice: `Graph authoring is expanding with richer runtime nodes; server static asset integration next`
 - Last updated: `2026-04-10`
 
 ## Milestones
@@ -146,6 +146,8 @@ Completed in this phase so far:
 - added custom graph node renderers with inline property editors for the current bootstrap node catalog
 - added a searchable node palette with click-to-add and drag-to-add flows
 - added local connection validation plus saved viewport round-tripping in the graph editor
+- added the first math-category authoring slice with `Mix Color` plus driven-property hiding in the editor
+- added a dedicated node authoring guide for future catalog/runtime/editor node work
 
 ### Phase 4 - Packaging and Polish
 

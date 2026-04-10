@@ -134,7 +134,7 @@ public sealed class DefaultNodeTypeCatalog : INodeTypeCatalog
         return new NodeTypeDefinition(
             "logic.mix-color",
             "Mix Color",
-            "Logic",
+            "Math",
             "Blends between two colors using a factor from 0 to 1.",
             [
                 Input("a", "A", NodeValueType.Color, "The first color input."),
