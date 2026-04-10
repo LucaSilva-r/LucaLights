@@ -27,6 +27,7 @@ export interface EditorNodeData {
 	propertyDefs: NodePropertyDefinition[];
 	inputs: NodePortDefinition[];
 	outputs: NodePortDefinition[];
+	connectedInputIds: string[];
 	inputChannelOptions: InputChannelDefinition[];
 	deviceOptions: EditorDeviceOption[];
 	segmentOptions: EditorSegmentOption[];

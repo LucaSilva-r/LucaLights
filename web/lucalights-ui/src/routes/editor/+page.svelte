@@ -178,6 +178,16 @@
 		);
 	}
 
+	function connectedInputIdsFor(nodeId: string, edgeList: Edge[] = edges) {
+		return Array.from(
+			new Set(
+				edgeList
+					.filter((edge) => edge.target === nodeId && typeof edge.targetHandle === 'string')
+					.map((edge) => edge.targetHandle as string)
+			)
+		);
+	}
+
 	function defaultPropertiesFor(nodeType: NodeTypeDefinition) {
 		const properties: Record<string, unknown> = {};
 
@@ -199,7 +209,8 @@
 	function createNodeData(
 		nodeId: string,
 		nodeType: NodeTypeDefinition | undefined,
-		properties: Record<string, unknown>
+		properties: Record<string, unknown>,
+		edgeList: Edge[] = edges
 	): EditorNodeData {
 		return {
 			label: nodeType?.displayName ?? nodeId,
@@ -210,6 +221,7 @@
 			propertyDefs: nodeType?.properties ?? [],
 			inputs: nodeType?.inputs ?? [],
 			outputs: nodeType?.outputs ?? [],
+			connectedInputIds: connectedInputIdsFor(nodeId, edgeList),
 			inputChannelOptions: buildInputChannelOptions(),
 			deviceOptions: buildDeviceOptions(),
 			segmentOptions: buildSegmentOptions(),
@@ -222,6 +234,17 @@
 		graph: SvelteFlowGraphDocument,
 		typeMap: Map<string, NodeTypeDefinition>
 	) {
+		const mappedEdges = graph.edges.map(
+			(edge): Edge => ({
+				id: edge.id,
+				source: edge.source,
+				sourceHandle: edge.sourceHandle || undefined,
+				target: edge.target,
+				targetHandle: edge.targetHandle || undefined,
+				animated: true
+			})
+		);
+
 		return {
 			nodes: graph.nodes.map(
 				(graphNode): EditorFlowNode => ({
@@ -231,20 +254,12 @@
 					data: createNodeData(
 						graphNode.id,
 						typeMap.get(graphNode.type),
-						graphNode.data.properties ?? {}
+						graphNode.data.properties ?? {},
+						mappedEdges
 					)
 				})
 			),
-			edges: graph.edges.map(
-				(edge): Edge => ({
-					id: edge.id,
-					source: edge.source,
-					sourceHandle: edge.sourceHandle || undefined,
-					target: edge.target,
-					targetHandle: edge.targetHandle || undefined,
-					animated: true
-				})
-			),
+			edges: mappedEdges,
 			viewport: graph.viewport ?? defaultViewport
 		};
 	}
@@ -293,6 +308,16 @@
 				: node
 		);
 		markDirty();
+	}
+
+	function refreshConnectedInputs(edgeList: Edge[] = edges) {
+		nodes = nodes.map((node) => ({
+			...node,
+			data: {
+				...node.data,
+				connectedInputIds: connectedInputIdsFor(node.id, edgeList)
+			}
+		}));
 	}
 
 	function createNodeId(typeId: string) {
@@ -473,7 +498,7 @@
 			return;
 		}
 
-		edges = addEdge(
+		const nextEdges = addEdge(
 			{
 				...connection,
 				id: createNodeId('edge'),
@@ -481,11 +506,17 @@
 			},
 			edges
 		);
+
+		edges = nextEdges;
+		refreshConnectedInputs(nextEdges);
 		markDirty();
 	}
 
 	function handleDelete() {
-		markDirty();
+		queueMicrotask(() => {
+			refreshConnectedInputs();
+			markDirty();
+		});
 	}
 
 	function handleNodeDragStop() {

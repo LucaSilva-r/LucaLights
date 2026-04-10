@@ -13,7 +13,15 @@
 			return [];
 		}
 
-		return data.propertyDefs;
+		return data.propertyDefs.filter((property) => !connectedInputIds.includes(property.key));
+	});
+
+	let connectedInputIds = $derived.by(() => {
+		if (!Array.isArray(data.connectedInputIds)) {
+			return [];
+		}
+
+		return data.connectedInputIds.filter((value): value is string => typeof value === 'string');
 	});
 
 	let inputKeyOptions = $derived.by(() => {
