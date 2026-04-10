@@ -7,7 +7,6 @@ using LucaLights.Server.Endpoints;
 using LucaLights.Server.Services;
 
 var builder = WebApplication.CreateBuilder(args);
-builder.WebHost.UseStaticWebAssets();
 Directory.CreateDirectory(Path.Combine(builder.Environment.ContentRootPath, "wwwroot"));
 
 builder.Services.AddSingleton<ConfigManager>();

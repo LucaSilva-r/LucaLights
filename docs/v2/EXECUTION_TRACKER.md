@@ -4,7 +4,7 @@
 
 - Overall status: `in progress`
 - Current phase: `Phase 4 - Packaging and polish`
-- Current implementation slice: `Hosted SPA integration landed; preview behavior and publish polish next`
+- Current implementation slice: `Hosted build and publish flow documented; preview behavior and lifecycle polish next`
 - Last updated: `2026-04-10`
 
 ## Milestones
@@ -148,7 +148,7 @@ Completed in this phase so far:
 - added local connection validation plus saved viewport round-tripping in the graph editor
 - added the first math-category authoring slice with `Mix Color` plus driven-property hiding in the editor
 - added a dedicated node authoring guide for future catalog/runtime/editor node work
-- integrated the Svelte build into the ASP.NET static web assets pipeline, generated server `wwwroot` for local runs, and added SPA fallback routing in the host
+- integrated the Svelte build into `LucaLights.Server`, generated server `wwwroot` for local runs, copied frontend assets into publish `wwwroot`, and added SPA fallback routing in the host
 
 ### Phase 4 - Packaging and Polish
 
@@ -177,7 +177,7 @@ Exit criteria:
 - The browser UI is a consumer of backend-defined input channels, not a source of game-specific assumptions.
 - One unified graph per configuration, not multiple effects. Multiple output nodes in the same graph handle per-device routing. Scene switching deferred to future subgraph support.
 - `LucaLights.Server` is responsible for building and serving the Svelte SPA static assets.
-- Hosted frontend assets come from the Svelte build output via the ASP.NET static web assets pipeline, with a generated local `wwwroot` copy kept only for source-run static file hosting.
+- Hosted frontend assets come from the Svelte build output, with generated copies written into the server `wwwroot` for source runs and the publish `wwwroot` for release output.
 
 ## Next Recommended Slice
 
@@ -186,8 +186,8 @@ Continue `Phase 4 - Packaging and polish`.
 Concrete target:
 
 - decide whether authoring preview should render while no input module is active
-- document the verified build and publish flow now that the frontend build is host-integrated
+- polish lifecycle and startup behavior now that the hosted build and publish flow is documented
 
 Suggested checkpoint commit:
 
-- `v2: integrate hosted svelte assets`
+- `v2: document hosted build flow`

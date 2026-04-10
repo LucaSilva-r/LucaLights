@@ -6,6 +6,7 @@ Use these files together:
 
 - [`PLAN.md`](../../PLAN.md): strategic target state and phased architecture plan
 - [`EXECUTION_TRACKER.md`](./EXECUTION_TRACKER.md): current implementation status, milestones, risks, and next slices
+- [`HOSTED_BUILD_AND_PUBLISH.md`](./HOSTED_BUILD_AND_PUBLISH.md): verified source-build and publish flow for the hosted server plus browser UI
 - [`ARCHITECTURE_GAME_INPUTS.md`](./ARCHITECTURE_GAME_INPUTS.md): canonical design for game-agnostic input modules
 - [`ARCHITECTURE_GRAPH_BINDINGS.md`](./ARCHITECTURE_GRAPH_BINDINGS.md): design for reusable graph inputs and binding profiles
 - [`ARCHITECTURE_NODE_ENGINE.md`](./ARCHITECTURE_NODE_ENGINE.md): design for node catalog, graph validation, and graph compilation
@@ -35,4 +36,4 @@ To keep the rewrite reviewable:
 The current recommended starting point is the next v2 slice:
 
 - decide whether authoring preview should render while no input module is active
-- document and polish the server build and publish flow now that the Svelte app is integrated into the host
+- polish the hosted server lifecycle now that the build and publish flow is documented

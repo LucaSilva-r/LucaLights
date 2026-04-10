@@ -547,3 +547,28 @@ Next recommended step:
 
 - document the verified build and publish flow
 - decide whether editor preview should render while no input module is active
+
+## 2026-04-10
+
+What changed:
+
+- fixed the hosted server build flow so source runs and published output both serve the generated Svelte frontend reliably
+- simplified hosted asset serving to use generated physical `wwwroot` copies for both source builds and publish output
+- added `HOSTED_BUILD_AND_PUBLISH.md` to document the verified `dotnet build`, `dotnet run`, and `dotnet publish` workflow
+- updated the v2 README and execution tracker to point at the new hosted-build documentation and reflect the verified packaging behavior
+
+Decisions made:
+
+- the repo docs should describe the concrete physical `wwwroot` copy flow that was verified in practice, not the earlier static-web-assets approach
+- published server runs should assume they are launched from the publish directory unless content root is configured explicitly
+
+Blockers or risks:
+
+- server builds still assume a working Node/npm toolchain is present on the machine
+- authoring preview behavior without a live input module is still undecided
+- lifecycle controls and startup polish still remain in `Phase 4`
+
+Next recommended step:
+
+- decide whether editor preview should render while no input module is active
+- polish lifecycle and startup behavior for packaged runs

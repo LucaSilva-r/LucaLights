@@ -30,14 +30,26 @@
     <MakeDir Directories="$(GeneratedWebRootDir)" />
     <ItemGroup>
       <FrontendStaticFiles Include="$(SpaBuildOutputDir)**\*" />
-      <Content
-        Include="@(FrontendStaticFiles)"
-        Link="wwwroot/%(RecursiveDir)%(Filename)%(Extension)"
-        CopyToOutputDirectory="PreserveNewest"
-        CopyToPublishDirectory="PreserveNewest" />
     </ItemGroup>
     <Copy
       SourceFiles="@(FrontendStaticFiles)"
       DestinationFiles="@(FrontendStaticFiles->'$(GeneratedWebRootDir)%(RecursiveDir)%(Filename)%(Extension)')" />
+  </Target>
+
+  <Target
+    Name="CopyFrontendAssetsToPublishDir"
+    AfterTargets="Publish"
+    Condition="'$(DesignTimeBuild)' != 'true' and '$(ShouldBuildFrontendAssets)' == 'true' and Exists('$(SpaBuildOutputDir)index.html')">
+    <PropertyGroup>
+      <PublishedWebRootDir>$(PublishDir)wwwroot\</PublishedWebRootDir>
+    </PropertyGroup>
+    <RemoveDir Directories="$(PublishedWebRootDir)" Condition="Exists('$(PublishedWebRootDir)')" />
+    <MakeDir Directories="$(PublishedWebRootDir)" />
+    <ItemGroup>
+      <PublishedFrontendStaticFiles Include="$(SpaBuildOutputDir)**\*" />
+    </ItemGroup>
+    <Copy
+      SourceFiles="@(PublishedFrontendStaticFiles)"
+      DestinationFiles="@(PublishedFrontendStaticFiles->'$(PublishedWebRootDir)%(RecursiveDir)%(Filename)%(Extension)')" />
   </Target>
 </Project>
