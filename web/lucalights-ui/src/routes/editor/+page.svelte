@@ -508,8 +508,10 @@
 		);
 
 		edges = nextEdges;
-		refreshConnectedInputs(nextEdges);
-		markDirty();
+		queueMicrotask(() => {
+			refreshConnectedInputs(nextEdges);
+			markDirty();
+		});
 	}
 
 	function handleDelete() {
