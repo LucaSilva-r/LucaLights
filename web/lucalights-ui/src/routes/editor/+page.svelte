@@ -1,5 +1,5 @@
 <script lang="ts">
-	import { onMount } from 'svelte';
+	import { onMount, untrack } from 'svelte';
 	import {
 		Background,
 		Controls,
@@ -122,6 +122,12 @@
 
 		return Array.from(groups.entries()).map(([category, items]) => ({ category, items }));
 	});
+	let connectedInputSignature = $derived.by(() =>
+		edges
+			.map((edge) => `${edge.target}:${edge.targetHandle ?? ''}`)
+			.sort()
+			.join('|')
+	);
 
 	function buildDeviceOptions() {
 		return devices.map(
@@ -311,13 +317,32 @@
 	}
 
 	function refreshConnectedInputs(edgeList: Edge[] = edges) {
-		nodes = nodes.map((node) => ({
-			...node,
-			data: {
-				...node.data,
-				connectedInputIds: connectedInputIdsFor(node.id, edgeList)
+		let changed = false;
+
+		const nextNodes = nodes.map((node) => {
+			const nextConnectedInputIds = connectedInputIdsFor(node.id, edgeList);
+			const previousConnectedInputIds = node.data.connectedInputIds ?? [];
+			const isSame =
+				previousConnectedInputIds.length === nextConnectedInputIds.length &&
+				previousConnectedInputIds.every((value, index) => value === nextConnectedInputIds[index]);
+
+			if (isSame) {
+				return node;
 			}
-		}));
+
+			changed = true;
+			return {
+				...node,
+				data: {
+					...node.data,
+					connectedInputIds: nextConnectedInputIds
+				}
+			};
+		});
+
+		if (changed) {
+			nodes = nextNodes;
+		}
 	}
 
 	function createNodeId(typeId: string) {
@@ -508,17 +533,11 @@
 		);
 
 		edges = nextEdges;
-		queueMicrotask(() => {
-			refreshConnectedInputs(nextEdges);
-			markDirty();
-		});
+		markDirty();
 	}
 
 	function handleDelete() {
-		queueMicrotask(() => {
-			refreshConnectedInputs();
-			markDirty();
-		});
+		markDirty();
 	}
 
 	function handleNodeDragStop() {
@@ -566,6 +585,15 @@
 
 	onMount(() => {
 		void loadGraph();
+	});
+
+	$effect(() => {
+		connectedInputSignature;
+		const edgeSnapshot = edges;
+
+		untrack(() => {
+			refreshConnectedInputs(edgeSnapshot);
+		});
 	});
 </script>
 
