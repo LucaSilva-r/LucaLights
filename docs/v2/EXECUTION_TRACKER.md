@@ -4,7 +4,7 @@
 
 - Overall status: `in progress`
 - Current phase: `Phase 3 - Web UI`
-- Current implementation slice: `Browser device CRUD landed; custom node components and node palette next`
+- Current implementation slice: `Graph palette and custom nodes landed; server static asset integration next`
 - Last updated: `2026-04-10`
 
 ## Milestones
@@ -143,6 +143,9 @@ Completed in this phase so far:
 - added Editor link to the navigation layout
 - added browser device management at `/devices` with create, edit, and delete flows for devices plus nested segment CRUD
 - normalized frontend transport labels so DDP and UDP Realtime display consistently across the dashboard and device manager
+- added custom graph node renderers with inline property editors for the current bootstrap node catalog
+- added a searchable node palette with click-to-add and drag-to-add flows
+- added local connection validation plus saved viewport round-tripping in the graph editor
 
 ### Phase 4 - Packaging and Polish
 
@@ -177,10 +180,9 @@ Continue `Phase 3 - SvelteKit UI`.
 
 Concrete target:
 
-- add custom SvelteFlow node components per node type (color pickers, input selectors, etc.)
-- add node palette / drag-to-add for the graph editor
 - integrate the Svelte build output into `LucaLights.Server/wwwroot` static assets
+- decide whether authoring preview should render while no input module is active
 
 Suggested checkpoint commit:
 
-- `v2: add browser device management`
+- `v2: improve graph editor authoring`

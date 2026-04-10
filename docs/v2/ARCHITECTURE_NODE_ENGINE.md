@@ -70,7 +70,7 @@ This keeps the compiler free to use engine-friendly names while letting the UI s
 
 Validation should also be split by cost:
 
-- on drag, the UI can use SvelteFlow's `isValidConnection` hook with local catalog metadata for fast type and direction checks
+- on drag, the UI can use SvelteFlow's `isValidConnection` hook with local catalog metadata for fast type, direction, and single-input checks
 - on save or explicit validation, the UI should call `POST /api/graph/validate` so the backend remains authoritative for cycles, missing outputs, and future runtime-only constraints
 
 ## Node Catalog
@@ -83,6 +83,13 @@ The first catalog is intentionally small:
 - output: `output.segment-color`
 
 Graph inputs are graph-level keys. Binding profiles will eventually decide which game channels feed those keys. This keeps reusable graphs from hardcoding ITGMania, osu!, or any other module-specific channel names.
+
+The browser editor now layers custom node renderers on top of this catalog:
+
+- `constant.color` exposes an inline color picker plus RGB controls
+- `input.bool`, `input.float`, and `input.color` expose channel selectors from the active module definition
+- `output.segment-color` exposes inline target filters plus device, segment, and group quick-picks
+- the node palette groups catalog entries by category and supports click-to-add and drag-to-add
 
 ## Validation
 
@@ -121,6 +128,5 @@ Runtime behavior in this slice:
 ## Next Work
 
 - expand the node runtime beyond the bootstrap set with math, timing, gradients, and animation nodes
-- add custom SvelteFlow node components per node type (color pickers, input selectors, etc.)
-- add a node palette / drag-to-add for the graph editor
+- integrate the Svelte build output into `LucaLights.Server/wwwroot`
 - decide whether editor preview should be able to render while no input module is active

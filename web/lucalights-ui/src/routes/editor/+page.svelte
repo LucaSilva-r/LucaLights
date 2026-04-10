@@ -1,24 +1,35 @@
 <script lang="ts">
 	import { onMount } from 'svelte';
 	import {
-		SvelteFlow,
 		Background,
 		Controls,
 		MiniMap,
-		type Node,
-		type Edge,
+		SvelteFlow,
+		addEdge,
 		type Connection,
-		Position
+		type Edge,
+		type NodeTypes,
+		type Viewport
 	} from '@xyflow/svelte';
 	import '@xyflow/svelte/dist/style.css';
 	import {
 		ArrowLeft,
 		Check,
+		Layers3,
 		Loader2,
+		Plus,
 		Save,
+		Search,
 		TriangleAlert,
 		Workflow
 	} from '@lucide/svelte';
+	import GraphNode from '$lib/components/editor/GraphNode.svelte';
+	import type {
+		EditorDeviceOption,
+		EditorFlowNode,
+		EditorNodeData,
+		EditorSegmentOption
+	} from '$lib/components/editor/types';
 	import { Badge } from '$lib/components/ui/badge';
 	import { Button } from '$lib/components/ui/button';
 	import {
@@ -28,79 +39,234 @@
 		CardHeader,
 		CardTitle
 	} from '$lib/components/ui/card';
+	import { Separator } from '$lib/components/ui/separator';
 	import {
 		apiGet,
 		apiPut,
 		toMessage,
+		type Device,
+		type GraphDiagnostic,
 		type GraphResponse,
+		type InputChannelDefinition,
+		type InputDefinition,
 		type NodeTypeDefinition,
 		type NodeTypesResponse,
-		type SvelteFlowGraphDocument
+		type SvelteFlowGraphDocument,
+		type SystemStatus
 	} from '$lib/lucalights';
 
+	const defaultViewport: Viewport = { x: 0, y: 0, zoom: 1 };
+
 	let nodeTypes = $state<NodeTypeDefinition[]>([]);
-	let nodeTypeMap = $derived(new Map(nodeTypes.map((nt) => [nt.typeId, nt])));
+	let inputDefinitions = $state<InputDefinition[]>([]);
+	let devices = $state<Device[]>([]);
+	let activeInputModuleId = $state<string | null>(null);
 
-	let nodes = $state<Node[]>([]);
+	let nodes = $state<EditorFlowNode[]>([]);
 	let edges = $state<Edge[]>([]);
+	let viewport = $state<Viewport>(defaultViewport);
 
+	let canvasHost = $state<HTMLDivElement | null>(null);
+	let paletteFilter = $state('');
 	let loading = $state(true);
 	let saving = $state(false);
 	let dirty = $state(false);
 	let initialized = $state(false);
 	let errorMessage = $state('');
-	let validationErrors = $state<string[]>([]);
+	let validationDiagnostics = $state<GraphDiagnostic[]>([]);
 	let lastSaveResult = $state<'success' | 'error' | null>(null);
 
-	function graphDocumentToFlow(graph: SvelteFlowGraphDocument): { nodes: Node[]; edges: Edge[] } {
+	let nodeTypeMap = $derived(new Map(nodeTypes.map((nodeType) => [nodeType.typeId, nodeType])));
+	let activeInputDefinition = $derived(
+		inputDefinitions.find((definition) => definition.moduleId === activeInputModuleId) ?? null
+	);
+	let flowNodeTypes = $derived.by(
+		() =>
+			Object.fromEntries(
+				nodeTypes.map((nodeType) => [nodeType.typeId, GraphNode])
+			) as NodeTypes
+	);
+	let validationErrors = $derived(
+		validationDiagnostics
+			.filter((diagnostic) => diagnostic.severity === 'Error')
+			.map((diagnostic) => diagnostic.message)
+	);
+	let validationWarnings = $derived(
+		validationDiagnostics
+			.filter((diagnostic) => diagnostic.severity !== 'Error')
+			.map((diagnostic) => diagnostic.message)
+	);
+	let paletteGroups = $derived.by(() => {
+		const filter = paletteFilter.trim().toLowerCase();
+		const groups = new Map<string, NodeTypeDefinition[]>();
+
+		for (const nodeType of nodeTypes) {
+			const matchesFilter =
+				filter.length === 0 ||
+				nodeType.displayName.toLowerCase().includes(filter) ||
+				nodeType.description.toLowerCase().includes(filter) ||
+				nodeType.typeId.toLowerCase().includes(filter) ||
+				nodeType.category.toLowerCase().includes(filter);
+
+			if (!matchesFilter) {
+				continue;
+			}
+
+			const existingGroup = groups.get(nodeType.category);
+			if (existingGroup) {
+				existingGroup.push(nodeType);
+			} else {
+				groups.set(nodeType.category, [nodeType]);
+			}
+		}
+
+		return Array.from(groups.entries()).map(([category, items]) => ({ category, items }));
+	});
+
+	function buildDeviceOptions() {
+		return devices.map(
+			(device): EditorDeviceOption => ({
+				id: device.id,
+				name: device.name
+			})
+		);
+	}
+
+	function buildSegmentOptions() {
+		return devices.flatMap((device) =>
+			device.segments.map(
+				(segment): EditorSegmentOption => ({
+					id: segment.id,
+					name: segment.name,
+					deviceId: device.id,
+					deviceName: device.name
+				})
+			)
+		);
+	}
+
+	function buildGroupOptions() {
+		return Array.from(
+			new Set(
+				devices.flatMap((device) =>
+					device.segments.flatMap((segment) => segment.groupIds)
+				)
+			)
+		).sort((left, right) => left - right);
+	}
+
+	function buildInputChannelOptions() {
+		if (activeInputDefinition) {
+			return activeInputDefinition.channels;
+		}
+
+		const channelsByKey = new Map<string, InputChannelDefinition>();
+		for (const definition of inputDefinitions) {
+			for (const channel of definition.channels) {
+				if (!channelsByKey.has(channel.key)) {
+					channelsByKey.set(channel.key, channel);
+				}
+			}
+		}
+
+		return Array.from(channelsByKey.values());
+	}
+
+	function cloneProperties(properties: Record<string, unknown>) {
+		return Object.fromEntries(
+			Object.entries(properties).map(([key, value]) => [key, value])
+		);
+	}
+
+	function defaultPropertiesFor(nodeType: NodeTypeDefinition) {
+		const properties: Record<string, unknown> = {};
+
+		for (const property of nodeType.properties) {
+			if (property.defaultValue !== undefined && property.defaultValue !== null) {
+				properties[property.key] = property.defaultValue;
+			} else if (property.valueType === 'Bool') {
+				properties[property.key] = false;
+			} else if (property.valueType === 'Float') {
+				properties[property.key] = 0;
+			} else {
+				properties[property.key] = '';
+			}
+		}
+
+		return properties;
+	}
+
+	function createNodeData(
+		nodeId: string,
+		nodeType: NodeTypeDefinition | undefined,
+		properties: Record<string, unknown>
+	): EditorNodeData {
 		return {
-			nodes: graph.nodes.map((n) => {
-				const typeDef = nodeTypeMap.get(n.type);
-				return {
-					id: n.id,
-					type: 'default',
-					position: n.position,
-					data: {
-						label: typeDef?.displayName ?? n.type,
-						typeId: n.type,
-						category: typeDef?.category ?? 'Unknown',
-						properties: n.data.properties ?? {},
-						inputs: typeDef?.inputs ?? [],
-						outputs: typeDef?.outputs ?? []
-					},
-					sourcePosition: Position.Right,
-					targetPosition: Position.Left
-				};
-			}),
-			edges: graph.edges.map((e) => ({
-				id: e.id,
-				source: e.source,
-				sourceHandle: e.sourceHandle || undefined,
-				target: e.target,
-				targetHandle: e.targetHandle || undefined,
-				animated: true
-			}))
+			label: nodeType?.displayName ?? nodeId,
+			typeId: nodeType?.typeId ?? 'unknown',
+			category: nodeType?.category ?? 'Unknown',
+			description: nodeType?.description ?? 'Unknown node type.',
+			properties: cloneProperties(properties),
+			propertyDefs: nodeType?.properties ?? [],
+			inputs: nodeType?.inputs ?? [],
+			outputs: nodeType?.outputs ?? [],
+			inputChannelOptions: buildInputChannelOptions(),
+			deviceOptions: buildDeviceOptions(),
+			segmentOptions: buildSegmentOptions(),
+			groupOptions: buildGroupOptions(),
+			onPropertyChange: updateNodeProperty
+		};
+	}
+
+	function graphDocumentToFlow(
+		graph: SvelteFlowGraphDocument,
+		typeMap: Map<string, NodeTypeDefinition>
+	) {
+		return {
+			nodes: graph.nodes.map(
+				(graphNode): EditorFlowNode => ({
+					id: graphNode.id,
+					type: graphNode.type,
+					position: graphNode.position,
+					data: createNodeData(
+						graphNode.id,
+						typeMap.get(graphNode.type),
+						graphNode.data.properties ?? {}
+					)
+				})
+			),
+			edges: graph.edges.map(
+				(edge): Edge => ({
+					id: edge.id,
+					source: edge.source,
+					sourceHandle: edge.sourceHandle || undefined,
+					target: edge.target,
+					targetHandle: edge.targetHandle || undefined,
+					animated: true
+				})
+			),
+			viewport: graph.viewport ?? defaultViewport
 		};
 	}
 
 	function flowToGraphDocument(): SvelteFlowGraphDocument {
 		return {
-			nodes: nodes.map((n) => ({
-				id: n.id,
-				type: n.data.typeId as string,
-				position: n.position,
+			nodes: nodes.map((node) => ({
+				id: node.id,
+				type: node.data.typeId,
+				position: node.position,
 				data: {
-					properties: (n.data.properties as Record<string, unknown>) ?? {}
+					properties: node.data.properties
 				}
 			})),
-			edges: edges.map((e) => ({
-				id: e.id,
-				source: e.source,
-				sourceHandle: e.sourceHandle ?? '',
-				target: e.target,
-				targetHandle: e.targetHandle ?? ''
+			edges: edges.map((edge) => ({
+				id: edge.id,
+				source: edge.source,
+				sourceHandle: edge.sourceHandle ?? '',
+				target: edge.target,
+				targetHandle: edge.targetHandle ?? ''
 			})),
-			viewport: { x: 0, y: 0, zoom: 1 }
+			viewport
 		};
 	}
 
@@ -111,28 +277,168 @@
 		}
 	}
 
+	function updateNodeProperty(nodeId: string, key: string, value: unknown) {
+		nodes = nodes.map((node) =>
+			node.id === nodeId
+				? {
+						...node,
+						data: {
+							...node.data,
+							properties: {
+								...node.data.properties,
+								[key]: value
+							}
+						}
+					}
+				: node
+		);
+		markDirty();
+	}
+
+	function createNodeId(typeId: string) {
+		const stem = typeId.split('.').pop()?.replace(/[^a-z0-9]+/gi, '-').toLowerCase() ?? 'node';
+		const suffix =
+			typeof crypto !== 'undefined' && typeof crypto.randomUUID === 'function'
+				? crypto.randomUUID().slice(0, 8)
+				: Math.random().toString(36).slice(2, 10);
+
+		return `${stem}-${suffix}`;
+	}
+
+	function clientToFlowPosition(clientX: number, clientY: number) {
+		const bounds = canvasHost?.getBoundingClientRect();
+		if (!bounds) {
+			return { x: 40, y: 40 };
+		}
+
+		const zoom = viewport.zoom || 1;
+		return {
+			x: (clientX - bounds.left - viewport.x) / zoom,
+			y: (clientY - bounds.top - viewport.y) / zoom
+		};
+	}
+
+	function canvasCenterPosition() {
+		const bounds = canvasHost?.getBoundingClientRect();
+		if (!bounds) {
+			return { x: 80 + nodes.length * 20, y: 80 + nodes.length * 20 };
+		}
+
+		return clientToFlowPosition(bounds.left + bounds.width / 2, bounds.top + bounds.height / 2);
+	}
+
+	function addNodeFromType(typeId: string, position = canvasCenterPosition()) {
+		const nodeType = nodeTypeMap.get(typeId);
+		if (!nodeType) {
+			return;
+		}
+
+		const nodeId = createNodeId(typeId);
+		const nextNode: EditorFlowNode = {
+			id: nodeId,
+			type: typeId,
+			position: {
+				x: position.x + nodes.length * 8,
+				y: position.y + nodes.length * 8
+			},
+			data: createNodeData(nodeId, nodeType, defaultPropertiesFor(nodeType))
+		};
+
+		nodes = [...nodes, nextNode];
+		markDirty();
+	}
+
+	function getPort(
+		node: EditorFlowNode | undefined,
+		handleId: string | undefined,
+		direction: 'input' | 'output'
+	) {
+		if (!node || !handleId) {
+			return null;
+		}
+
+		const collection = direction === 'input' ? node.data.inputs : node.data.outputs;
+		return collection.find((port) => port.id === handleId) ?? null;
+	}
+
+	function isValidConnection(connection: Connection | Edge) {
+		const sourceHandle = connection.sourceHandle ?? undefined;
+		const targetHandle = connection.targetHandle ?? undefined;
+
+		if (!connection.source || !connection.target || !sourceHandle || !targetHandle) {
+			return false;
+		}
+
+		if (connection.source === connection.target) {
+			return false;
+		}
+
+		const sourceNode = nodes.find((node) => node.id === connection.source);
+		const targetNode = nodes.find((node) => node.id === connection.target);
+		const sourcePort = getPort(sourceNode, sourceHandle, 'output');
+		const targetPort = getPort(targetNode, targetHandle, 'input');
+
+		if (!sourcePort || !targetPort) {
+			return false;
+		}
+
+		if (sourcePort.valueType !== targetPort.valueType) {
+			return false;
+		}
+
+		if (
+			edges.some(
+				(edge) =>
+					edge.source === connection.source &&
+					edge.sourceHandle === sourceHandle &&
+					edge.target === connection.target &&
+					edge.targetHandle === targetHandle
+			)
+		) {
+			return false;
+		}
+
+		if (
+			targetPort.allowMultipleConnections !== true &&
+			edges.some(
+				(edge) =>
+					edge.target === connection.target && edge.targetHandle === targetHandle
+			)
+		) {
+			return false;
+		}
+
+		return true;
+	}
+
 	async function loadGraph() {
 		loading = true;
 		initialized = false;
 		errorMessage = '';
 
 		try {
-			const [graphData, nodeTypesData] = await Promise.all([
-				apiGet<GraphResponse>('/api/graph'),
-				apiGet<NodeTypesResponse>('/api/node-types')
-			]);
+			const [graphData, nodeTypesData, moduleDefinitions, deviceList, systemStatus] =
+				await Promise.all([
+					apiGet<GraphResponse>('/api/graph'),
+					apiGet<NodeTypesResponse>('/api/node-types'),
+					apiGet<InputDefinition[]>('/api/input-modules'),
+					apiGet<Device[]>('/api/devices'),
+					apiGet<SystemStatus>('/api/system/status')
+				]);
 
 			nodeTypes = nodeTypesData.nodeTypes;
+			inputDefinitions = moduleDefinitions;
+			devices = deviceList;
+			activeInputModuleId = systemStatus.input.activeModuleId;
 
-			const flow = graphDocumentToFlow(graphData.graph);
+			const typeMap = new Map(nodeTypesData.nodeTypes.map((nodeType) => [nodeType.typeId, nodeType]));
+			const flow = graphDocumentToFlow(graphData.graph, typeMap);
 			nodes = flow.nodes;
 			edges = flow.edges;
-
-			validationErrors = graphData.validation.diagnostics
-				.filter((d) => d.severity === 'Error')
-				.map((d) => d.message);
-
+			viewport = flow.viewport;
+			validationDiagnostics = graphData.validation.diagnostics;
 			dirty = false;
+			lastSaveResult = null;
 
 			requestAnimationFrame(() => {
 				initialized = true;
@@ -147,16 +453,11 @@
 	async function saveGraph() {
 		saving = true;
 		lastSaveResult = null;
-		validationErrors = [];
 
 		try {
-			const graphDoc = flowToGraphDocument();
-			const result = await apiPut<GraphResponse>('/api/graph', graphDoc);
+			const result = await apiPut<GraphResponse>('/api/graph', flowToGraphDocument());
 
-			validationErrors = result.validation.diagnostics
-				.filter((d) => d.severity === 'Error')
-				.map((d) => d.message);
-
+			validationDiagnostics = result.validation.diagnostics;
 			dirty = false;
 			lastSaveResult = 'success';
 		} catch (error) {
@@ -168,16 +469,18 @@
 	}
 
 	function handleConnect(connection: Connection) {
-		const newEdge: Edge = {
-			id: `e-${connection.source}-${connection.sourceHandle ?? 'out'}-${connection.target}-${connection.targetHandle ?? 'in'}`,
-			source: connection.source,
-			sourceHandle: connection.sourceHandle ?? undefined,
-			target: connection.target,
-			targetHandle: connection.targetHandle ?? undefined,
-			animated: true
-		};
+		if (!isValidConnection(connection)) {
+			return;
+		}
 
-		edges = [...edges, newEdge];
+		edges = addEdge(
+			{
+				...connection,
+				id: createNodeId('edge'),
+				animated: true
+			},
+			edges
+		);
 		markDirty();
 	}
 
@@ -189,17 +492,47 @@
 		markDirty();
 	}
 
+	function handleMoveEnd(_event: MouseEvent | TouchEvent | null, nextViewport: Viewport) {
+		viewport = nextViewport;
+		markDirty();
+	}
+
+	function handlePaletteDragStart(event: DragEvent, typeId: string) {
+		event.dataTransfer?.setData('application/x-lucalights-node-type', typeId);
+		event.dataTransfer?.setData('text/plain', typeId);
+		if (event.dataTransfer) {
+			event.dataTransfer.effectAllowed = 'copy';
+		}
+	}
+
+	function handleCanvasDragOver(event: DragEvent) {
+		event.preventDefault();
+		if (event.dataTransfer) {
+			event.dataTransfer.dropEffect = 'copy';
+		}
+	}
+
+	function handleCanvasDrop(event: DragEvent) {
+		event.preventDefault();
+		const typeId = event.dataTransfer?.getData('application/x-lucalights-node-type');
+		if (!typeId) {
+			return;
+		}
+
+		addNodeFromType(typeId, clientToFlowPosition(event.clientX, event.clientY));
+	}
+
 	function handleKeydown(event: KeyboardEvent) {
 		if ((event.ctrlKey || event.metaKey) && event.key === 's') {
 			event.preventDefault();
 			if (!saving && dirty) {
-				saveGraph();
+				void saveGraph();
 			}
 		}
 	}
 
 	onMount(() => {
-		loadGraph();
+		void loadGraph();
 	});
 </script>
 
@@ -218,6 +551,15 @@
 			</Button>
 
 			<span class="text-sm font-semibold">Graph Editor</span>
+
+			<Badge variant="outline">
+				<Layers3 class="size-3" />
+				{nodes.length} nodes / {edges.length} edges
+			</Badge>
+
+			{#if activeInputDefinition}
+				<Badge variant="outline">{activeInputDefinition.displayName}</Badge>
+			{/if}
 
 			{#if dirty}
 				<Badge variant="secondary">Unsaved changes</Badge>
@@ -256,61 +598,142 @@
 		</div>
 	{/if}
 
-	{#if loading}
-		<div class="flex flex-1 items-center justify-center">
-			<div class="flex flex-col items-center gap-3 text-muted-foreground">
-				<Loader2 class="size-8 animate-spin" />
-				<p class="text-sm">Loading graph...</p>
-			</div>
-		</div>
-	{:else if nodes.length === 0 && edges.length === 0}
-		<div class="flex flex-1 items-center justify-center bg-zinc-50">
-			<Card class="max-w-md">
-				<CardHeader>
-					<CardTitle class="flex items-center gap-2">
-						<Workflow class="size-5" />
-						Empty Graph
-					</CardTitle>
-					<CardDescription>
-						No nodes in the graph yet. Add nodes to start building your lighting
-						pipeline.
-					</CardDescription>
-				</CardHeader>
-				<CardContent>
-					<div class="space-y-2 text-sm text-muted-foreground">
-						<p>Available node types:</p>
-						<div class="flex flex-wrap gap-1.5">
-							{#each nodeTypes as nodeType}
-								<Badge variant="outline">{nodeType.displayName}</Badge>
-							{/each}
-						</div>
-					</div>
-				</CardContent>
-			</Card>
-		</div>
-	{:else}
-		<div class="flex-1">
-			<SvelteFlow
-				bind:nodes
-				bind:edges
-				onconnect={handleConnect}
-				ondelete={handleDelete}
-				onnodedragstop={handleNodeDragStop}
-				fitView
-				class="bg-zinc-50"
-			>
-				<Background />
-				<Controls />
-				<MiniMap />
-			</SvelteFlow>
-		</div>
-	{/if}
+	<div class="grid min-h-0 flex-1 xl:grid-cols-[20rem_minmax(0,1fr)]">
+		<aside class="overflow-auto border-r border-border/60 bg-[linear-gradient(180deg,#fbf8f3_0%,#f4efe7_100%)]">
+			<div class="space-y-5 p-4">
+				<div class="space-y-2">
+					<h2 class="text-sm font-semibold tracking-tight">Node Palette</h2>
+					<p class="text-sm leading-5 text-muted-foreground">
+						Click a node to add it at the center of the current view, or drag it onto the canvas.
+					</p>
+				</div>
 
-	{#if validationErrors.length > 0}
-		<div class="border-t border-destructive/30 bg-destructive/5 px-4 py-2">
+				<label class="relative block">
+					<Search class="pointer-events-none absolute left-3 top-1/2 size-4 -translate-y-1/2 text-muted-foreground" />
+					<input
+						class="h-10 w-full rounded-xl border border-border/70 bg-white/90 pl-9 pr-3 text-sm shadow-sm outline-none transition focus:border-ring focus:ring-4 focus:ring-ring/20"
+						bind:value={paletteFilter}
+						placeholder="Search nodes"
+					/>
+				</label>
+
+				<div class="grid gap-3">
+					{#each paletteGroups as group}
+						<div class="space-y-2">
+							<div class="flex items-center justify-between gap-3">
+								<h3 class="text-[11px] font-semibold uppercase tracking-[0.2em] text-muted-foreground">
+									{group.category}
+								</h3>
+								<Badge variant="outline">{group.items.length}</Badge>
+							</div>
+
+							<div class="space-y-2">
+								{#each group.items as nodeType}
+									<button
+										type="button"
+										draggable="true"
+										class="w-full rounded-2xl border border-border/70 bg-white/90 p-3 text-left shadow-sm transition hover:border-primary/40 hover:bg-white"
+										onclick={() => addNodeFromType(nodeType.typeId)}
+										ondragstart={(event) => handlePaletteDragStart(event, nodeType.typeId)}
+									>
+										<div class="flex items-start justify-between gap-3">
+											<div class="space-y-1">
+												<p class="text-sm font-semibold">{nodeType.displayName}</p>
+												<p class="text-xs leading-5 text-muted-foreground">
+													{nodeType.description}
+												</p>
+											</div>
+											<Plus class="size-4 text-muted-foreground" />
+										</div>
+									</button>
+								{/each}
+							</div>
+						</div>
+					{/each}
+
+					{#if paletteGroups.length === 0}
+						<div class="rounded-2xl border border-dashed border-border/80 bg-white/70 px-4 py-8 text-center text-sm text-muted-foreground">
+							No nodes match the current filter.
+						</div>
+					{/if}
+				</div>
+
+				<Separator />
+
+				<div class="space-y-2 text-sm text-muted-foreground">
+					<p>{buildInputChannelOptions().length} input channels available for graph input nodes.</p>
+					<p>{devices.length} devices and {devices.reduce((total, device) => total + device.segments.length, 0)} segments available for output targeting.</p>
+				</div>
+			</div>
+		</aside>
+
+		<div
+			bind:this={canvasHost}
+			role="presentation"
+			aria-label="Graph canvas"
+			class="relative min-h-0 bg-[linear-gradient(180deg,#f7f4ef_0%,#f1ece3_100%)]"
+			ondragover={handleCanvasDragOver}
+			ondrop={handleCanvasDrop}
+		>
+			{#if loading}
+				<div class="flex h-full items-center justify-center">
+					<div class="flex flex-col items-center gap-3 text-muted-foreground">
+						<Loader2 class="size-8 animate-spin" />
+						<p class="text-sm">Loading graph...</p>
+					</div>
+				</div>
+			{:else}
+				<SvelteFlow
+					bind:nodes
+					bind:edges
+					bind:viewport
+					nodeTypes={flowNodeTypes}
+					onconnect={handleConnect}
+					ondelete={handleDelete}
+					onnodedragstop={handleNodeDragStop}
+					onmoveend={handleMoveEnd}
+					isValidConnection={isValidConnection}
+					class="h-full bg-transparent"
+				>
+					<Background />
+					<Controls />
+					<MiniMap />
+				</SvelteFlow>
+
+				{#if nodes.length === 0 && edges.length === 0}
+					<div class="pointer-events-none absolute inset-0 flex items-center justify-center p-6">
+						<Card class="max-w-md border-white/70 bg-white/90 shadow-xl">
+							<CardHeader>
+								<CardTitle class="flex items-center gap-2">
+									<Workflow class="size-5" />
+									Empty Graph
+								</CardTitle>
+								<CardDescription>
+									Start by adding constants, inputs, logic, and output nodes from the palette.
+								</CardDescription>
+							</CardHeader>
+							<CardContent class="text-sm text-muted-foreground">
+								Drop nodes anywhere on the canvas, then connect matching handle colors to build the lighting pipeline.
+							</CardContent>
+						</Card>
+					</div>
+				{/if}
+			{/if}
+		</div>
+	</div>
+
+	{#if validationErrors.length > 0 || validationWarnings.length > 0}
+		<div class="border-t border-border/70 bg-background/95 px-4 py-3">
 			<div class="flex flex-wrap gap-2">
 				{#each validationErrors as error}
-					<span class="text-xs text-destructive">{error}</span>
+					<span class="rounded-full bg-destructive/10 px-3 py-1 text-xs text-destructive">
+						{error}
+					</span>
+				{/each}
+				{#each validationWarnings as warning}
+					<span class="rounded-full bg-secondary px-3 py-1 text-xs text-secondary-foreground">
+						{warning}
+					</span>
 				{/each}
 			</div>
 		</div>

@@ -47,10 +47,12 @@ export interface SystemStatus {
 	};
 }
 
+export type InputValueType = number | 'Bool' | 'Float' | 'Color' | 'String';
+
 export interface InputChannelDefinition {
 	key: string;
 	label: string;
-	valueType: string;
+	valueType: InputValueType;
 	category: string;
 	description: string;
 	defaultFloatValue?: number | null;

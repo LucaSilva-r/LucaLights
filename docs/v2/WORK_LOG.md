@@ -471,3 +471,27 @@ Next recommended step:
 
 - add custom SvelteFlow node components per node type
 - add a node palette / drag-to-add workflow for the graph editor
+
+## 2026-04-10
+
+What changed:
+
+- replaced the generic graph editor shell with custom node renderers for the current bootstrap node catalog
+- added inline property editors for colors, booleans, floats, input-channel keys, and output targeting filters
+- added a searchable node palette with click-to-add and drag-to-add flows
+- added local connection validation in the browser plus viewport persistence in graph saves
+
+Decisions made:
+
+- the editor should stay document-oriented and save the full graph snapshot, but it can enforce cheap structural rules locally for faster feedback
+- node metadata from `/api/node-types`, `/api/input-modules`, and `/api/devices` is enough to drive a richer authoring UI without changing the backend graph contract
+
+Blockers or risks:
+
+- the Svelte app is still standalone under `web/` and not yet built into `LucaLights.Server/wwwroot`
+- authoring still depends on live input snapshots for meaningful preview behavior
+
+Next recommended step:
+
+- integrate the Svelte build into `LucaLights.Server/wwwroot`
+- decide whether the editor should support preview while no input module is active

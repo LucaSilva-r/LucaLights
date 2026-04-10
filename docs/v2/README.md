@@ -33,6 +33,5 @@ To keep the rewrite reviewable:
 
 The current recommended starting point is the next Phase 3 slice:
 
-- add custom SvelteFlow node components per node type (color pickers, input selectors, etc.)
-- add a node palette / drag-to-add for the graph editor
 - integrate the Svelte build into `LucaLights.Server` static assets once the editor shell is stable
+- decide whether authoring preview should render while no input module is active

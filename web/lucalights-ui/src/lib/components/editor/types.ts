@@ -1,0 +1,37 @@
+import type { Node } from '@xyflow/svelte';
+import type {
+	InputChannelDefinition,
+	NodePortDefinition,
+	NodePropertyDefinition
+} from '$lib/lucalights';
+
+export interface EditorDeviceOption {
+	id: string;
+	name: string;
+}
+
+export interface EditorSegmentOption {
+	id: string;
+	name: string;
+	deviceId: string;
+	deviceName: string;
+}
+
+export interface EditorNodeData {
+	[key: string]: unknown;
+	label: string;
+	typeId: string;
+	category: string;
+	description: string;
+	properties: Record<string, unknown>;
+	propertyDefs: NodePropertyDefinition[];
+	inputs: NodePortDefinition[];
+	outputs: NodePortDefinition[];
+	inputChannelOptions: InputChannelDefinition[];
+	deviceOptions: EditorDeviceOption[];
+	segmentOptions: EditorSegmentOption[];
+	groupOptions: number[];
+	onPropertyChange?: (nodeId: string, key: string, value: unknown) => void;
+}
+
+export type EditorFlowNode = Node<EditorNodeData>;
