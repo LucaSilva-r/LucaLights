@@ -361,7 +361,7 @@
 			class="pointer-events-none absolute inset-y-0 left-0 bg-primary/25"
 			style="width: {sliderPercent(property)}%"
 		></div>
-		<span class="relative z-10 px-2 text-[11px] font-medium">{label}</span>
+		<span class="relative z-10 px-2 text-[12px] font-medium">{label}</span>
 		<span class="relative z-10 ml-auto px-2 text-[11px] tabular-nums text-muted-foreground">{formatSliderValue(property)}</span>
 	</div>
 {/snippet}
@@ -499,14 +499,14 @@
 					{#if property}
 						{@render inlineEditor(property, output.label)}
 					{:else}
-						<p class="min-w-0 flex-1 truncate text-right text-[12px] font-medium">{output.label}</p>
+						<p class="min-w-0 flex-1 truncate text-right text-[13px] font-medium">{output.label}</p>
 					{/if}
 					<Handle
 						type="source"
 						id={output.id}
 						position={Position.Right}
 						style="right: 0; top: 50%; transform: translate(50%, -50%);"
-						class={`${handleTone(output.valueType)} !h-4 !w-4 !border-[3px] !border-node-handle-border !shadow-sm`}
+						class={`${handleTone(output.valueType)} !h-2.5 !w-2.5 !border-0 !shadow-sm`}
 					/>
 				</div>
 			{/each}
@@ -534,7 +534,7 @@
 								id={input.id}
 								position={Position.Left}
 								style="left: 0; top: 50%; transform: translate(-50%, -50%);"
-								class={`${handleTone(input.valueType)} !h-4 !w-4 !border-[3px] !border-node-handle-border !shadow-sm`}
+								class={`${handleTone(input.valueType)} !h-2.5 !w-2.5 !border-0 !shadow-sm`}
 							/>
 							<input
 								class="nodrag nopan h-7 w-8 cursor-pointer rounded-md border border-border/70 bg-transparent p-0.5"
@@ -542,7 +542,7 @@
 								value={colorHex}
 								oninput={(event) => setColorFromHex((event.currentTarget as HTMLInputElement).value)}
 							/>
-							<span class="text-[11px] font-medium">{input.label}</span>
+							<span class="text-[12px] font-medium">{input.label}</span>
 							<span class="ml-auto font-mono text-[11px] text-muted-foreground">{colorHex}</span>
 						</div>
 					{:else if showEditor && property.valueType === 'Float' && hasRange(property)}
@@ -553,7 +553,7 @@
 								id={input.id}
 								position={Position.Left}
 								style="left: 0; top: 50%; transform: translate(-50%, -50%);"
-								class={`${handleTone(input.valueType)} !h-4 !w-4 !border-[3px] !border-node-handle-border !shadow-sm`}
+								class={`${handleTone(input.valueType)} !h-2.5 !w-2.5 !border-0 !shadow-sm`}
 							/>
 							<div class="min-w-0 flex-1">
 								{@render sliderField(property, input.label)}
@@ -567,9 +567,9 @@
 								id={input.id}
 								position={Position.Left}
 								style="left: 0; top: 50%; transform: translate(-50%, -50%);"
-								class={`${handleTone(input.valueType)} !h-4 !w-4 !border-[3px] !border-node-handle-border !shadow-sm`}
+								class={`${handleTone(input.valueType)} !h-2.5 !w-2.5 !border-0 !shadow-sm`}
 							/>
-							<span class="shrink-0 text-[12px] font-medium">{input.label}</span>
+							<span class="shrink-0 text-[13px] font-medium">{input.label}</span>
 							{@render inlineEditor(property, input.label)}
 						</div>
 					{:else}
@@ -580,9 +580,9 @@
 								id={input.id}
 								position={Position.Left}
 								style="left: 0; top: 50%; transform: translate(-50%, -50%);"
-								class={`${handleTone(input.valueType)} !h-4 !w-4 !border-[3px] !border-node-handle-border !shadow-sm`}
+								class={`${handleTone(input.valueType)} !h-2.5 !w-2.5 !border-0 !shadow-sm`}
 							/>
-							<p class="min-w-0 flex-1 truncate text-[12px] font-medium">{input.label}</p>
+							<p class="min-w-0 flex-1 truncate text-[13px] font-medium">{input.label}</p>
 						</div>
 					{/if}
 				</div>
@@ -603,7 +603,7 @@
 					{#if property.valueType === 'Float' && hasRange(property)}
 						{@render sliderField(property, property.label)}
 					{:else if property.valueType === 'Bool'}
-						<label class="flex h-7 items-center gap-2 text-[11px] font-medium">
+						<label class="flex h-7 items-center gap-2 text-[12px] font-medium">
 							<input
 								class="nodrag nopan size-4 rounded border-border text-primary"
 								type="checkbox"
@@ -614,7 +614,7 @@
 						</label>
 					{:else}
 						<div class="flex h-7 items-center gap-2">
-							<span class="shrink-0 text-[11px] font-medium">{property.label}</span>
+							<span class="shrink-0 text-[12px] font-medium">{property.label}</span>
 							{@render inlineEditor(property, property.label)}
 						</div>
 					{/if}

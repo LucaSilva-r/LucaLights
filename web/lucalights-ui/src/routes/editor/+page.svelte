@@ -248,7 +248,7 @@
 				sourceHandle: edge.sourceHandle || undefined,
 				target: edge.target,
 				targetHandle: edge.targetHandle || undefined,
-				animated: true
+				animated: false
 			})
 		);
 
@@ -528,7 +528,7 @@
 			{
 				...connection,
 				id: createNodeId('edge'),
-				animated: true
+				animated: false
 			},
 			edges
 		);
