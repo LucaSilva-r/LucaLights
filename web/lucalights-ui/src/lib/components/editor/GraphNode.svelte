@@ -6,7 +6,7 @@
 	let { id, data, selected = false }: NodeProps<EditorFlowNode> = $props();
 
 	const interactiveClass =
-		'nodrag nopan h-8 w-full rounded-lg border border-border/70 bg-background/90 px-2.5 text-xs shadow-sm outline-none transition focus:border-ring focus:ring-4 focus:ring-ring/20';
+		'nodrag nopan h-7 w-full rounded-md border border-border/70 bg-background/90 px-2 text-[11px] shadow-sm outline-none transition focus:border-ring focus:ring-4 focus:ring-ring/20';
 
 	let visiblePropertyDefs = $derived.by(() => {
 		if (data.typeId === 'constant.color') {
@@ -171,88 +171,97 @@
 		}
 	}
 
-	function categoryTone(category: string) {
+	function categoryHeaderTone(category: string) {
 		switch (category) {
 			case 'Constants':
-				return 'bg-amber-100 text-amber-900';
+				return 'bg-amber-500 text-white';
 			case 'Graph Inputs':
-				return 'bg-sky-100 text-sky-900';
+				return 'bg-sky-500 text-white';
 			case 'Logic':
-				return 'bg-violet-100 text-violet-900';
+				return 'bg-violet-500 text-white';
 			case 'Outputs':
-				return 'bg-emerald-100 text-emerald-900';
+				return 'bg-emerald-500 text-white';
 			default:
-				return 'bg-zinc-200 text-zinc-800';
+				return 'bg-zinc-700 text-white';
 		}
+	}
+
+	function nodeTooltip() {
+		return data.description.trim().length > 0
+			? `${data.category}\n${data.description}`
+			: data.category;
+	}
+
+	function propertyTooltip(property: NodePropertyDefinition) {
+		return property.description.trim().length > 0
+			? `${property.label} · ${property.valueType}\n${property.description}`
+			: `${property.label} · ${property.valueType}`;
+	}
+
+	function portTooltip(label: string, valueType: string, description: string) {
+		return description.trim().length > 0
+			? `${label} · ${valueType}\n${description}`
+			: `${label} · ${valueType}`;
 	}
 </script>
 
 <div
-	class={`min-w-[17rem] overflow-visible rounded-[1.35rem] border bg-white/96 text-left shadow-lg backdrop-blur ${
-		selected ? 'border-primary ring-4 ring-primary/15' : 'border-border/70'
+	class={`w-[15.5rem] overflow-visible rounded-[1.05rem] border bg-white/95 text-left shadow-lg backdrop-blur ${
+		selected ? 'border-primary ring-2 ring-primary/20' : 'border-border/70'
 	}`}
 >
-	<div class="space-y-2 rounded-t-[1.35rem] border-b border-border/70 bg-[linear-gradient(180deg,rgba(255,255,255,0.95),rgba(245,241,235,0.9))] px-4 py-3">
-		<div class="flex items-start justify-between gap-3">
-			<div class="space-y-1">
-				<p class={`inline-flex rounded-full px-2 py-0.5 text-[10px] font-semibold uppercase tracking-[0.22em] ${categoryTone(data.category)}`}>
-					{data.category}
-				</p>
-				<h3 class="text-sm font-semibold tracking-tight">{data.label}</h3>
-			</div>
-			<span class="rounded-full bg-black/5 px-2 py-1 text-[10px] uppercase tracking-[0.18em] text-muted-foreground">
+	<div class={`flex items-center justify-between gap-3 rounded-t-[1.05rem] border-b border-black/10 px-3 py-2 ${categoryHeaderTone(data.category)}`}>
+		<h3 class="min-w-0 flex-1 truncate text-[13px] font-semibold tracking-tight" title={nodeTooltip()}>
+			{data.label}
+		</h3>
+		<span class="rounded-full border border-white/15 bg-black/10 px-1.5 py-0.5 font-mono text-[10px] text-white/80">
 				{data.inputs.length}:{data.outputs.length}
-			</span>
-		</div>
-
-		<p class="text-[11px] leading-5 text-muted-foreground">{data.description}</p>
+		</span>
 	</div>
 
 	{#if data.inputs.length > 0}
-		<div class="space-y-1.5 border-b border-border/70 px-3 py-3">
-			<p class="px-1 text-[10px] font-semibold uppercase tracking-[0.18em] text-muted-foreground">
-				Inputs
-			</p>
+		<div class="border-b border-border/60 px-0 py-1">
 			{#each data.inputs as input}
-				<div class="relative flex items-center gap-2 rounded-xl border border-border/70 bg-background/80 px-3 py-2 pl-5">
+				<div
+					class="relative flex min-h-7 items-center px-3 pl-4 text-foreground/90 transition hover:bg-black/[0.03]"
+					title={portTooltip(input.label, input.valueType, input.description)}
+				>
 					<Handle
 						type="target"
 						id={input.id}
 						position={Position.Left}
-						style="top: 50%; transform: translateY(-50%);"
-						class={handleTone(input.valueType)}
+						style="left: 0; top: 50%; transform: translate(-50%, -50%);"
+						class={`${handleTone(input.valueType)} !h-4 !w-4 !border-[3px] !border-white !shadow-sm`}
 					/>
-					<div class="min-w-0 flex-1">
-						<p class="truncate text-xs font-medium">{input.label}</p>
-						<p class="truncate text-[10px] uppercase tracking-[0.16em] text-muted-foreground">
-							{input.valueType}
-						</p>
-					</div>
+					<p class="min-w-0 flex-1 truncate text-[12px] font-medium">{input.label}</p>
 				</div>
 			{/each}
 		</div>
 	{/if}
 
-	<div class="space-y-3 px-3 py-3">
+	<div class="space-y-2.5 px-3 py-2.5">
 		{#if data.typeId === 'constant.color'}
-			<div class="space-y-2">
+			<div class="space-y-1.5">
 				<div class="flex items-center justify-between gap-3">
-					<p class="text-[10px] font-semibold uppercase tracking-[0.18em] text-muted-foreground">
+					<p
+						class="text-[10px] font-semibold uppercase tracking-[0.14em] text-muted-foreground"
+						title="Color · Color&#10;Outputs a fixed RGB color."
+					>
 						Color
 					</p>
 					<span class="font-mono text-[11px] text-muted-foreground">{colorHex}</span>
 				</div>
 
-				<div class="flex items-center gap-3">
+				<div class="flex items-center gap-2">
 					<input
-						class="nodrag nopan h-10 w-12 cursor-pointer rounded-xl border border-border/70 bg-transparent p-1"
+						class="nodrag nopan h-9 w-10 cursor-pointer rounded-md border border-border/70 bg-transparent p-1"
 						type="color"
 						value={colorHex}
 						oninput={(event) => setColorFromHex((event.currentTarget as HTMLInputElement).value)}
 					/>
-					<div class="grid flex-1 grid-cols-3 gap-2">
+					<div class="grid flex-1 grid-cols-3 gap-1.5">
 						<label class="space-y-1">
-							<span class="px-1 text-[10px] uppercase tracking-[0.14em] text-muted-foreground">R</span>
+							<span class="px-0.5 text-[10px] uppercase tracking-[0.12em] text-muted-foreground">R</span>
 							<input
 								class={interactiveClass}
 								type="number"
@@ -263,7 +272,7 @@
 							/>
 						</label>
 						<label class="space-y-1">
-							<span class="px-1 text-[10px] uppercase tracking-[0.14em] text-muted-foreground">G</span>
+							<span class="px-0.5 text-[10px] uppercase tracking-[0.12em] text-muted-foreground">G</span>
 							<input
 								class={interactiveClass}
 								type="number"
@@ -274,7 +283,7 @@
 							/>
 						</label>
 						<label class="space-y-1">
-							<span class="px-1 text-[10px] uppercase tracking-[0.14em] text-muted-foreground">B</span>
+							<span class="px-0.5 text-[10px] uppercase tracking-[0.12em] text-muted-foreground">B</span>
 							<input
 								class={interactiveClass}
 								type="number"
@@ -290,12 +299,14 @@
 		{/if}
 
 		{#each visiblePropertyDefs as property}
-			<div class="space-y-2">
-				<div class="space-y-1">
-					<p class="text-[10px] font-semibold uppercase tracking-[0.18em] text-muted-foreground">
+			<div class="space-y-1.5">
+				<div class="flex items-center justify-between gap-2">
+					<p
+						class="text-[10px] font-semibold uppercase tracking-[0.14em] text-muted-foreground"
+						title={propertyTooltip(property)}
+					>
 						{property.label}
 					</p>
-					<p class="text-[11px] leading-4 text-muted-foreground">{property.description}</p>
 				</div>
 
 				{#if data.typeId.startsWith('input.') && property.key === 'key'}
@@ -310,7 +321,7 @@
 						{/each}
 					</select>
 				{:else if property.valueType === 'Bool'}
-					<label class="flex items-center gap-2 rounded-xl border border-border/70 bg-background/80 px-3 py-2 text-xs font-medium">
+					<label class="flex items-center gap-2 rounded-md border border-border/70 bg-background/80 px-2.5 py-1.5 text-[11px] font-medium">
 						<input
 							class="nodrag nopan size-4 rounded border-border text-primary"
 							type="checkbox"
@@ -320,7 +331,7 @@
 						Enabled
 					</label>
 				{:else if property.valueType === 'Float'}
-					<div class="space-y-2">
+					<div class="space-y-1.5">
 						<input
 							class={interactiveClass}
 							type="number"
@@ -333,7 +344,7 @@
 
 						{#if property.minFloatValue !== null && property.minFloatValue !== undefined && property.maxFloatValue !== null && property.maxFloatValue !== undefined}
 							<input
-								class="nodrag nopan h-2 w-full cursor-pointer appearance-none rounded-full bg-muted accent-primary"
+								class="nodrag nopan h-1.5 w-full cursor-pointer appearance-none rounded-full bg-muted accent-primary"
 								type="range"
 								min={property.minFloatValue}
 								max={property.maxFloatValue}
@@ -353,11 +364,11 @@
 				{/if}
 
 				{#if data.typeId === 'output.segment-color' && property.key === 'deviceIds' && data.deviceOptions.length > 0}
-					<div class="flex flex-wrap gap-1.5">
+					<div class="flex flex-wrap gap-1">
 						{#each data.deviceOptions as device}
 							<button
 								type="button"
-								class={`nodrag nopan rounded-full border px-2 py-1 text-[10px] transition ${
+								class={`nodrag nopan rounded-full border px-1.5 py-0.5 text-[9px] transition ${
 									csvContains(property.key, device.id)
 										? 'border-primary bg-primary/10 text-primary'
 										: 'border-border/70 bg-background/70 text-muted-foreground'
@@ -371,11 +382,11 @@
 				{/if}
 
 				{#if data.typeId === 'output.segment-color' && property.key === 'segmentIds' && data.segmentOptions.length > 0}
-					<div class="flex flex-wrap gap-1.5">
+					<div class="flex flex-wrap gap-1">
 						{#each data.segmentOptions as segment}
 							<button
 								type="button"
-								class={`nodrag nopan rounded-full border px-2 py-1 text-[10px] transition ${
+								class={`nodrag nopan rounded-full border px-1.5 py-0.5 text-[9px] transition ${
 									csvContains(property.key, segment.id)
 										? 'border-primary bg-primary/10 text-primary'
 										: 'border-border/70 bg-background/70 text-muted-foreground'
@@ -390,11 +401,11 @@
 				{/if}
 
 				{#if data.typeId === 'output.segment-color' && property.key === 'groupIds' && data.groupOptions.length > 0}
-					<div class="flex flex-wrap gap-1.5">
+					<div class="flex flex-wrap gap-1">
 						{#each data.groupOptions as groupId}
 							<button
 								type="button"
-								class={`nodrag nopan rounded-full border px-2 py-1 text-[10px] transition ${
+								class={`nodrag nopan rounded-full border px-1.5 py-0.5 text-[9px] transition ${
 									csvContains(property.key, String(groupId))
 										? 'border-primary bg-primary/10 text-primary'
 										: 'border-border/70 bg-background/70 text-muted-foreground'
@@ -411,24 +422,19 @@
 	</div>
 
 	{#if data.outputs.length > 0}
-		<div class="space-y-1.5 border-t border-border/70 px-3 py-3">
-			<p class="px-1 text-[10px] font-semibold uppercase tracking-[0.18em] text-muted-foreground">
-				Outputs
-			</p>
+		<div class="border-t border-border/60 px-0 py-1">
 			{#each data.outputs as output}
-				<div class="relative flex items-center gap-2 rounded-xl border border-border/70 bg-background/80 px-3 py-2 pr-5">
-					<div class="min-w-0 flex-1">
-						<p class="truncate text-xs font-medium">{output.label}</p>
-						<p class="truncate text-[10px] uppercase tracking-[0.16em] text-muted-foreground">
-							{output.valueType}
-						</p>
-					</div>
+				<div
+					class="relative flex min-h-7 items-center justify-end px-3 pr-4 text-right text-foreground/90 transition hover:bg-black/[0.03]"
+					title={portTooltip(output.label, output.valueType, output.description)}
+				>
+					<p class="min-w-0 flex-1 truncate text-[12px] font-medium">{output.label}</p>
 					<Handle
 						type="source"
 						id={output.id}
 						position={Position.Right}
-						style="top: 50%; transform: translateY(-50%);"
-						class={handleTone(output.valueType)}
+						style="right: 0; top: 50%; transform: translate(50%, -50%);"
+						class={`${handleTone(output.valueType)} !h-4 !w-4 !border-[3px] !border-white !shadow-sm`}
 					/>
 				</div>
 			{/each}
