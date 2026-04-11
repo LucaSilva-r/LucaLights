@@ -88,7 +88,7 @@
 	}
 
 	function floatPrecisionFor(property: NodePropertyDefinition) {
-		return floatStepFor(property) === '1' ? 0 : 3;
+		return property.valueType === 'Float' ? 3 : 0;
 	}
 
 	function hasRange(property: NodePropertyDefinition) {
