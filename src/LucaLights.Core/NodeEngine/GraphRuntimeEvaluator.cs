@@ -7,6 +7,10 @@ namespace LucaLights.Core.NodeEngine;
 
 public sealed class GraphRuntimeEvaluator
 {
+    private readonly record struct NormalizedColor(float R, float G, float B);
+
+    private readonly record struct HsvColor(float Hue, float Saturation, float Value);
+
     private readonly NodeGraphCompiler _nodeGraphCompiler;
     private readonly INodeTypeCatalog _nodeTypeCatalog;
 
@@ -167,6 +171,7 @@ public sealed class GraphRuntimeEvaluator
                 {
                     var colorA = GetInputColor(preparedEffect, outputs, node.Id, "a");
                     var colorB = GetInputColor(preparedEffect, outputs, node.Id, "b");
+                    var mode = ReadString(node.Properties, "mode", "mix");
                     var factor = GetInputFloat(
                         preparedEffect,
                         outputs,
@@ -174,7 +179,7 @@ public sealed class GraphRuntimeEvaluator
                         "factor",
                         ReadFloat(node.Properties, "factor", 0.5f));
                     outputs[BuildOutputKey(node.Id, "color")] = RuntimeValue.FromColor(
-                        MixColors(colorA, colorB, factor));
+                        MixColors(colorA, colorB, factor, mode));
                     break;
                 }
 
@@ -515,6 +520,11 @@ public sealed class GraphRuntimeEvaluator
 
     private static Color HsvToColor(float hue, float saturation, float value)
     {
+        return DenormalizeColor(HsvToNormalizedColor(hue, saturation, value));
+    }
+
+    private static NormalizedColor HsvToNormalizedColor(float hue, float saturation, float value)
+    {
         var s = Math.Clamp(saturation, 0f, 1f);
         var v = Math.Clamp(value, 0f, 1f);
         var h = ((hue % 360f) + 360f) % 360f;
@@ -531,10 +541,39 @@ public sealed class GraphRuntimeEvaluator
         else if (h < 300f) { r1 = x; g1 = 0f; b1 = c; }
         else { r1 = c; g1 = 0f; b1 = x; }
 
-        return Color.FromRgb(
-            (byte)Math.Clamp((int)MathF.Round((r1 + m) * 255f), 0, 255),
-            (byte)Math.Clamp((int)MathF.Round((g1 + m) * 255f), 0, 255),
-            (byte)Math.Clamp((int)MathF.Round((b1 + m) * 255f), 0, 255));
+        return new NormalizedColor(r1 + m, g1 + m, b1 + m);
+    }
+
+    private static HsvColor ColorToHsv(NormalizedColor color)
+    {
+        var max = MathF.Max(color.R, MathF.Max(color.G, color.B));
+        var min = MathF.Min(color.R, MathF.Min(color.G, color.B));
+        var delta = max - min;
+
+        var hue = 0f;
+        if (delta > 0f)
+        {
+            if (max == color.R)
+            {
+                hue = 60f * (((color.G - color.B) / delta) % 6f);
+            }
+            else if (max == color.G)
+            {
+                hue = 60f * (((color.B - color.R) / delta) + 2f);
+            }
+            else
+            {
+                hue = 60f * (((color.R - color.G) / delta) + 4f);
+            }
+        }
+
+        if (hue < 0f)
+        {
+            hue += 360f;
+        }
+
+        var saturation = max <= 0f ? 0f : delta / max;
+        return new HsvColor(hue, saturation, max);
     }
 
     private static float EvaluateWaveform(string waveform, float phase)
@@ -594,18 +633,165 @@ public sealed class GraphRuntimeEvaluator
         }
     }
 
-    private static Color MixColors(Color a, Color b, float factor)
+    private static Color MixColors(Color a, Color b, float factor, string mode = "mix")
     {
         var clamped = Math.Clamp(factor, 0f, 1f);
-        return Color.FromRgb(
-            LerpByte(a.R, b.R, clamped),
-            LerpByte(a.G, b.G, clamped),
-            LerpByte(a.B, b.B, clamped));
+        var baseColor = NormalizeColor(a);
+        var blendColor = NormalizeColor(b);
+        var blended = BlendColors(baseColor, blendColor, mode);
+        return DenormalizeColor(LerpColor(baseColor, blended, clamped));
     }
 
-    private static byte LerpByte(byte start, byte end, float factor)
+    private static NormalizedColor BlendColors(
+        NormalizedColor baseColor,
+        NormalizedColor blendColor,
+        string mode)
     {
-        var value = start + ((end - start) * factor);
+        var normalizedMode = string.IsNullOrWhiteSpace(mode)
+            ? "mix"
+            : mode.Trim().ToLowerInvariant();
+
+        return normalizedMode switch
+        {
+            "darken" => new(
+                MathF.Min(baseColor.R, blendColor.R),
+                MathF.Min(baseColor.G, blendColor.G),
+                MathF.Min(baseColor.B, blendColor.B)),
+            "multiply" => BlendPerChannel(baseColor, blendColor, static (a, b) => a * b),
+            "color-burn" => BlendPerChannel(baseColor, blendColor, ColorBurnChannel),
+            "lighten" => new(
+                MathF.Max(baseColor.R, blendColor.R),
+                MathF.Max(baseColor.G, blendColor.G),
+                MathF.Max(baseColor.B, blendColor.B)),
+            "screen" => BlendPerChannel(baseColor, blendColor, static (a, b) => 1f - ((1f - a) * (1f - b))),
+            "color-dodge" => BlendPerChannel(baseColor, blendColor, ColorDodgeChannel),
+            "add" => BlendPerChannel(baseColor, blendColor, static (a, b) => MathF.Min(1f, a + b)),
+            "overlay" => BlendPerChannel(baseColor, blendColor, OverlayChannel),
+            "soft-light" => BlendPerChannel(baseColor, blendColor, SoftLightChannel),
+            "linear-light" => BlendPerChannel(baseColor, blendColor, static (a, b) => Math.Clamp(a + (2f * b) - 1f, 0f, 1f)),
+            "difference" => BlendPerChannel(baseColor, blendColor, static (a, b) => MathF.Abs(a - b)),
+            "exclusion" => BlendPerChannel(baseColor, blendColor, static (a, b) => a + b - (2f * a * b)),
+            "subtract" => BlendPerChannel(baseColor, blendColor, static (a, b) => MathF.Max(0f, a - b)),
+            "divide" => BlendPerChannel(baseColor, blendColor, DivideChannel),
+            "hue" or "saturation" or "color" or "value" => BlendHsv(baseColor, blendColor, normalizedMode),
+            _ => blendColor
+        };
+    }
+
+    private static NormalizedColor BlendPerChannel(
+        NormalizedColor baseColor,
+        NormalizedColor blendColor,
+        Func<float, float, float> blendChannel)
+    {
+        return new NormalizedColor(
+            blendChannel(baseColor.R, blendColor.R),
+            blendChannel(baseColor.G, blendColor.G),
+            blendChannel(baseColor.B, blendColor.B));
+    }
+
+    private static NormalizedColor BlendHsv(
+        NormalizedColor baseColor,
+        NormalizedColor blendColor,
+        string mode)
+    {
+        var baseHsv = ColorToHsv(baseColor);
+        var blendHsv = ColorToHsv(blendColor);
+
+        return mode switch
+        {
+            "hue" => HsvToNormalizedColor(blendHsv.Hue, baseHsv.Saturation, baseHsv.Value),
+            "saturation" => HsvToNormalizedColor(baseHsv.Hue, blendHsv.Saturation, baseHsv.Value),
+            "color" => HsvToNormalizedColor(blendHsv.Hue, blendHsv.Saturation, baseHsv.Value),
+            "value" => HsvToNormalizedColor(baseHsv.Hue, baseHsv.Saturation, blendHsv.Value),
+            _ => blendColor
+        };
+    }
+
+    private static float OverlayChannel(float baseChannel, float blendChannel)
+    {
+        return baseChannel < 0.5f
+            ? 2f * baseChannel * blendChannel
+            : 1f - (2f * (1f - baseChannel) * (1f - blendChannel));
+    }
+
+    private static float SoftLightChannel(float baseChannel, float blendChannel)
+    {
+        if (blendChannel <= 0.5f)
+        {
+            return baseChannel - ((1f - (2f * blendChannel)) * baseChannel * (1f - baseChannel));
+        }
+
+        var d = baseChannel <= 0.25f
+            ? ((16f * baseChannel - 12f) * baseChannel + 4f) * baseChannel
+            : MathF.Sqrt(baseChannel);
+
+        return baseChannel + (((2f * blendChannel) - 1f) * (d - baseChannel));
+    }
+
+    private static float ColorDodgeChannel(float baseChannel, float blendChannel)
+    {
+        if (blendChannel >= 1f)
+        {
+            return 1f;
+        }
+
+        return MathF.Min(1f, baseChannel / (1f - blendChannel));
+    }
+
+    private static float ColorBurnChannel(float baseChannel, float blendChannel)
+    {
+        if (blendChannel <= 0f)
+        {
+            return 0f;
+        }
+
+        return 1f - MathF.Min(1f, (1f - baseChannel) / blendChannel);
+    }
+
+    private static float DivideChannel(float baseChannel, float blendChannel)
+    {
+        if (blendChannel <= 0f)
+        {
+            return 1f;
+        }
+
+        return MathF.Min(1f, baseChannel / blendChannel);
+    }
+
+    private static NormalizedColor NormalizeColor(Color color)
+    {
+        return new NormalizedColor(
+            color.R / 255f,
+            color.G / 255f,
+            color.B / 255f);
+    }
+
+    private static Color DenormalizeColor(NormalizedColor color)
+    {
+        return Color.FromRgb(
+            ToByte(color.R * 255f),
+            ToByte(color.G * 255f),
+            ToByte(color.B * 255f));
+    }
+
+    private static NormalizedColor LerpColor(
+        NormalizedColor start,
+        NormalizedColor end,
+        float factor)
+    {
+        return new NormalizedColor(
+            LerpFloat(start.R, end.R, factor),
+            LerpFloat(start.G, end.G, factor),
+            LerpFloat(start.B, end.B, factor));
+    }
+
+    private static float LerpFloat(float start, float end, float factor)
+    {
+        return start + ((end - start) * factor);
+    }
+
+    private static byte ToByte(float value)
+    {
         return (byte)Math.Clamp((int)MathF.Round(value), byte.MinValue, byte.MaxValue);
     }
 

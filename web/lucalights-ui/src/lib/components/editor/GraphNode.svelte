@@ -303,6 +303,29 @@
 				{ value: 'less', label: 'Less than' },
 				{ value: 'equal', label: 'Equal' }
 			]
+		},
+		'logic.mix-color': {
+			mode: [
+				{ value: 'mix', label: 'Mix' },
+				{ value: 'darken', label: 'Darken' },
+				{ value: 'multiply', label: 'Multiply' },
+				{ value: 'color-burn', label: 'Color Burn' },
+				{ value: 'lighten', label: 'Lighten' },
+				{ value: 'screen', label: 'Screen' },
+				{ value: 'color-dodge', label: 'Color Dodge' },
+				{ value: 'add', label: 'Add' },
+				{ value: 'overlay', label: 'Overlay' },
+				{ value: 'soft-light', label: 'Soft Light' },
+				{ value: 'linear-light', label: 'Linear Light' },
+				{ value: 'difference', label: 'Difference' },
+				{ value: 'exclusion', label: 'Exclusion' },
+				{ value: 'subtract', label: 'Subtract' },
+				{ value: 'divide', label: 'Divide' },
+				{ value: 'hue', label: 'Hue' },
+				{ value: 'saturation', label: 'Saturation' },
+				{ value: 'color', label: 'Color' },
+				{ value: 'value', label: 'Value' }
+			]
 		}
 	};
 

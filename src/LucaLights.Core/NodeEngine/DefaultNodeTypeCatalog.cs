@@ -180,14 +180,17 @@ public sealed class DefaultNodeTypeCatalog : INodeTypeCatalog
             "logic.mix-color",
             "Mix Color",
             "Math",
-            "Blends between two colors using a factor from 0 to 1.",
+            "Blends between two colors using a selectable blend mode and factor from 0 to 1.",
             [
                 Input("a", "A", NodeValueType.Color, "The first color input."),
                 Input("b", "B", NodeValueType.Color, "The second color input."),
                 Input("factor", "Factor", NodeValueType.Float, "Blend amount from 0 to 1.")
             ],
             [Output("color", "Color", NodeValueType.Color, "The mixed color.")],
-            [Property("factor", "Factor", NodeValueType.Float, "Fallback blend amount from 0 to 1 when no factor input is connected.", 0.5, 0, 1)]);
+            [
+                Property("mode", "Mode", NodeValueType.String, "Blend mode used to combine A and B.", "mix"),
+                Property("factor", "Factor", NodeValueType.Float, "Fallback blend amount from 0 to 1 when no factor input is connected.", 0.5, 0, 1)
+            ]);
     }
 
     private static NodeTypeDefinition SelectFloat()
