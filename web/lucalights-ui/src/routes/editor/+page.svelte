@@ -817,6 +817,13 @@
 			return;
 		}
 
+		if (key === 'd') {
+			if (copySelectionToClipboard() && pasteClipboardSelection()) {
+				event.preventDefault();
+			}
+			return;
+		}
+
 		if (key === 'v') {
 			if (pasteClipboardSelection()) {
 				event.preventDefault();
