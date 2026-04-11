@@ -11,8 +11,13 @@ public sealed class GraphRuntimeEvaluator
 
     private readonly record struct HsvColor(float Hue, float Saturation, float Value);
 
+    public readonly record struct PixelContext(int Index, int Length, float Normalized);
+
     private readonly NodeGraphCompiler _nodeGraphCompiler;
     private readonly INodeTypeCatalog _nodeTypeCatalog;
+
+    private PixelContext? _currentPixel;
+    private Segment? _currentSegment;
 
     public GraphRuntimeEvaluator(
         NodeGraphCompiler nodeGraphCompiler,
@@ -72,7 +77,96 @@ public sealed class GraphRuntimeEvaluator
             return;
         }
 
+        if (preparedEffect.HasPixelInfoNodes)
+        {
+            RenderPerPixel(settings, preparedEffect, frameContext);
+        }
+        else
+        {
+            var outputs = new Dictionary<string, RuntimeValue>(StringComparer.OrdinalIgnoreCase);
+            EvaluateGraph(settings, preparedEffect, frameContext, outputs);
+        }
+    }
+
+    private void RenderPerPixel(
+        Settings settings,
+        PreparedGraph preparedEffect,
+        LightingFrameContext frameContext)
+    {
+        var segments = CollectTargetSegments(settings, preparedEffect);
         var outputs = new Dictionary<string, RuntimeValue>(StringComparer.OrdinalIgnoreCase);
+
+        foreach (var segment in segments)
+        {
+            var length = segment.Leds.Length;
+            if (length == 0)
+            {
+                continue;
+            }
+
+            for (var i = 0; i < length; i++)
+            {
+                var normalized = length > 1 ? (float)i / (length - 1) : 0f;
+                _currentPixel = new PixelContext(i, length, normalized);
+                _currentSegment = segment;
+
+                outputs.Clear();
+                EvaluateGraph(settings, preparedEffect, frameContext, outputs);
+            }
+        }
+
+        _currentPixel = null;
+        _currentSegment = null;
+    }
+
+    private static HashSet<Segment> CollectTargetSegments(Settings settings, PreparedGraph preparedEffect)
+    {
+        var segments = new HashSet<Segment>();
+
+        foreach (var node in preparedEffect.CompiledGraph.EvaluationOrder)
+        {
+            if (!node.TypeId.StartsWith("output.", StringComparison.Ordinal))
+            {
+                continue;
+            }
+
+            var deviceIds = ParseStringSet(ReadString(node.Properties, "deviceIds", string.Empty));
+            var segmentIds = ParseStringSet(ReadString(node.Properties, "segmentIds", string.Empty));
+            var groupIds = ParseIntSet(ReadString(node.Properties, "groupIds", string.Empty));
+
+            foreach (var device in settings.Devices)
+            {
+                if (deviceIds.Count > 0 && !deviceIds.Contains(device.Id))
+                {
+                    continue;
+                }
+
+                foreach (var segment in device.Segments)
+                {
+                    if (segmentIds.Count > 0 && !segmentIds.Contains(segment.Id))
+                    {
+                        continue;
+                    }
+
+                    if (groupIds.Count > 0 && !segment.GroupIds.Any(groupIds.Contains))
+                    {
+                        continue;
+                    }
+
+                    segments.Add(segment);
+                }
+            }
+        }
+
+        return segments;
+    }
+
+    private void EvaluateGraph(
+        Settings settings,
+        PreparedGraph preparedEffect,
+        LightingFrameContext frameContext,
+        Dictionary<string, RuntimeValue> outputs)
+    {
         var totalSeconds = (float)frameContext.TotalElapsed.TotalSeconds;
 
         foreach (var node in preparedEffect.CompiledGraph.EvaluationOrder)
@@ -108,6 +202,15 @@ public sealed class GraphRuntimeEvaluator
                     outputs[BuildOutputKey(node.Id, "value")] = RuntimeValue.FromColor(
                         ReadMergedColor(frameContext.InputSnapshot, node.Properties));
                     break;
+
+                case "pixel.info":
+                {
+                    var px = _currentPixel ?? new PixelContext(0, 1, 0f);
+                    outputs[BuildOutputKey(node.Id, "index")] = RuntimeValue.FromFloat(px.Index);
+                    outputs[BuildOutputKey(node.Id, "length")] = RuntimeValue.FromFloat(px.Length);
+                    outputs[BuildOutputKey(node.Id, "normalized")] = RuntimeValue.FromFloat(px.Normalized);
+                    break;
+                }
 
                 case "logic.select-color":
                 {
@@ -386,8 +489,18 @@ public sealed class GraphRuntimeEvaluator
         return $"{nodeId}:{portId}";
     }
 
-    private static void ApplySegmentColor(Settings settings, NodeInstance node, Color color)
+    private void ApplySegmentColor(Settings settings, NodeInstance node, Color color)
     {
+        if (_currentPixel is { } px && _currentSegment is not null)
+        {
+            if (px.Index < _currentSegment.Leds.Length)
+            {
+                _currentSegment.Leds[px.Index] = color;
+            }
+
+            return;
+        }
+
         var deviceIds = ParseStringSet(ReadString(node.Properties, "deviceIds", string.Empty));
         var segmentIds = ParseStringSet(ReadString(node.Properties, "segmentIds", string.Empty));
         var groupIds = ParseIntSet(ReadString(node.Properties, "groupIds", string.Empty));
@@ -588,8 +701,19 @@ public sealed class GraphRuntimeEvaluator
         };
     }
 
-    private static void ApplySegmentGradient(Settings settings, NodeInstance node, Color colorA, Color colorB, float offset)
+    private void ApplySegmentGradient(Settings settings, NodeInstance node, Color colorA, Color colorB, float offset)
     {
+        if (_currentPixel is { } px && _currentSegment is not null)
+        {
+            if (px.Index < _currentSegment.Leds.Length)
+            {
+                var shifted = ((px.Normalized + offset) % 1f + 1f) % 1f;
+                _currentSegment.Leds[px.Index] = MixColors(colorA, colorB, shifted);
+            }
+
+            return;
+        }
+
         var deviceIds = ParseStringSet(ReadString(node.Properties, "deviceIds", string.Empty));
         var segmentIds = ParseStringSet(ReadString(node.Properties, "segmentIds", string.Empty));
         var groupIds = ParseIntSet(ReadString(node.Properties, "groupIds", string.Empty));
@@ -906,6 +1030,9 @@ public sealed record PreparedGraph(
     private readonly Dictionary<string, EnvelopeState> _envelopeStates = new(StringComparer.OrdinalIgnoreCase);
 
     public bool CanRender => CompiledGraph.Validation.IsValid && CompiledGraph.EvaluationOrder.Count > 0;
+
+    public bool HasPixelInfoNodes { get; } = CompiledGraph.EvaluationOrder
+        .Any(node => node.TypeId == "pixel.info");
 
     public bool TryGetInputSource(string nodeId, string portId, out RuntimeConnectionSource source)
     {

@@ -39,6 +39,7 @@ public sealed class DefaultNodeTypeCatalog : INodeTypeCatalog
             TimeOscillator(),
             TimePulse(),
             TimeEnvelope(),
+            PixelInfo(),
             SegmentColorOutput(),
             SegmentGradientOutput()
         ];
@@ -504,6 +505,22 @@ public sealed class DefaultNodeTypeCatalog : INodeTypeCatalog
             ],
             [Output("value", "Value", NodeValueType.Float, "1 while held, fading to 0 after release.")],
             [Property("release", "Release", NodeValueType.Float, "Fallback release duration in seconds.", 0.5, 0, 10)]);
+    }
+
+    private static NodeTypeDefinition PixelInfo()
+    {
+        return new NodeTypeDefinition(
+            "pixel.info",
+            "Pixel Info",
+            "Segment",
+            "Outputs the current pixel index, segment length, and normalized position (0-1) when evaluated per-pixel.",
+            [],
+            [
+                Output("index", "Index", NodeValueType.Float, "Zero-based pixel index within the segment."),
+                Output("length", "Length", NodeValueType.Float, "Total number of LEDs in the segment."),
+                Output("normalized", "Normalized", NodeValueType.Float, "Pixel position normalized to 0-1 range.")
+            ],
+            []);
     }
 
     private static NodeTypeDefinition SegmentGradientOutput()
