@@ -29,6 +29,8 @@ public sealed class DefaultNodeTypeCatalog : INodeTypeCatalog
             MathMultiply(),
             MathClamp(),
             MathRemap(),
+            MathWrap(),
+            MathPingPong(),
             MathModulo(),
             MathAbs(),
             MathStep(),
@@ -358,6 +360,44 @@ public sealed class DefaultNodeTypeCatalog : INodeTypeCatalog
                 Property("inMax", "In Max", NodeValueType.Float, "Input range maximum.", 1),
                 Property("outMin", "Out Min", NodeValueType.Float, "Output range minimum.", 0),
                 Property("outMax", "Out Max", NodeValueType.Float, "Output range maximum.", 1)
+            ]);
+    }
+
+    private static NodeTypeDefinition MathWrap()
+    {
+        return new NodeTypeDefinition(
+            "math.wrap",
+            "Wrap",
+            "Math",
+            "Repeats a value inside a range by wrapping it back to the minimum after it passes the maximum.",
+            [
+                Input("value", "Value", NodeValueType.Float, "The value to wrap."),
+                Input("min", "Min", NodeValueType.Float, "Lower bound of the wrap range."),
+                Input("max", "Max", NodeValueType.Float, "Upper bound of the wrap range.")
+            ],
+            [Output("value", "Value", NodeValueType.Float, "The wrapped value.")],
+            [
+                Property("value", "Value", NodeValueType.Float, "Fallback input value.", 0),
+                Property("min", "Min", NodeValueType.Float, "Fallback minimum.", 0),
+                Property("max", "Max", NodeValueType.Float, "Fallback maximum.", 1)
+            ]);
+    }
+
+    private static NodeTypeDefinition MathPingPong()
+    {
+        return new NodeTypeDefinition(
+            "math.ping-pong",
+            "Ping-Pong",
+            "Math",
+            "Repeats a value by bouncing it back and forth between 0 and the scale.",
+            [
+                Input("value", "Value", NodeValueType.Float, "The value to ping-pong."),
+                Input("scale", "Scale", NodeValueType.Float, "Maximum bounce distance.")
+            ],
+            [Output("value", "Value", NodeValueType.Float, "The ping-ponged value.")],
+            [
+                Property("value", "Value", NodeValueType.Float, "Fallback input value.", 0),
+                Property("scale", "Scale", NodeValueType.Float, "Fallback bounce scale.", 1)
             ]);
     }
 

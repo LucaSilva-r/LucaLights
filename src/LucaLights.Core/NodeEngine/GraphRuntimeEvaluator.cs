@@ -312,6 +312,23 @@ public sealed class GraphRuntimeEvaluator
                     break;
                 }
 
+                case "math.wrap":
+                {
+                    var value = GetInputFloat(preparedEffect, outputs, node.Id, "value", ReadFloat(node.Properties, "value", 0f));
+                    var min = GetInputFloat(preparedEffect, outputs, node.Id, "min", ReadFloat(node.Properties, "min", 0f));
+                    var max = GetInputFloat(preparedEffect, outputs, node.Id, "max", ReadFloat(node.Properties, "max", 1f));
+                    outputs[BuildOutputKey(node.Id, "value")] = RuntimeValue.FromFloat(WrapValue(value, min, max));
+                    break;
+                }
+
+                case "math.ping-pong":
+                {
+                    var value = GetInputFloat(preparedEffect, outputs, node.Id, "value", ReadFloat(node.Properties, "value", 0f));
+                    var scale = GetInputFloat(preparedEffect, outputs, node.Id, "scale", ReadFloat(node.Properties, "scale", 1f));
+                    outputs[BuildOutputKey(node.Id, "value")] = RuntimeValue.FromFloat(PingPongValue(value, scale));
+                    break;
+                }
+
                 case "math.modulo":
                 {
                     var value = GetInputFloat(preparedEffect, outputs, node.Id, "value", ReadFloat(node.Properties, "value", 0f));
@@ -654,6 +671,46 @@ public sealed class GraphRuntimeEvaluator
             (byte)Math.Clamp((int)MathF.Round(color.R * clamped), byte.MinValue, byte.MaxValue),
             (byte)Math.Clamp((int)MathF.Round(color.G * clamped), byte.MinValue, byte.MaxValue),
             (byte)Math.Clamp((int)MathF.Round(color.B * clamped), byte.MinValue, byte.MaxValue));
+    }
+
+    private static float WrapValue(float value, float min, float max)
+    {
+        if (max < min)
+        {
+            (min, max) = (max, min);
+        }
+
+        var span = max - min;
+        if (span <= 0f)
+        {
+            return min;
+        }
+
+        var wrapped = (value - min) % span;
+        if (wrapped < 0f)
+        {
+            wrapped += span;
+        }
+
+        return min + wrapped;
+    }
+
+    private static float PingPongValue(float value, float scale)
+    {
+        var amplitude = MathF.Abs(scale);
+        if (amplitude <= 0f)
+        {
+            return 0f;
+        }
+
+        var cycle = amplitude * 2f;
+        var wrapped = value % cycle;
+        if (wrapped < 0f)
+        {
+            wrapped += cycle;
+        }
+
+        return wrapped <= amplitude ? wrapped : cycle - wrapped;
     }
 
     private static Color SampleGradient(GradientStop[] stops, float factor, string interpolation)
