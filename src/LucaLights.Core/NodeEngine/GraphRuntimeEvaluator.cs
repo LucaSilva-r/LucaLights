@@ -214,17 +214,17 @@ public sealed class GraphRuntimeEvaluator
 
                 case "logic.select-color":
                 {
-                    var condition = GetInputBool(preparedEffect, outputs, node.Id, "condition");
+                    var condition = GetInputBool(preparedEffect, outputs, node.Id, "condition", ReadBool(node.Properties, "condition"));
                     var selectedColor = condition
-                        ? GetInputColor(preparedEffect, outputs, node.Id, "trueColor")
-                        : GetInputColor(preparedEffect, outputs, node.Id, "falseColor");
+                        ? GetInputColor(preparedEffect, outputs, node.Id, "trueColor", ReadColor(node.Properties, "trueColor", Color.FromRgb(255, 255, 255)))
+                        : GetInputColor(preparedEffect, outputs, node.Id, "falseColor", ReadColor(node.Properties, "falseColor", Color.Black));
                     outputs[BuildOutputKey(node.Id, "color")] = RuntimeValue.FromColor(selectedColor);
                     break;
                 }
 
                 case "logic.select-float":
                 {
-                    var condition = GetInputBool(preparedEffect, outputs, node.Id, "condition");
+                    var condition = GetInputBool(preparedEffect, outputs, node.Id, "condition", ReadBool(node.Properties, "condition"));
                     var value = condition
                         ? GetInputFloat(preparedEffect, outputs, node.Id, "true", ReadFloat(node.Properties, "true", 1f))
                         : GetInputFloat(preparedEffect, outputs, node.Id, "false", ReadFloat(node.Properties, "false", 0f));
@@ -234,23 +234,23 @@ public sealed class GraphRuntimeEvaluator
 
                 case "logic.not":
                 {
-                    var value = GetInputBool(preparedEffect, outputs, node.Id, "value");
+                    var value = GetInputBool(preparedEffect, outputs, node.Id, "value", ReadBool(node.Properties, "value"));
                     outputs[BuildOutputKey(node.Id, "value")] = RuntimeValue.FromBool(!value);
                     break;
                 }
 
                 case "logic.and":
                 {
-                    var a = GetInputBool(preparedEffect, outputs, node.Id, "a");
-                    var b = GetInputBool(preparedEffect, outputs, node.Id, "b");
+                    var a = GetInputBool(preparedEffect, outputs, node.Id, "a", ReadBool(node.Properties, "a"));
+                    var b = GetInputBool(preparedEffect, outputs, node.Id, "b", ReadBool(node.Properties, "b"));
                     outputs[BuildOutputKey(node.Id, "value")] = RuntimeValue.FromBool(a && b);
                     break;
                 }
 
                 case "logic.or":
                 {
-                    var a = GetInputBool(preparedEffect, outputs, node.Id, "a");
-                    var b = GetInputBool(preparedEffect, outputs, node.Id, "b");
+                    var a = GetInputBool(preparedEffect, outputs, node.Id, "a", ReadBool(node.Properties, "a"));
+                    var b = GetInputBool(preparedEffect, outputs, node.Id, "b", ReadBool(node.Properties, "b"));
                     outputs[BuildOutputKey(node.Id, "value")] = RuntimeValue.FromBool(a || b);
                     break;
                 }
@@ -272,8 +272,8 @@ public sealed class GraphRuntimeEvaluator
 
                 case "logic.mix-color":
                 {
-                    var colorA = GetInputColor(preparedEffect, outputs, node.Id, "a");
-                    var colorB = GetInputColor(preparedEffect, outputs, node.Id, "b");
+                    var colorA = GetInputColor(preparedEffect, outputs, node.Id, "a", ReadColor(node.Properties, "a", Color.Black));
+                    var colorB = GetInputColor(preparedEffect, outputs, node.Id, "b", ReadColor(node.Properties, "b", Color.FromRgb(255, 255, 255)));
                     var mode = ReadString(node.Properties, "mode", "mix");
                     var factor = GetInputFloat(
                         preparedEffect,
@@ -360,7 +360,7 @@ public sealed class GraphRuntimeEvaluator
 
                 case "color.brightness":
                 {
-                    var color = GetInputColor(preparedEffect, outputs, node.Id, "color");
+                    var color = GetInputColor(preparedEffect, outputs, node.Id, "color", ReadColor(node.Properties, "color", Color.FromRgb(255, 255, 255)));
                     var factor = GetInputFloat(preparedEffect, outputs, node.Id, "factor", ReadFloat(node.Properties, "factor", 1f));
                     outputs[BuildOutputKey(node.Id, "color")] = RuntimeValue.FromColor(ScaleColor(color, factor));
                     break;
@@ -401,7 +401,7 @@ public sealed class GraphRuntimeEvaluator
 
                 case "time.pulse":
                 {
-                    var trigger = GetInputBool(preparedEffect, outputs, node.Id, "trigger");
+                    var trigger = GetInputBool(preparedEffect, outputs, node.Id, "trigger", ReadBool(node.Properties, "trigger"));
                     var duration = GetInputFloat(preparedEffect, outputs, node.Id, "duration", ReadFloat(node.Properties, "duration", 0.5f));
                     var edge = ReadString(node.Properties, "edge", "rising");
                     var pulseState = preparedEffect.GetOrCreatePulseState(node.Id);
@@ -412,7 +412,7 @@ public sealed class GraphRuntimeEvaluator
 
                 case "time.envelope":
                 {
-                    var trigger = GetInputBool(preparedEffect, outputs, node.Id, "trigger");
+                    var trigger = GetInputBool(preparedEffect, outputs, node.Id, "trigger", ReadBool(node.Properties, "trigger"));
                     var release = GetInputFloat(preparedEffect, outputs, node.Id, "release", ReadFloat(node.Properties, "release", 0.5f));
                     var envelopeState = preparedEffect.GetOrCreateEnvelopeState(node.Id);
                     envelopeState.Update(trigger, totalSeconds, release);
@@ -424,15 +424,15 @@ public sealed class GraphRuntimeEvaluator
                     ApplySegmentColor(
                         settings,
                         node,
-                        GetInputColor(preparedEffect, outputs, node.Id, "color"));
+                        GetInputColor(preparedEffect, outputs, node.Id, "color", ReadColor(node.Properties, "color", Color.FromRgb(255, 255, 255))));
                     break;
 
                 case "output.segment-gradient":
                     ApplySegmentGradient(
                         settings,
                         node,
-                        GetInputColor(preparedEffect, outputs, node.Id, "colorA"),
-                        GetInputColor(preparedEffect, outputs, node.Id, "colorB"),
+                        GetInputColor(preparedEffect, outputs, node.Id, "colorA", ReadColor(node.Properties, "colorA", Color.Black)),
+                        GetInputColor(preparedEffect, outputs, node.Id, "colorB", ReadColor(node.Properties, "colorB", Color.FromRgb(255, 255, 255))),
                         GetInputFloat(preparedEffect, outputs, node.Id, "offset", ReadFloat(node.Properties, "offset", 0f)));
                     break;
             }
@@ -631,6 +631,53 @@ public sealed class GraphRuntimeEvaluator
             ReadByte(properties, "r", 255),
             ReadByte(properties, "g", 255),
             ReadByte(properties, "b", 255));
+    }
+
+    private static Color ReadColor(JsonObject properties, string key, Color defaultValue)
+    {
+        var node = properties[key];
+        if (node is JsonObject obj)
+        {
+            return Color.FromRgb(
+                ReadByte(obj, "r", defaultValue.R),
+                ReadByte(obj, "g", defaultValue.G),
+                ReadByte(obj, "b", defaultValue.B));
+        }
+
+        if (node is JsonValue stringNode
+            && stringNode.TryGetValue<string>(out var hex)
+            && TryParseHexColor(hex, out var parsed))
+        {
+            return parsed;
+        }
+
+        return defaultValue;
+    }
+
+    private static bool TryParseHexColor(string value, out Color color)
+    {
+        color = Color.Black;
+        var trimmed = value.Trim();
+        if (trimmed.StartsWith('#'))
+        {
+            trimmed = trimmed[1..];
+        }
+
+        if (trimmed.Length == 3)
+        {
+            trimmed = string.Concat(trimmed.Select(ch => $"{ch}{ch}"));
+        }
+
+        if (trimmed.Length != 6
+            || !byte.TryParse(trimmed[..2], System.Globalization.NumberStyles.HexNumber, null, out var r)
+            || !byte.TryParse(trimmed.Substring(2, 2), System.Globalization.NumberStyles.HexNumber, null, out var g)
+            || !byte.TryParse(trimmed.Substring(4, 2), System.Globalization.NumberStyles.HexNumber, null, out var b))
+        {
+            return false;
+        }
+
+        color = Color.FromRgb(r, g, b);
+        return true;
     }
 
     private static Color ScaleColor(Color color, float factor)

@@ -1,6 +1,7 @@
 <script lang="ts">
 	import { Plus, Minus } from '@lucide/svelte';
 	import ColorPickerPanel from './ColorPickerPanel.svelte';
+	import NodeNumberInput from './NodeNumberInput.svelte';
 	import { rgbToHex } from './color-utils';
 
 	export interface GradientStop {
@@ -240,9 +241,7 @@
 		emit(next);
 	}
 
-	function handlePosInput(event: Event) {
-		const value = parseFloat((event.currentTarget as HTMLInputElement).value);
-		if (!Number.isFinite(value)) return;
+	function handlePosChange(value: number) {
 		const pos = Math.max(0, Math.min(1, value));
 		const next = stops.map((s, i) =>
 			i === selectedOriginalIndex ? { ...s, p: Math.round(pos * 100) / 100 } : s
@@ -306,17 +305,17 @@
 	<!-- Selected stop info -->
 	{#if selectedStop}
 		<div class="flex items-center gap-2">
-			<span class="text-[11px] text-muted-foreground tabular-nums">{selectedSortedIndex + 1}</span>
+			<span class="w-4 shrink-0 text-[11px] text-muted-foreground tabular-nums">{selectedSortedIndex + 1}</span>
 
-			<span class="text-[11px] text-muted-foreground">Pos</span>
-			<input
-				class="h-6 w-14 rounded-md border border-border/70 bg-background/90 px-1.5 text-right text-[11px] tabular-nums shadow-sm outline-none transition focus:border-ring focus:ring-4 focus:ring-ring/20"
-				type="number"
-				min="0"
-				max="1"
-				step="0.01"
-				value={selectedStop.p.toFixed(3)}
-				oninput={handlePosInput}
+			<NodeNumberInput
+				className="min-w-0 flex-1"
+				label="Pos"
+				value={selectedStop.p}
+				min={0}
+				max={1}
+				step={0.01}
+				precision={3}
+				onchange={handlePosChange}
 			/>
 
 			<!-- Color swatch opens floating picker -->

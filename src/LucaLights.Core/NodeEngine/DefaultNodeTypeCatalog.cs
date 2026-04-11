@@ -173,7 +173,11 @@ public sealed class DefaultNodeTypeCatalog : INodeTypeCatalog
                 Input("falseColor", "False", NodeValueType.Color, "Color to output when the condition is false.")
             ],
             [Output("color", "Color", NodeValueType.Color, "The selected color.")],
-            []);
+            [
+                Property("condition", "Condition", NodeValueType.Bool, "Fallback condition when no condition input is connected.", false),
+                ColorProperty("trueColor", "True", "Fallback color when the condition is true.", 255, 255, 255),
+                ColorProperty("falseColor", "False", "Fallback color when the condition is false.", 0, 0, 0)
+            ]);
     }
 
     private static NodeTypeDefinition MixColor()
@@ -190,6 +194,8 @@ public sealed class DefaultNodeTypeCatalog : INodeTypeCatalog
             ],
             [Output("color", "Color", NodeValueType.Color, "The mixed color.")],
             [
+                ColorProperty("a", "A", "Fallback color for A.", 0, 0, 0),
+                ColorProperty("b", "B", "Fallback color for B.", 255, 255, 255),
                 Property("mode", "Mode", NodeValueType.String, "Blend mode used to combine A and B.", "mix"),
                 Property("factor", "Factor", NodeValueType.Float, "Fallback blend amount from 0 to 1 when no factor input is connected.", 0.5, 0, 1)
             ]);
@@ -209,6 +215,7 @@ public sealed class DefaultNodeTypeCatalog : INodeTypeCatalog
             ],
             [Output("value", "Value", NodeValueType.Float, "The selected value.")],
             [
+                Property("condition", "Condition", NodeValueType.Bool, "Fallback condition when no condition input is connected.", false),
                 Property("true", "True", NodeValueType.Float, "Fallback value when condition is true.", 1),
                 Property("false", "False", NodeValueType.Float, "Fallback value when condition is false.", 0)
             ]);
@@ -223,7 +230,7 @@ public sealed class DefaultNodeTypeCatalog : INodeTypeCatalog
             "Inverts a boolean value.",
             [Input("value", "Value", NodeValueType.Bool, "The boolean to invert.")],
             [Output("value", "Value", NodeValueType.Bool, "The inverted boolean.")],
-            []);
+            [Property("value", "Value", NodeValueType.Bool, "Fallback input value.", false)]);
     }
 
     private static NodeTypeDefinition LogicAnd()
@@ -238,7 +245,10 @@ public sealed class DefaultNodeTypeCatalog : INodeTypeCatalog
                 Input("b", "B", NodeValueType.Bool, "Second boolean input.")
             ],
             [Output("value", "Value", NodeValueType.Bool, "True when both inputs are true.")],
-            []);
+            [
+                Property("a", "A", NodeValueType.Bool, "Fallback value for A.", false),
+                Property("b", "B", NodeValueType.Bool, "Fallback value for B.", false)
+            ]);
     }
 
     private static NodeTypeDefinition LogicOr()
@@ -253,7 +263,10 @@ public sealed class DefaultNodeTypeCatalog : INodeTypeCatalog
                 Input("b", "B", NodeValueType.Bool, "Second boolean input.")
             ],
             [Output("value", "Value", NodeValueType.Bool, "True when either input is true.")],
-            []);
+            [
+                Property("a", "A", NodeValueType.Bool, "Fallback value for A.", false),
+                Property("b", "B", NodeValueType.Bool, "Fallback value for B.", false)
+            ]);
     }
 
     private static NodeTypeDefinition LogicCompare()
@@ -425,7 +438,10 @@ public sealed class DefaultNodeTypeCatalog : INodeTypeCatalog
                 Input("factor", "Factor", NodeValueType.Float, "Brightness multiplier.")
             ],
             [Output("color", "Color", NodeValueType.Color, "The brightness-adjusted color.")],
-            [Property("factor", "Factor", NodeValueType.Float, "Fallback brightness factor.", 1, 0, 2)]);
+            [
+                ColorProperty("color", "Color", "Fallback input color.", 255, 255, 255),
+                Property("factor", "Factor", NodeValueType.Float, "Fallback brightness factor.", 1, 0, 2)
+            ]);
     }
 
     private static NodeTypeDefinition ColorHsv()
@@ -506,6 +522,7 @@ public sealed class DefaultNodeTypeCatalog : INodeTypeCatalog
             ],
             [Output("value", "Value", NodeValueType.Float, "The pulse value from 1 to 0.")],
             [
+                Property("trigger", "Trigger", NodeValueType.Bool, "Fallback trigger state.", false),
                 Property("duration", "Duration", NodeValueType.Float, "Fallback pulse duration in seconds.", 0.5, 0, 10),
                 Property("edge", "Edge", NodeValueType.String, "Which edge triggers the pulse: rising or falling.", "rising")
             ]);
@@ -523,7 +540,10 @@ public sealed class DefaultNodeTypeCatalog : INodeTypeCatalog
                 Input("release", "Release", NodeValueType.Float, "Fade duration in seconds after release.")
             ],
             [Output("value", "Value", NodeValueType.Float, "1 while held, fading to 0 after release.")],
-            [Property("release", "Release", NodeValueType.Float, "Fallback release duration in seconds.", 0.5, 0, 10)]);
+            [
+                Property("trigger", "Trigger", NodeValueType.Bool, "Fallback trigger state.", false),
+                Property("release", "Release", NodeValueType.Float, "Fallback release duration in seconds.", 0.5, 0, 10)
+            ]);
     }
 
     private static NodeTypeDefinition PixelInfo()
@@ -556,6 +576,8 @@ public sealed class DefaultNodeTypeCatalog : INodeTypeCatalog
             ],
             [],
             [
+                ColorProperty("colorA", "Color A", "Fallback gradient start color.", 0, 0, 0),
+                ColorProperty("colorB", "Color B", "Fallback gradient end color.", 255, 255, 255),
                 Property("offset", "Offset", NodeValueType.Float, "Fallback scroll offset.", 0, 0, 1),
                 Property("deviceIds", "Device IDs", NodeValueType.String, "Comma-separated device IDs. Empty means all devices.", string.Empty),
                 Property("segmentIds", "Segment IDs", NodeValueType.String, "Comma-separated segment IDs. Empty means all segments.", string.Empty),
@@ -573,6 +595,7 @@ public sealed class DefaultNodeTypeCatalog : INodeTypeCatalog
             [Input("color", "Color", NodeValueType.Color, "Color to write to the target segments.")],
             [],
             [
+                ColorProperty("color", "Color", "Fallback output color.", 255, 255, 255),
                 Property("deviceIds", "Device IDs", NodeValueType.String, "Comma-separated device IDs. Empty means all devices.", string.Empty),
                 Property("segmentIds", "Segment IDs", NodeValueType.String, "Comma-separated segment IDs. Empty means all segments.", string.Empty),
                 Property("groupIds", "Group IDs", NodeValueType.String, "Comma-separated group IDs. Empty means all groups.", string.Empty)
@@ -628,5 +651,26 @@ public sealed class DefaultNodeTypeCatalog : INodeTypeCatalog
             defaultValue,
             minFloatValue,
             maxFloatValue);
+    }
+
+    private static NodePropertyDefinition ColorProperty(
+        string key,
+        string label,
+        string description,
+        byte r,
+        byte g,
+        byte b)
+    {
+        return Property(
+            key,
+            label,
+            NodeValueType.Color,
+            description,
+            new JsonObject
+            {
+                ["r"] = r,
+                ["g"] = g,
+                ["b"] = b
+            });
     }
 }

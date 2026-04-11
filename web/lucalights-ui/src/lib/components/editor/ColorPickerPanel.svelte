@@ -9,6 +9,7 @@
 		type HsvColor,
 		type RgbColor
 	} from './color-utils';
+	import NodeNumberInput from './NodeNumberInput.svelte';
 
 	const DEFAULT_HEX = '#ffffff';
 
@@ -213,37 +214,40 @@
 
 		<label class="space-y-1">
 			<span class="text-[10px] font-semibold uppercase tracking-[0.18em] text-muted-foreground">R</span>
-			<input
-				class="h-9 w-full rounded-lg border border-white/10 bg-black/35 px-2.5 text-center font-mono text-[13px] text-foreground outline-none transition focus:border-primary/50 focus:ring-2 focus:ring-primary/20"
-				type="number"
-				min="0"
-				max="255"
+			<NodeNumberInput
+				className="h-9 rounded-lg border-white/10 bg-black/35 font-mono text-[13px]"
 				value={previewRgb.r}
-				oninput={(event) => handleRgbInput('r', event)}
+				min={0}
+				max={255}
+				step={1}
+				precision={0}
+				onchange={(next) => commitRgb({ ...previewRgb, r: next })}
 			/>
 		</label>
 
 		<label class="space-y-1">
 			<span class="text-[10px] font-semibold uppercase tracking-[0.18em] text-muted-foreground">G</span>
-			<input
-				class="h-9 w-full rounded-lg border border-white/10 bg-black/35 px-2.5 text-center font-mono text-[13px] text-foreground outline-none transition focus:border-primary/50 focus:ring-2 focus:ring-primary/20"
-				type="number"
-				min="0"
-				max="255"
+			<NodeNumberInput
+				className="h-9 rounded-lg border-white/10 bg-black/35 font-mono text-[13px]"
 				value={previewRgb.g}
-				oninput={(event) => handleRgbInput('g', event)}
+				min={0}
+				max={255}
+				step={1}
+				precision={0}
+				onchange={(next) => commitRgb({ ...previewRgb, g: next })}
 			/>
 		</label>
 
 		<label class="space-y-1">
 			<span class="text-[10px] font-semibold uppercase tracking-[0.18em] text-muted-foreground">B</span>
-			<input
-				class="h-9 w-full rounded-lg border border-white/10 bg-black/35 px-2.5 text-center font-mono text-[13px] text-foreground outline-none transition focus:border-primary/50 focus:ring-2 focus:ring-primary/20"
-				type="number"
-				min="0"
-				max="255"
+			<NodeNumberInput
+				className="h-9 rounded-lg border-white/10 bg-black/35 font-mono text-[13px]"
 				value={previewRgb.b}
-				oninput={(event) => handleRgbInput('b', event)}
+				min={0}
+				max={255}
+				step={1}
+				precision={0}
+				onchange={(next) => commitRgb({ ...previewRgb, b: next })}
 			/>
 		</label>
 	</div>

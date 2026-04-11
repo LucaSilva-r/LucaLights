@@ -1,8 +1,9 @@
 <script lang="ts">
 	import { Handle, Position, type NodeProps } from '@xyflow/svelte';
-	import type { NodePortDefinition, NodePropertyDefinition } from '$lib/lucalights';
+	import type { ColorValue, NodePortDefinition, NodePropertyDefinition } from '$lib/lucalights';
 	import InputChannelPicker from './InputChannelPicker.svelte';
 	import NodeColorPicker from './NodeColorPicker.svelte';
+	import NodeNumberInput from './NodeNumberInput.svelte';
 	import GradientEditor, { type GradientStop } from './GradientEditor.svelte';
 	import type { EditorFlowNode } from './types';
 
@@ -81,6 +82,10 @@
 			property.maxFloatValue <= 1;
 
 		return hasFractionalBounds || hasFractionalDefault || isNormalizedRange ? '0.01' : '1';
+	}
+
+	function floatPrecisionFor(property: NodePropertyDefinition) {
+		return floatStepFor(property) === '1' ? 0 : 3;
 	}
 
 	function hasRange(property: NodePropertyDefinition) {
@@ -166,6 +171,44 @@
 		setProperty('r', parseInt(normalized.slice(0, 2), 16));
 		setProperty('g', parseInt(normalized.slice(2, 4), 16));
 		setProperty('b', parseInt(normalized.slice(4, 6), 16));
+	}
+
+	function propertyColorValue(property: NodePropertyDefinition): ColorValue {
+		const raw = data.properties[property.key] ?? property.defaultValue;
+		if (
+			raw &&
+			typeof raw === 'object' &&
+			'r' in raw &&
+			'g' in raw &&
+			'b' in raw
+		) {
+			const color = raw as { r?: unknown; g?: unknown; b?: unknown };
+			return {
+				r: Math.max(0, Math.min(255, Number(color.r ?? 255))),
+				g: Math.max(0, Math.min(255, Number(color.g ?? 255))),
+				b: Math.max(0, Math.min(255, Number(color.b ?? 255)))
+			};
+		}
+
+		return { r: 255, g: 255, b: 255 };
+	}
+
+	function propertyColorHex(property: NodePropertyDefinition) {
+		const color = propertyColorValue(property);
+		return `#${toHex(color.r)}${toHex(color.g)}${toHex(color.b)}`;
+	}
+
+	function setColorPropertyFromHex(key: string, hex: string) {
+		const normalized = hex.replace('#', '');
+		if (normalized.length !== 6) {
+			return;
+		}
+
+		setProperty(key, {
+			r: parseInt(normalized.slice(0, 2), 16),
+			g: parseInt(normalized.slice(2, 4), 16),
+			b: parseInt(normalized.slice(4, 6), 16)
+		});
 	}
 
 	function csvValues(key: string) {
@@ -395,6 +438,10 @@
 		return data.typeId === 'constant.color' && input.valueType === 'Color';
 	}
 
+	function isConstantColorNode(typeId: string) {
+		return typeId === 'constant.color';
+	}
+
 	function handleSliderPointer(event: PointerEvent, property: NodePropertyDefinition) {
 		const target = event.currentTarget as HTMLElement;
 		target.setPointerCapture(event.pointerId);
@@ -482,12 +529,18 @@
 	{:else if property.valueType === 'Float' && hasRange(property)}
 		{@render sliderField(property, label)}
 	{:else if property.valueType === 'Float'}
-		<input
-			class={inlineInputClass}
-			type="number"
-			step={floatStepFor(property)}
+		<NodeNumberInput
+			className="flex-1"
 			value={numberValue(property.key, Number(valueFor(property) ?? 0))}
-			oninput={(event) => setProperty(property.key, Number((event.currentTarget as HTMLInputElement).value))}
+			step={Number(floatStepFor(property))}
+			precision={floatPrecisionFor(property)}
+			onchange={(next) => setProperty(property.key, next)}
+		/>
+	{:else if property.valueType === 'Color'}
+		<NodeColorPicker
+			hex={propertyColorHex(property)}
+			label={label}
+			onchange={(hex) => setColorPropertyFromHex(property.key, hex)}
 		/>
 	{:else}
 		<input
@@ -588,12 +641,13 @@
 		<div class="border-b border-border/60 py-1">
 			{#each data.outputs as output}
 				{@const property = propertyMap.get(output.id)}
+				{@const editableOutputProperty = data.inputs.length === 0 ? property : undefined}
 				<div
 					class="relative flex min-h-7 items-center gap-2 px-3 pr-4 text-foreground/90 transition hover:bg-surface-subtle-hover"
 					title={portTooltip(output.label, output.valueType, output.description)}
 				>
-					{#if property}
-						{@render inlineEditor(property, output.label)}
+					{#if editableOutputProperty}
+						{@render inlineEditor(editableOutputProperty, output.label)}
 					{:else}
 						<p class="min-w-0 flex-1 truncate text-right text-[13px] font-medium">{output.label}</p>
 					{/if}
@@ -617,13 +671,14 @@
 				{@const property = propertyMap.get(input.id)}
 				{@const showEditor = !connected && property}
 				{@const isColor = isColorInput(input)}
+				{@const isPropertyColor = property?.valueType === 'Color'}
 
 				<div
 					class="relative py-0.5 text-foreground/90 transition hover:bg-surface-subtle-hover"
 					title={portTooltip(input.label, input.valueType, input.description)}
 				>
-					{#if showEditor && isColor}
-						<!-- Color constant: click-to-open color picker -->
+					{#if (showEditor && isPropertyColor) || isColor}
+						<!-- Color input: click-to-open color picker -->
 						<div class="px-3 pl-4">
 							<div class="relative">
 								<Handle
@@ -634,9 +689,9 @@
 									class={`${handleTone(input.valueType)} !h-2.5 !w-2.5 !border-0 !shadow-sm`}
 								/>
 								<NodeColorPicker
-									hex={colorHex}
+									hex={isColor ? colorHex : propertyColorHex(property!)}
 									label={input.label}
-									onchange={(hex) => setColorFromHex(hex)}
+									onchange={(hex) => isColor ? setColorFromHex(hex) : setColorPropertyFromHex(property!.key, hex)}
 								/>
 							</div>
 						</div>
@@ -720,6 +775,14 @@
 					></textarea>
 				</label>
 			{/if}
+		</div>
+	{:else if isConstantColorNode(data.typeId)}
+		<div class="border-t border-border/60 px-3 py-2">
+			<NodeColorPicker
+				hex={colorHex}
+				label="Color"
+				onchange={(hex) => setColorFromHex(hex)}
+			/>
 		</div>
 	{:else if isGradientNode(data.typeId)}
 		<div class="space-y-2 border-t border-border/60 px-3 py-2">
