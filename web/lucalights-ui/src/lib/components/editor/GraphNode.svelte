@@ -2,6 +2,8 @@
 	import { Handle, Position, type NodeProps } from '@xyflow/svelte';
 	import type { NodePortDefinition, NodePropertyDefinition } from '$lib/lucalights';
 	import InputChannelPicker from './InputChannelPicker.svelte';
+	import NodeColorPicker from './NodeColorPicker.svelte';
+	import GradientEditor, { type GradientStop } from './GradientEditor.svelte';
 	import type { EditorFlowNode } from './types';
 
 	let { id, data, selected = false }: NodeProps<EditorFlowNode> = $props();
@@ -240,6 +242,8 @@
 				return 'bg-orange-500 text-white';
 			case 'Color':
 				return 'bg-rose-500 text-white';
+			case 'Segment':
+				return 'bg-teal-500 text-white';
 			case 'Outputs':
 				return 'bg-emerald-500 text-white';
 			default:
@@ -249,6 +253,32 @@
 
 	function isOutputNode(typeId: string) {
 		return typeId === 'output.segment-color' || typeId === 'output.segment-gradient';
+	}
+
+	function isGradientNode(typeId: string) {
+		return typeId === 'color.gradient';
+	}
+
+	function parseGradientStops(json: string): GradientStop[] {
+		try {
+			const arr = JSON.parse(json);
+			if (Array.isArray(arr) && arr.length >= 1) {
+				return arr.map((s: Record<string, number>) => ({
+					p: s.p ?? 0,
+					r: s.r ?? 0,
+					g: s.g ?? 0,
+					b: s.b ?? 0
+				}));
+			}
+		} catch { /* fallthrough */ }
+		return [
+			{ p: 0, r: 0, g: 0, b: 0 },
+			{ p: 1, r: 255, g: 255, b: 255 }
+		];
+	}
+
+	function serializeGradientStops(stops: GradientStop[]): string {
+		return JSON.stringify(stops.map((s) => ({ p: s.p, r: s.r, g: s.g, b: s.b })));
 	}
 
 	function isCommentNode(typeId: string) {
@@ -302,6 +332,12 @@
 				{ value: 'greater', label: 'Greater than' },
 				{ value: 'less', label: 'Less than' },
 				{ value: 'equal', label: 'Equal' }
+			]
+		},
+		'color.gradient': {
+			interpolation: [
+				{ value: 'linear', label: 'Linear' },
+				{ value: 'constant', label: 'Constant' }
 			]
 		},
 		'logic.mix-color': {
@@ -587,23 +623,22 @@
 					title={portTooltip(input.label, input.valueType, input.description)}
 				>
 					{#if showEditor && isColor}
-						<!-- Color constant: color picker row -->
-						<div class="flex min-h-7 items-center gap-2 px-3 pl-4">
-							<Handle
-								type="target"
-								id={input.id}
-								position={Position.Left}
-								style="left: 0; top: 50%; transform: translate(-50%, -50%);"
-								class={`${handleTone(input.valueType)} !h-2.5 !w-2.5 !border-0 !shadow-sm`}
-							/>
-							<input
-								class="nodrag nopan h-7 w-8 cursor-pointer rounded-md border border-border/70 bg-transparent p-0.5"
-								type="color"
-								value={colorHex}
-								oninput={(event) => setColorFromHex((event.currentTarget as HTMLInputElement).value)}
-							/>
-							<span class="text-[12px] font-medium">{input.label}</span>
-							<span class="ml-auto font-mono text-[11px] text-muted-foreground">{colorHex}</span>
+						<!-- Color constant: click-to-open color picker -->
+						<div class="px-3 pl-4">
+							<div class="relative">
+								<Handle
+									type="target"
+									id={input.id}
+									position={Position.Left}
+									style="left: -12px; top: 14px; transform: translate(-50%, -50%);"
+									class={`${handleTone(input.valueType)} !h-2.5 !w-2.5 !border-0 !shadow-sm`}
+								/>
+								<NodeColorPicker
+									hex={colorHex}
+									label={input.label}
+									onchange={(hex) => setColorFromHex(hex)}
+								/>
+							</div>
 						</div>
 					{:else if showEditor && property.valueType === 'Float' && hasRange(property)}
 						<!-- Float with range: Blender-style slider fills the whole row -->
@@ -685,6 +720,26 @@
 					></textarea>
 				</label>
 			{/if}
+		</div>
+	{:else if isGradientNode(data.typeId)}
+		<div class="space-y-2 border-t border-border/60 px-3 py-2">
+			<GradientEditor
+				stops={parseGradientStops(stringValue('stops', '[]'))}
+				interpolation={stringValue('interpolation', 'linear')}
+				onchange={(next) => setProperty('stops', serializeGradientStops(next))}
+			/>
+			{#each standaloneProperties.filter((p) => p.key !== 'stops') as property}
+				<div class="space-y-1" title={propertyTooltip(property)}>
+					{#if property.valueType === 'Float' && hasRange(property)}
+						{@render sliderField(property, property.label)}
+					{:else}
+						<div class="flex h-7 items-center gap-2">
+							<span class="shrink-0 text-[12px] font-medium">{property.label}</span>
+							{@render inlineEditor(property, property.label)}
+						</div>
+					{/if}
+				</div>
+			{/each}
 		</div>
 	{:else if standaloneProperties.length > 0}
 		<div class="space-y-1 border-t border-border/60 px-3 py-2">

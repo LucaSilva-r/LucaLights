@@ -375,6 +375,17 @@ public sealed class GraphRuntimeEvaluator
                     break;
                 }
 
+                case "color.gradient":
+                {
+                    var factor = GetInputFloat(preparedEffect, outputs, node.Id, "factor", ReadFloat(node.Properties, "factor", 0.5f));
+                    var stopsJson = ReadString(node.Properties, "stops", string.Empty);
+                    var interpolation = ReadString(node.Properties, "interpolation", "linear");
+                    var stops = preparedEffect.GetOrCreateGradientStops(node.Id, stopsJson);
+                    outputs[BuildOutputKey(node.Id, "color")] = RuntimeValue.FromColor(
+                        SampleGradient(stops, factor, interpolation));
+                    break;
+                }
+
                 case "time.elapsed":
                     outputs[BuildOutputKey(node.Id, "seconds")] = RuntimeValue.FromFloat(totalSeconds);
                     break;
@@ -629,6 +640,56 @@ public sealed class GraphRuntimeEvaluator
             (byte)Math.Clamp((int)MathF.Round(color.R * clamped), byte.MinValue, byte.MaxValue),
             (byte)Math.Clamp((int)MathF.Round(color.G * clamped), byte.MinValue, byte.MaxValue),
             (byte)Math.Clamp((int)MathF.Round(color.B * clamped), byte.MinValue, byte.MaxValue));
+    }
+
+    private static Color SampleGradient(GradientStop[] stops, float factor, string interpolation)
+    {
+        if (stops.Length == 0)
+        {
+            return Color.Black;
+        }
+
+        if (stops.Length == 1)
+        {
+            return Color.FromRgb(stops[0].R, stops[0].G, stops[0].B);
+        }
+
+        var clamped = Math.Clamp(factor, stops[0].Position, stops[^1].Position);
+
+        if (clamped <= stops[0].Position)
+        {
+            return Color.FromRgb(stops[0].R, stops[0].G, stops[0].B);
+        }
+
+        if (clamped >= stops[^1].Position)
+        {
+            return Color.FromRgb(stops[^1].R, stops[^1].G, stops[^1].B);
+        }
+
+        for (var i = 0; i < stops.Length - 1; i++)
+        {
+            var a = stops[i];
+            var b = stops[i + 1];
+
+            if (clamped < a.Position || clamped > b.Position)
+            {
+                continue;
+            }
+
+            if (interpolation == "constant")
+            {
+                return Color.FromRgb(a.R, a.G, a.B);
+            }
+
+            var range = b.Position - a.Position;
+            var t = range == 0f ? 0f : (clamped - a.Position) / range;
+            return Color.FromRgb(
+                ToByte(a.R + ((b.R - a.R) * t)),
+                ToByte(a.G + ((b.G - a.G) * t)),
+                ToByte(a.B + ((b.B - a.B) * t)));
+        }
+
+        return Color.FromRgb(stops[^1].R, stops[^1].G, stops[^1].B);
     }
 
     private static Color HsvToColor(float hue, float saturation, float value)
@@ -1028,6 +1089,7 @@ public sealed record PreparedGraph(
 {
     private readonly Dictionary<string, PulseState> _pulseStates = new(StringComparer.OrdinalIgnoreCase);
     private readonly Dictionary<string, EnvelopeState> _envelopeStates = new(StringComparer.OrdinalIgnoreCase);
+    private readonly Dictionary<string, GradientStop[]> _gradientStopsCache = new(StringComparer.OrdinalIgnoreCase);
 
     public bool CanRender => CompiledGraph.Validation.IsValid && CompiledGraph.EvaluationOrder.Count > 0;
 
@@ -1062,6 +1124,84 @@ public sealed record PreparedGraph(
         }
 
         return state;
+    }
+
+    public GradientStop[] GetOrCreateGradientStops(string nodeId, string stopsJson)
+    {
+        if (_gradientStopsCache.TryGetValue(nodeId, out var cached))
+        {
+            return cached;
+        }
+
+        var stops = GradientStop.Parse(stopsJson);
+        _gradientStopsCache[nodeId] = stops;
+        return stops;
+    }
+}
+
+public readonly record struct GradientStop(float Position, byte R, byte G, byte B)
+{
+    private static readonly GradientStop[] DefaultStops =
+    [
+        new(0f, 0, 0, 0),
+        new(1f, 255, 255, 255)
+    ];
+
+    public static GradientStop[] Parse(string json)
+    {
+        if (string.IsNullOrWhiteSpace(json))
+        {
+            return DefaultStops;
+        }
+
+        try
+        {
+            var array = System.Text.Json.Nodes.JsonNode.Parse(json)?.AsArray();
+            if (array is null || array.Count == 0)
+            {
+                return DefaultStops;
+            }
+
+            var stops = new List<GradientStop>(array.Count);
+            foreach (var item in array)
+            {
+                if (item is not System.Text.Json.Nodes.JsonObject obj)
+                {
+                    continue;
+                }
+
+                var p = GetFloat(obj, "p", 0f);
+                var r = (byte)Math.Clamp(GetFloat(obj, "r", 0f), 0f, 255f);
+                var g = (byte)Math.Clamp(GetFloat(obj, "g", 0f), 0f, 255f);
+                var b = (byte)Math.Clamp(GetFloat(obj, "b", 0f), 0f, 255f);
+                stops.Add(new GradientStop(p, r, g, b));
+            }
+
+            if (stops.Count == 0)
+            {
+                return DefaultStops;
+            }
+
+            stops.Sort((a, b) => a.Position.CompareTo(b.Position));
+            return stops.ToArray();
+        }
+        catch
+        {
+            return DefaultStops;
+        }
+    }
+
+    private static float GetFloat(System.Text.Json.Nodes.JsonObject obj, string key, float fallback)
+    {
+        var node = obj[key];
+        if (node is System.Text.Json.Nodes.JsonValue val)
+        {
+            if (val.TryGetValue<float>(out var f)) return f;
+            if (val.TryGetValue<int>(out var i)) return i;
+            if (val.TryGetValue<double>(out var d)) return (float)d;
+        }
+
+        return fallback;
     }
 }
 

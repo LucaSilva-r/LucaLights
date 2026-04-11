@@ -35,6 +35,7 @@ public sealed class DefaultNodeTypeCatalog : INodeTypeCatalog
             MathSmoothStep(),
             ColorBrightness(),
             ColorHsv(),
+            ColorGradient(),
             TimeElapsed(),
             TimeOscillator(),
             TimePulse(),
@@ -444,6 +445,24 @@ public sealed class DefaultNodeTypeCatalog : INodeTypeCatalog
                 Property("hue", "Hue", NodeValueType.Float, "Fallback hue in degrees.", 0, 0, 360),
                 Property("saturation", "Saturation", NodeValueType.Float, "Fallback saturation.", 1, 0, 1),
                 Property("brightness", "Brightness", NodeValueType.Float, "Fallback brightness.", 1, 0, 1)
+            ]);
+    }
+
+    private static NodeTypeDefinition ColorGradient()
+    {
+        return new NodeTypeDefinition(
+            "color.gradient",
+            "Gradient",
+            "Color",
+            "Samples a multi-stop color gradient at a given factor (0-1). Stops are defined as a JSON array.",
+            [Input("factor", "Factor", NodeValueType.Float, "Position to sample the gradient (0-1).")],
+            [Output("color", "Color", NodeValueType.Color, "The sampled gradient color.")],
+            [
+                Property("factor", "Factor", NodeValueType.Float, "Fallback sample position.", 0.5, 0, 1),
+                Property("stops", "Stops", NodeValueType.String,
+                    "JSON gradient stops: [{\"p\":0,\"r\":0,\"g\":0,\"b\":0},{\"p\":1,\"r\":255,\"g\":255,\"b\":255}]",
+                    "[{\"p\":0,\"r\":0,\"g\":0,\"b\":0},{\"p\":1,\"r\":255,\"g\":255,\"b\":255}]"),
+                Property("interpolation", "Interpolation", NodeValueType.String, "Interpolation mode: linear or constant.", "linear")
             ]);
     }
 
