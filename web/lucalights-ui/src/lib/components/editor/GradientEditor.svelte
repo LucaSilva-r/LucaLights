@@ -192,6 +192,25 @@
 		emit(next);
 	}
 
+	function distributeStopsEvenly() {
+		if (stops.length <= 1) return;
+
+		const positions = sortedView.map((_, index) =>
+			stops.length === 1 ? 0 : index / (stops.length - 1)
+		);
+		const next = [...stops];
+
+		for (let i = 0; i < sortedView.length; i++) {
+			const originalIndex = sortedView[i].originalIndex;
+			next[originalIndex] = {
+				...next[originalIndex],
+				p: Math.round(positions[i] * 1000) / 1000
+			};
+		}
+
+		emit(next);
+	}
+
 	function selectByOriginalIndex(originalIndex: number) {
 		selectedOriginalIndex = originalIndex;
 		colorPickerOpen = false;
@@ -255,7 +274,7 @@
 </script>
 
 <div class="nodrag nopan space-y-2 overflow-visible">
-	<!-- Toolbar: +/- buttons -->
+	<!-- Toolbar: stop utilities -->
 	<div class="flex items-center gap-1.5">
 		<button
 			type="button"
@@ -273,6 +292,14 @@
 			title="Remove selected stop"
 		>
 			<Minus class="size-3.5" />
+		</button>
+		<button
+			type="button"
+			class="flex h-6 items-center justify-center rounded-md border border-border/70 bg-background/90 px-2 text-[10px] font-medium text-muted-foreground shadow-sm transition hover:bg-surface-subtle-hover hover:text-foreground"
+			onclick={distributeStopsEvenly}
+			title="Distribute stops evenly"
+		>
+			Even
 		</button>
 	</div>
 
