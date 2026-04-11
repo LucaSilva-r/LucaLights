@@ -4,6 +4,7 @@
 	import InputChannelPicker from './InputChannelPicker.svelte';
 	import NodeColorPicker from './NodeColorPicker.svelte';
 	import NodeNumberInput from './NodeNumberInput.svelte';
+	import OutputTargetPicker from './OutputTargetPicker.svelte';
 	import GradientEditor, { type GradientStop } from './GradientEditor.svelte';
 	import type { EditorFlowNode } from './types';
 
@@ -11,6 +12,7 @@
 
 	const inlineInputClass =
 		'nodrag nopan h-7 min-w-0 flex-1 rounded-md border border-border/70 bg-background/90 px-2 text-[11px] text-right shadow-sm outline-none transition focus:border-ring focus:ring-4 focus:ring-ring/20';
+	const outputTargetKeys = new Set(['segmentIds']);
 
 	let connectedInputIds = $derived.by(() => {
 		if (!Array.isArray(data.connectedInputIds)) {
@@ -29,6 +31,7 @@
 			(property) =>
 				!inputIds.has(property.key) &&
 				!outputIds.has(property.key) &&
+				!(isOutputNode(data.typeId) && outputTargetKeys.has(property.key)) &&
 				!connectedInputIds.includes(property.key)
 		);
 	});
@@ -211,30 +214,6 @@
 		});
 	}
 
-	function csvValues(key: string) {
-		return stringValue(key)
-			.split(',')
-			.map((value) => value.trim())
-			.filter((value) => value.length > 0);
-	}
-
-	function csvContains(key: string, value: string) {
-		return csvValues(key).some((entry) => entry.toLowerCase() === value.toLowerCase());
-	}
-
-	function toggleCsvValue(key: string, value: string) {
-		const nextValues = csvValues(key);
-		const matchIndex = nextValues.findIndex((entry) => entry.toLowerCase() === value.toLowerCase());
-
-		if (matchIndex >= 0) {
-			nextValues.splice(matchIndex, 1);
-		} else {
-			nextValues.push(value);
-		}
-
-		setProperty(key, nextValues.join(', '));
-	}
-
 	function handleTone(valueType: string) {
 		switch (valueType) {
 			case 'Bool':
@@ -295,7 +274,7 @@
 	}
 
 	function isOutputNode(typeId: string) {
-		return typeId === 'output.segment-color' || typeId === 'output.segment-gradient';
+		return typeId === 'output.segment-color';
 	}
 
 	function isGradientNode(typeId: string) {
@@ -552,63 +531,6 @@
 	{/if}
 {/snippet}
 
-{#snippet propertyChips(property: NodePropertyDefinition)}
-	{#if isOutputNode(data.typeId) && property.key === 'deviceIds' && data.deviceOptions.length > 0}
-		<div class="flex flex-wrap gap-1 px-4 pb-1.5">
-			{#each data.deviceOptions as device}
-				<button
-					type="button"
-					class={`nodrag nopan rounded-full border px-1.5 py-0.5 text-[9px] transition ${
-						csvContains(property.key, device.id)
-							? 'border-primary bg-primary/10 text-primary'
-							: 'border-border/70 bg-background/70 text-muted-foreground'
-					}`}
-					onclick={() => toggleCsvValue(property.key, device.id)}
-				>
-					{device.name}
-				</button>
-			{/each}
-		</div>
-	{/if}
-
-	{#if isOutputNode(data.typeId) && property.key === 'segmentIds' && data.segmentOptions.length > 0}
-		<div class="flex flex-wrap gap-1 px-4 pb-1.5">
-			{#each data.segmentOptions as segment}
-				<button
-					type="button"
-					class={`nodrag nopan rounded-full border px-1.5 py-0.5 text-[9px] transition ${
-						csvContains(property.key, segment.id)
-							? 'border-primary bg-primary/10 text-primary'
-							: 'border-border/70 bg-background/70 text-muted-foreground'
-					}`}
-					title={`${segment.deviceName} · ${segment.id}`}
-					onclick={() => toggleCsvValue(property.key, segment.id)}
-				>
-					{segment.name}
-				</button>
-			{/each}
-		</div>
-	{/if}
-
-	{#if isOutputNode(data.typeId) && property.key === 'groupIds' && data.groupOptions.length > 0}
-		<div class="flex flex-wrap gap-1 px-4 pb-1.5">
-			{#each data.groupOptions as groupId}
-				<button
-					type="button"
-					class={`nodrag nopan rounded-full border px-1.5 py-0.5 text-[9px] transition ${
-						csvContains(property.key, String(groupId))
-							? 'border-primary bg-primary/10 text-primary'
-							: 'border-border/70 bg-background/70 text-muted-foreground'
-					}`}
-					onclick={() => toggleCsvValue(property.key, String(groupId))}
-				>
-					Group {groupId}
-				</button>
-			{/each}
-		</div>
-	{/if}
-{/snippet}
-
 <div
 	class={`overflow-visible rounded-[1.05rem] border text-left shadow-lg backdrop-blur ${
 		isCommentNode(data.typeId)
@@ -737,11 +659,23 @@
 					{/if}
 				</div>
 
-				<!-- Chip selectors below the input row -->
-				{#if property && !connected}
-					{@render propertyChips(property)}
-				{/if}
 			{/each}
+		</div>
+	{/if}
+
+	{#if isOutputNode(data.typeId)}
+		<div class="border-t border-border/60 px-3 py-2">
+			<div class="space-y-1.5">
+				<p class="text-[11px] font-semibold uppercase tracking-[0.18em] text-muted-foreground">
+					Targets
+				</p>
+				<OutputTargetPicker
+					value={stringValue('segmentIds', '')}
+					devices={data.deviceOptions}
+					segments={data.segmentOptions}
+					onChange={(nextValue) => setProperty('segmentIds', nextValue)}
+				/>
+			</div>
 		</div>
 	{/if}
 
@@ -827,7 +761,6 @@
 						</div>
 					{/if}
 				</div>
-				{@render propertyChips(property)}
 			{/each}
 		</div>
 	{/if}

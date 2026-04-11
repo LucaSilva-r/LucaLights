@@ -56,6 +56,26 @@
 	} from '$lib/lucalights';
 
 	const defaultViewport: Viewport = { x: 0, y: 0, zoom: 1 };
+	const pasteOffset = { x: 42, y: 42 };
+
+	type GraphClipboardNode = {
+		id: string;
+		typeId: string;
+		position: { x: number; y: number };
+		properties: Record<string, unknown>;
+	};
+
+	type GraphClipboardEdge = {
+		source: string;
+		sourceHandle?: string;
+		target: string;
+		targetHandle?: string;
+	};
+
+	type GraphClipboard = {
+		nodes: GraphClipboardNode[];
+		edges: GraphClipboardEdge[];
+	};
 
 	let nodeTypes = $state<NodeTypeDefinition[]>([]);
 	let inputDefinitions = $state<InputDefinition[]>([]);
@@ -75,6 +95,8 @@
 	let errorMessage = $state('');
 	let validationDiagnostics = $state<GraphDiagnostic[]>([]);
 	let lastSaveResult = $state<'success' | 'error' | null>(null);
+	let graphClipboard = $state<GraphClipboard | null>(null);
+	let clipboardPasteCount = $state(0);
 
 	let nodeTypeMap = $derived(new Map(nodeTypes.map((nodeType) => [nodeType.typeId, nodeType])));
 	let activeInputDefinition = $derived(
@@ -149,16 +171,6 @@
 				})
 			)
 		);
-	}
-
-	function buildGroupOptions() {
-		return Array.from(
-			new Set(
-				devices.flatMap((device) =>
-					device.segments.flatMap((segment) => segment.groupIds)
-				)
-			)
-		).sort((left, right) => left - right);
 	}
 
 	function buildInputChannelOptions() {
@@ -246,7 +258,6 @@
 			inputChannelOptions: buildInputChannelOptions(),
 			deviceOptions: buildDeviceOptions(),
 			segmentOptions: buildSegmentOptions(),
-			groupOptions: buildGroupOptions(),
 			onPropertyChange: updateNodeProperty
 		};
 	}
@@ -666,12 +677,151 @@
 		addNodeFromType(typeId, clientToFlowPosition(event.clientX, event.clientY));
 	}
 
+	function isEditableTarget(target: EventTarget | null) {
+		if (!(target instanceof HTMLElement)) {
+			return false;
+		}
+
+		if (target.isContentEditable) {
+			return true;
+		}
+
+		return !!target.closest('input, textarea, select, [contenteditable="true"], [role="textbox"]');
+	}
+
+	function selectedNodes() {
+		return nodes.filter((node) => node.selected);
+	}
+
+	function copySelectionToClipboard() {
+		const selected = selectedNodes();
+		if (selected.length === 0) {
+			return false;
+		}
+
+		const selectedIdSet = new Set(selected.map((node) => node.id));
+		const internalEdges = edges
+			.filter((edge) => selectedIdSet.has(edge.source) && selectedIdSet.has(edge.target))
+			.map((edge): GraphClipboardEdge => ({
+				source: edge.source,
+				sourceHandle: edge.sourceHandle ?? undefined,
+				target: edge.target,
+				targetHandle: edge.targetHandle ?? undefined
+			}));
+
+		graphClipboard = {
+			nodes: selected.map((node) => ({
+				id: node.id,
+				typeId: node.data.typeId,
+				position: {
+					x: node.position.x,
+					y: node.position.y
+				},
+				properties: cloneProperties(node.data.properties)
+			})),
+			edges: internalEdges
+		};
+		clipboardPasteCount = 0;
+		return true;
+	}
+
+	function pasteClipboardSelection() {
+		if (!graphClipboard || graphClipboard.nodes.length === 0) {
+			return false;
+		}
+
+		clipboardPasteCount += 1;
+		const offsetX = pasteOffset.x * clipboardPasteCount;
+		const offsetY = pasteOffset.y * clipboardPasteCount;
+		const nodeIdMap = new Map<string, string>();
+
+		const pastedNodes = graphClipboard.nodes.map((clipboardNode) => {
+			const nodeType = nodeTypeMap.get(clipboardNode.typeId);
+			const nodeId = createNodeId(clipboardNode.typeId);
+			nodeIdMap.set(clipboardNode.id, nodeId);
+
+			return {
+				id: nodeId,
+				type: clipboardNode.typeId,
+				position: {
+					x: clipboardNode.position.x + offsetX,
+					y: clipboardNode.position.y + offsetY
+				},
+				selected: true,
+				data: createNodeData(
+					nodeId,
+					nodeType,
+					cloneProperties(clipboardNode.properties)
+				)
+			} satisfies EditorFlowNode;
+		});
+
+		const pastedEdges = graphClipboard.edges.flatMap((clipboardEdge) => {
+			const source = nodeIdMap.get(clipboardEdge.source);
+			const target = nodeIdMap.get(clipboardEdge.target);
+
+			if (!source || !target) {
+				return [];
+			}
+
+			const nextEdge: Edge = {
+				id: createNodeId('edge'),
+				source,
+				sourceHandle: clipboardEdge.sourceHandle ?? undefined,
+				target,
+				targetHandle: clipboardEdge.targetHandle ?? undefined,
+				animated: false,
+				selected: true
+			};
+
+			return isValidConnection(nextEdge) ? [nextEdge] : [];
+		});
+
+		nodes = [
+			...nodes.map((node) => ({
+				...node,
+				selected: false
+			})),
+			...pastedNodes
+		];
+		edges = [
+			...edges.map((edge) => ({
+				...edge,
+				selected: false
+			})),
+			...pastedEdges
+		];
+		markDirty();
+		return true;
+	}
+
 	function handleKeydown(event: KeyboardEvent) {
-		if ((event.ctrlKey || event.metaKey) && event.key === 's') {
+		if (!(event.ctrlKey || event.metaKey) || isEditableTarget(event.target)) {
+			return;
+		}
+
+		const key = event.key.toLowerCase();
+
+		if (key === 's') {
 			event.preventDefault();
 			if (!saving && dirty) {
 				void saveGraph();
 			}
+			return;
+		}
+
+		if (key === 'c') {
+			if (copySelectionToClipboard()) {
+				event.preventDefault();
+			}
+			return;
+		}
+
+		if (key === 'v') {
+			if (pasteClipboardSelection()) {
+				event.preventDefault();
+			}
+			return;
 		}
 	}
 

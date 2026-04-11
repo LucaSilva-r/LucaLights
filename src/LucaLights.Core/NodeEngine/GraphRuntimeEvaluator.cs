@@ -130,25 +130,13 @@ public sealed class GraphRuntimeEvaluator
                 continue;
             }
 
-            var deviceIds = ParseStringSet(ReadString(node.Properties, "deviceIds", string.Empty));
             var segmentIds = ParseStringSet(ReadString(node.Properties, "segmentIds", string.Empty));
-            var groupIds = ParseIntSet(ReadString(node.Properties, "groupIds", string.Empty));
 
             foreach (var device in settings.Devices)
             {
-                if (deviceIds.Count > 0 && !deviceIds.Contains(device.Id))
-                {
-                    continue;
-                }
-
                 foreach (var segment in device.Segments)
                 {
                     if (segmentIds.Count > 0 && !segmentIds.Contains(segment.Id))
-                    {
-                        continue;
-                    }
-
-                    if (groupIds.Count > 0 && !segment.GroupIds.Any(groupIds.Contains))
                     {
                         continue;
                     }
@@ -426,15 +414,6 @@ public sealed class GraphRuntimeEvaluator
                         node,
                         GetInputColor(preparedEffect, outputs, node.Id, "color", ReadColor(node.Properties, "color", Color.FromRgb(255, 255, 255))));
                     break;
-
-                case "output.segment-gradient":
-                    ApplySegmentGradient(
-                        settings,
-                        node,
-                        GetInputColor(preparedEffect, outputs, node.Id, "colorA", ReadColor(node.Properties, "colorA", Color.Black)),
-                        GetInputColor(preparedEffect, outputs, node.Id, "colorB", ReadColor(node.Properties, "colorB", Color.FromRgb(255, 255, 255))),
-                        GetInputFloat(preparedEffect, outputs, node.Id, "offset", ReadFloat(node.Properties, "offset", 0f)));
-                    break;
             }
         }
     }
@@ -512,25 +491,13 @@ public sealed class GraphRuntimeEvaluator
             return;
         }
 
-        var deviceIds = ParseStringSet(ReadString(node.Properties, "deviceIds", string.Empty));
         var segmentIds = ParseStringSet(ReadString(node.Properties, "segmentIds", string.Empty));
-        var groupIds = ParseIntSet(ReadString(node.Properties, "groupIds", string.Empty));
 
         foreach (var device in settings.Devices)
         {
-            if (deviceIds.Count > 0 && !deviceIds.Contains(device.Id))
-            {
-                continue;
-            }
-
             foreach (var segment in device.Segments)
             {
                 if (segmentIds.Count > 0 && !segmentIds.Contains(segment.Id))
-                {
-                    continue;
-                }
-
-                if (groupIds.Count > 0 && !segment.GroupIds.Any(groupIds.Contains))
                 {
                     continue;
                 }
@@ -809,62 +776,6 @@ public sealed class GraphRuntimeEvaluator
         };
     }
 
-    private void ApplySegmentGradient(Settings settings, NodeInstance node, Color colorA, Color colorB, float offset)
-    {
-        if (_currentPixel is { } px && _currentSegment is not null)
-        {
-            if (px.Index < _currentSegment.Leds.Length)
-            {
-                var shifted = ((px.Normalized + offset) % 1f + 1f) % 1f;
-                _currentSegment.Leds[px.Index] = MixColors(colorA, colorB, shifted);
-            }
-
-            return;
-        }
-
-        var deviceIds = ParseStringSet(ReadString(node.Properties, "deviceIds", string.Empty));
-        var segmentIds = ParseStringSet(ReadString(node.Properties, "segmentIds", string.Empty));
-        var groupIds = ParseIntSet(ReadString(node.Properties, "groupIds", string.Empty));
-
-        foreach (var device in settings.Devices)
-        {
-            if (deviceIds.Count > 0 && !deviceIds.Contains(device.Id))
-            {
-                continue;
-            }
-
-            foreach (var segment in device.Segments)
-            {
-                if (segmentIds.Count > 0 && !segmentIds.Contains(segment.Id))
-                {
-                    continue;
-                }
-
-                if (groupIds.Count > 0 && !segment.GroupIds.Any(groupIds.Contains))
-                {
-                    continue;
-                }
-
-                FillSegmentGradient(segment, colorA, colorB, offset);
-            }
-        }
-    }
-
-    private static void FillSegmentGradient(Segment segment, Color colorA, Color colorB, float offset)
-    {
-        if (segment.Leds.Length == 0)
-        {
-            return;
-        }
-
-        for (var i = 0; i < segment.Leds.Length; i++)
-        {
-            var t = (float)i / Math.Max(segment.Leds.Length - 1, 1);
-            var shifted = ((t + offset) % 1f + 1f) % 1f;
-            segment.Leds[i] = MixColors(colorA, colorB, shifted);
-        }
-    }
-
     private static Color MixColors(Color a, Color b, float factor, string mode = "mix")
     {
         var clamped = Math.Clamp(factor, 0f, 1f);
@@ -1114,19 +1025,6 @@ public sealed class GraphRuntimeEvaluator
             .ToHashSet(StringComparer.OrdinalIgnoreCase);
     }
 
-    private static HashSet<int> ParseIntSet(string value)
-    {
-        var values = new HashSet<int>();
-        foreach (var part in value.Split(',', StringSplitOptions.TrimEntries | StringSplitOptions.RemoveEmptyEntries))
-        {
-            if (int.TryParse(part, out var parsed))
-            {
-                values.Add(parsed);
-            }
-        }
-
-        return values;
-    }
 }
 
 public sealed record PreparedGraph(

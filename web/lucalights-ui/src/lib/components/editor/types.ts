@@ -31,7 +31,6 @@ export interface EditorNodeData {
 	inputChannelOptions: InputChannelDefinition[];
 	deviceOptions: EditorDeviceOption[];
 	segmentOptions: EditorSegmentOption[];
-	groupOptions: number[];
 	onPropertyChange?: (nodeId: string, key: string, value: unknown) => void;
 }
 

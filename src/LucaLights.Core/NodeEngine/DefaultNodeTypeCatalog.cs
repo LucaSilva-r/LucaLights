@@ -41,8 +41,7 @@ public sealed class DefaultNodeTypeCatalog : INodeTypeCatalog
             TimePulse(),
             TimeEnvelope(),
             PixelInfo(),
-            SegmentColorOutput(),
-            SegmentGradientOutput()
+            SegmentColorOutput()
         ];
 
         _nodeTypesById = _nodeTypes.ToDictionary(
@@ -562,43 +561,18 @@ public sealed class DefaultNodeTypeCatalog : INodeTypeCatalog
             []);
     }
 
-    private static NodeTypeDefinition SegmentGradientOutput()
-    {
-        return new NodeTypeDefinition(
-            "output.segment-gradient",
-            "Segment Gradient Output",
-            "Outputs",
-            "Fills target segments with a two-color gradient. Offset scrolls the gradient position.",
-            [
-                Input("colorA", "Color A", NodeValueType.Color, "Gradient start color."),
-                Input("colorB", "Color B", NodeValueType.Color, "Gradient end color."),
-                Input("offset", "Offset", NodeValueType.Float, "Scroll offset (0-1 wraps).")
-            ],
-            [],
-            [
-                ColorProperty("colorA", "Color A", "Fallback gradient start color.", 0, 0, 0),
-                ColorProperty("colorB", "Color B", "Fallback gradient end color.", 255, 255, 255),
-                Property("offset", "Offset", NodeValueType.Float, "Fallback scroll offset.", 0, 0, 1),
-                Property("deviceIds", "Device IDs", NodeValueType.String, "Comma-separated device IDs. Empty means all devices.", string.Empty),
-                Property("segmentIds", "Segment IDs", NodeValueType.String, "Comma-separated segment IDs. Empty means all segments.", string.Empty),
-                Property("groupIds", "Group IDs", NodeValueType.String, "Comma-separated group IDs. Empty means all groups.", string.Empty)
-            ]);
-    }
-
     private static NodeTypeDefinition SegmentColorOutput()
     {
         return new NodeTypeDefinition(
             "output.segment-color",
-            "Segment Color Output",
+            "Output",
             "Outputs",
-            "Writes a color to one or more target segments. Phase 2 rendering will interpret the target properties.",
+            "Writes a color to the selected output segments. Leave targets empty to write to every segment.",
             [Input("color", "Color", NodeValueType.Color, "Color to write to the target segments.")],
             [],
             [
                 ColorProperty("color", "Color", "Fallback output color.", 255, 255, 255),
-                Property("deviceIds", "Device IDs", NodeValueType.String, "Comma-separated device IDs. Empty means all devices.", string.Empty),
-                Property("segmentIds", "Segment IDs", NodeValueType.String, "Comma-separated segment IDs. Empty means all segments.", string.Empty),
-                Property("groupIds", "Group IDs", NodeValueType.String, "Comma-separated group IDs. Empty means all groups.", string.Empty)
+                Property("segmentIds", "Segments", NodeValueType.String, "Comma-separated segment IDs. Empty means all segments.", string.Empty)
             ]);
     }
 
