@@ -670,12 +670,7 @@ public sealed class GraphRuntimeEvaluator
 
         var start = stops[0].Position;
         var end = stops[^1].Position;
-        var position = factor;
-
-        if (position < start || position > end)
-        {
-            position = WrapToRange(position, start, end);
-        }
+        var position = Math.Clamp(factor, start, end);
 
         if (position <= start)
         {
@@ -711,23 +706,6 @@ public sealed class GraphRuntimeEvaluator
         }
 
         return Color.FromRgb(stops[^1].R, stops[^1].G, stops[^1].B);
-    }
-
-    private static float WrapToRange(float value, float start, float end)
-    {
-        var span = end - start;
-        if (span <= 0f)
-        {
-            return start;
-        }
-
-        var wrapped = (value - start) % span;
-        if (wrapped < 0f)
-        {
-            wrapped += span;
-        }
-
-        return start + wrapped;
     }
 
     private static Color HsvToColor(float hue, float saturation, float value)
