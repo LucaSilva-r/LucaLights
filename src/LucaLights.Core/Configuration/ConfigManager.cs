@@ -51,6 +51,6 @@ public sealed class ConfigManager
         return Path.Combine(
             Environment.GetFolderPath(Environment.SpecialFolder.ApplicationData),
             "LucaLights",
-            "settings.json");
+            "settingsV2.json");
     }
 }
