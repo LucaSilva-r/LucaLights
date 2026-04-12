@@ -136,7 +136,7 @@ public sealed class GraphRuntimeEvaluator
             {
                 foreach (var segment in device.Segments)
                 {
-                    if (segmentIds.Count > 0 && !segmentIds.Contains(segment.Id))
+                    if (!IsSegmentTargeted(segment, segmentIds))
                     {
                         continue;
                     }
@@ -498,9 +498,12 @@ public sealed class GraphRuntimeEvaluator
 
     private void ApplySegmentColor(Settings settings, NodeInstance node, Color color)
     {
+        var segmentIds = ParseStringSet(ReadString(node.Properties, "segmentIds", string.Empty));
+
         if (_currentPixel is { } px && _currentSegment is not null)
         {
-            if (px.Index < _currentSegment.Leds.Length)
+            if (IsSegmentTargeted(_currentSegment, segmentIds)
+                && px.Index < _currentSegment.Leds.Length)
             {
                 _currentSegment.Leds[px.Index] = color;
             }
@@ -508,13 +511,11 @@ public sealed class GraphRuntimeEvaluator
             return;
         }
 
-        var segmentIds = ParseStringSet(ReadString(node.Properties, "segmentIds", string.Empty));
-
         foreach (var device in settings.Devices)
         {
             foreach (var segment in device.Segments)
             {
-                if (segmentIds.Count > 0 && !segmentIds.Contains(segment.Id))
+                if (!IsSegmentTargeted(segment, segmentIds))
                 {
                     continue;
                 }
@@ -522,6 +523,11 @@ public sealed class GraphRuntimeEvaluator
                 FillSegment(segment, color);
             }
         }
+    }
+
+    private static bool IsSegmentTargeted(Segment segment, IReadOnlySet<string> segmentIds)
+    {
+        return segmentIds.Count == 0 || segmentIds.Contains(segment.Id);
     }
 
     private static void FillSegment(Segment segment, Color color)
