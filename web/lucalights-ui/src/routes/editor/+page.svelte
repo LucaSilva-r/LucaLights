@@ -693,6 +693,10 @@
 		return nodes.filter((node) => node.selected);
 	}
 
+	function duplicateSelection() {
+		return copySelectionToClipboard() && pasteClipboardSelection();
+	}
+
 	function copySelectionToClipboard() {
 		const selected = selectedNodes();
 		if (selected.length === 0) {
@@ -818,7 +822,7 @@
 		}
 
 		if (key === 'd') {
-			if (copySelectionToClipboard() && pasteClipboardSelection()) {
+			if (duplicateSelection()) {
 				event.preventDefault();
 			}
 			return;
@@ -998,6 +1002,8 @@
 					bind:viewport
 					nodeTypes={flowNodeTypes}
 					colorMode={theme.resolved}
+					multiSelectionKey="Shift"
+					selectionKey="Shift"
 					onbeforeconnect={handleBeforeConnect}
 					onbeforereconnect={handleBeforeReconnect}
 					onconnect={handleConnect}
