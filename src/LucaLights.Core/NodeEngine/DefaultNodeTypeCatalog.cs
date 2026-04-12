@@ -12,6 +12,9 @@ public sealed class DefaultNodeTypeCatalog : INodeTypeCatalog
         _nodeTypes =
         [
             CommentNote(),
+            RerouteBool(),
+            RerouteFloat(),
+            RerouteColor(),
             ConstantColor(),
             ConstantFloat(),
             ConstantBool(),
@@ -74,6 +77,33 @@ public sealed class DefaultNodeTypeCatalog : INodeTypeCatalog
                 Property("title", "Title", NodeValueType.String, "Short heading shown in the node header.", "Comment"),
                 Property("body", "Comment", NodeValueType.String, "Long-form note for documenting intent, TODOs, or context.", string.Empty)
             ]);
+    }
+
+    private static NodeTypeDefinition RerouteBool()
+    {
+        return Reroute(
+            "reroute.bool",
+            "Reroute Boolean",
+            NodeValueType.Bool,
+            "Routes a boolean connection through a movable waypoint to help tidy the graph.");
+    }
+
+    private static NodeTypeDefinition RerouteFloat()
+    {
+        return Reroute(
+            "reroute.float",
+            "Reroute Number",
+            NodeValueType.Float,
+            "Routes a number connection through a movable waypoint to help tidy the graph.");
+    }
+
+    private static NodeTypeDefinition RerouteColor()
+    {
+        return Reroute(
+            "reroute.color",
+            "Reroute Color",
+            NodeValueType.Color,
+            "Routes a color connection through a movable waypoint to help tidy the graph.");
     }
 
     private static NodeTypeDefinition ConstantColor()
@@ -620,6 +650,22 @@ public sealed class DefaultNodeTypeCatalog : INodeTypeCatalog
                 Property("priority", "Priority", NodeValueType.Float, "Higher priority outputs apply later and can override lower-priority outputs.", 0),
                 Property("segmentIds", "Segments", NodeValueType.String, "Comma-separated segment IDs. Empty means all segments.", string.Empty)
             ]);
+    }
+
+    private static NodeTypeDefinition Reroute(
+        string typeId,
+        string displayName,
+        NodeValueType valueType,
+        string description)
+    {
+        return new NodeTypeDefinition(
+            typeId,
+            displayName,
+            "Layout",
+            description,
+            [Input("value", "Value", valueType, "Incoming value routed through this waypoint.")],
+            [Output("value", "Value", valueType, "Outgoing value routed through this waypoint.")],
+            []);
     }
 
     private static NodePortDefinition Input(

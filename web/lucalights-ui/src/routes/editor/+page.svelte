@@ -123,6 +123,10 @@
 		const groups = new Map<string, NodeTypeDefinition[]>();
 
 		for (const nodeType of nodeTypes) {
+			if (nodeType.typeId.startsWith('reroute.')) {
+				continue;
+			}
+
 			const matchesFilter =
 				filter.length === 0 ||
 				nodeType.displayName.toLowerCase().includes(filter) ||
@@ -277,6 +281,36 @@
 		}
 	}
 
+	function edgeHoverColorForValueType(valueType: string | null | undefined) {
+		switch (valueType) {
+			case 'Bool':
+				return '#fbbf24';
+			case 'Float':
+				return '#38bdf8';
+			case 'Color':
+				return '#fb7185';
+			case 'String':
+				return '#34d399';
+			default:
+				return '#a1a1aa';
+		}
+	}
+
+	function edgeSelectedColorForValueType(valueType: string | null | undefined) {
+		switch (valueType) {
+			case 'Bool':
+				return '#fde68a';
+			case 'Float':
+				return '#7dd3fc';
+			case 'Color':
+				return '#fda4af';
+			case 'String':
+				return '#6ee7b7';
+			default:
+				return '#d4d4d8';
+		}
+	}
+
 	function resolveConnectionValueType(
 		connection: Pick<Edge, 'source' | 'sourceHandle' | 'target' | 'targetHandle'>,
 		nodeList: EditorFlowNode[]
@@ -294,12 +328,28 @@
 	function decorateEdge(edge: Edge, nodeList: EditorFlowNode[] = nodes): Edge {
 		const valueType = resolveConnectionValueType(edge, nodeList);
 		const stroke = edgeColorForValueType(valueType);
+		const hoverStroke = edgeHoverColorForValueType(valueType);
+		const selectedStroke = edgeSelectedColorForValueType(valueType);
 
 		return {
 			type: edge.type ?? 'smoothstep',
 			...edge,
-			style: `stroke: ${stroke}; stroke-width: 3.25px;`
+			class: ['lucalights-edge', edge.class],
+			style: `--xy-edge-stroke: ${stroke}; --lucalights-edge-hover-stroke: ${hoverStroke}; --xy-edge-stroke-selected: ${selectedStroke}; --xy-edge-stroke-width: 3.25px;`
 		};
+	}
+
+	function rerouteTypeIdForValueType(valueType: string | null | undefined) {
+		switch (valueType) {
+			case 'Bool':
+				return 'reroute.bool';
+			case 'Float':
+				return 'reroute.float';
+			case 'Color':
+				return 'reroute.color';
+			default:
+				return null;
+		}
 	}
 
 	function graphDocumentToFlow(
@@ -487,6 +537,95 @@
 
 		nodes = [...nodes, nextNode];
 		markDirty();
+	}
+
+	function insertRerouteOnEdge(edgeId: string, clientX: number, clientY: number) {
+		const existingEdge = edges.find((edge) => edge.id === edgeId);
+		if (
+			!existingEdge ||
+			!existingEdge.source ||
+			!existingEdge.target ||
+			!existingEdge.sourceHandle ||
+			!existingEdge.targetHandle
+		) {
+			return false;
+		}
+
+		const rerouteTypeId = rerouteTypeIdForValueType(
+			resolveConnectionValueType(existingEdge, nodes)
+		);
+		if (!rerouteTypeId) {
+			return false;
+		}
+
+		const rerouteType = nodeTypeMap.get(rerouteTypeId);
+		if (!rerouteType) {
+			return false;
+		}
+
+		const rerouteId = createNodeId(rerouteTypeId);
+		const flowPosition = clientToFlowPosition(clientX, clientY);
+		const rerouteNode: EditorFlowNode = {
+			id: rerouteId,
+			type: rerouteTypeId,
+			position: {
+				x: flowPosition.x - 10,
+				y: flowPosition.y - 10
+			},
+			selected: true,
+			data: createNodeData(rerouteId, rerouteType, defaultPropertiesFor(rerouteType))
+		};
+		const nextNodes = [...nodes, rerouteNode];
+		const nextEdges: Edge[] = edges
+			.filter((edge) => edge.id !== edgeId)
+			.map((edge) => ({ ...edge, selected: false }));
+
+		const upstreamEdge = decorateEdge(
+			{
+				id: createNodeId('edge'),
+				source: existingEdge.source,
+				sourceHandle: existingEdge.sourceHandle,
+				target: rerouteId,
+				targetHandle: 'value',
+				animated: false
+			},
+			nextNodes
+		);
+
+		if (!isValidConnection(upstreamEdge, nextNodes, nextEdges)) {
+			return false;
+		}
+
+		nextEdges.push(upstreamEdge);
+
+		const downstreamEdge = decorateEdge(
+			{
+				id: createNodeId('edge'),
+				source: rerouteId,
+				sourceHandle: 'value',
+				target: existingEdge.target,
+				targetHandle: existingEdge.targetHandle,
+				animated: false
+			},
+			nextNodes
+		);
+
+		if (!isValidConnection(downstreamEdge, nextNodes, nextEdges)) {
+			return false;
+		}
+
+		nextEdges.push(downstreamEdge);
+
+		nodes = [
+			...nodes.map((node) => ({
+				...node,
+				selected: false
+			})),
+			rerouteNode
+		];
+		edges = nextEdges;
+		markDirty();
+		return true;
 	}
 
 	function getPort(
@@ -735,6 +874,23 @@
 		}
 
 		addNodeFromType(typeId, clientToFlowPosition(event.clientX, event.clientY));
+	}
+
+	function handleCanvasDoubleClick(event: MouseEvent) {
+		if (!(event.target instanceof Element)) {
+			return;
+		}
+
+		const edgeElement = event.target.closest<SVGGElement>('.svelte-flow__edge[data-id]');
+		const edgeId = edgeElement?.getAttribute('data-id');
+		if (!edgeId) {
+			return;
+		}
+
+		if (insertRerouteOnEdge(edgeId, event.clientX, event.clientY)) {
+			event.preventDefault();
+			event.stopPropagation();
+		}
 	}
 
 	function isEditableTarget(target: EventTarget | null) {
@@ -1050,6 +1206,7 @@
 			role="presentation"
 			aria-label="Graph canvas"
 			class="relative min-h-0 bg-(image:--editor-canvas)"
+			ondblclick={handleCanvasDoubleClick}
 			ondragover={handleCanvasDragOver}
 			ondrop={handleCanvasDrop}
 		>
@@ -1069,6 +1226,7 @@
 					colorMode={theme.resolved}
 					multiSelectionKey="Shift"
 					selectionKey="Shift"
+					zoomOnDoubleClick={false}
 					onbeforeconnect={handleBeforeConnect}
 					onbeforereconnect={handleBeforeReconnect}
 					onconnect={handleConnect}

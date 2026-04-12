@@ -307,6 +307,25 @@
 		return typeId === 'annotation.comment';
 	}
 
+	function isRerouteNode(typeId: string) {
+		return typeId.startsWith('reroute.');
+	}
+
+	function rerouteCenterTone(valueType: string) {
+		switch (valueType) {
+			case 'Bool':
+				return 'border-amber-500 bg-amber-500/30';
+			case 'Float':
+				return 'border-sky-500 bg-sky-500/30';
+			case 'Color':
+				return 'border-rose-500 bg-rose-500/30';
+			case 'String':
+				return 'border-emerald-500 bg-emerald-500/30';
+			default:
+				return 'border-zinc-500 bg-zinc-500/30';
+		}
+	}
+
 	function commentProperty(key: string) {
 		return propertyMap.get(key);
 	}
@@ -545,237 +564,263 @@
 	{/if}
 {/snippet}
 
-<div
-	class={`overflow-visible rounded-[1.05rem] border text-left shadow-lg backdrop-blur ${
-		isCommentNode(data.typeId)
-			? 'w-[19rem] bg-surface-card text-foreground'
-			: 'w-[15.5rem] bg-surface-node'
-	} ${
-		selected
-			? isCommentNode(data.typeId)
-				? 'border-amber-300 ring-2 ring-amber-200/50 dark:border-amber-500/40 dark:ring-amber-500/20'
-				: 'border-primary ring-2 ring-primary/20'
-			: isCommentNode(data.typeId)
-				? 'border-amber-200/80 dark:border-amber-500/25'
-				: 'border-border/70'
-	}`}
->
-	<!-- Header -->
-	<div class={`flex items-center justify-between gap-3 rounded-t-[1.05rem] border-b border-black/10 px-3 py-2 ${categoryHeaderTone(data.category)}`}>
-		<h3 class="min-w-0 flex-1 truncate text-[13px] font-semibold tracking-tight" title={nodeTooltip()}>
-			{data.label}
-		</h3>
-		{#if !isCommentNode(data.typeId)}
-			<span class="rounded-full border border-white/15 bg-black/10 px-1.5 py-0.5 font-mono text-[10px] text-white/80">
-					{data.inputs.length}:{data.outputs.length}
-			</span>
-		{/if}
+{#if isRerouteNode(data.typeId)}
+	{@const rerouteValueType = data.outputs[0]?.valueType ?? data.inputs[0]?.valueType ?? 'Float'}
+	<div
+		class={`relative flex h-5 w-5 items-center justify-center rounded-full border bg-background/95 shadow-lg ${
+			selected ? 'border-primary ring-2 ring-primary/25' : 'border-border/80'
+		}`}
+		title={nodeTooltip()}
+	>
+		<Handle
+			type="target"
+			id="value"
+			position={Position.Left}
+			style="left: 0; top: 50%; transform: translate(-50%, -50%);"
+			class={`${handleTone(rerouteValueType)} !h-3 !w-3 !border-0 !shadow-sm`}
+		/>
+		<div class={`h-2.5 w-2.5 rounded-full border-2 ${rerouteCenterTone(rerouteValueType)}`}></div>
+		<Handle
+			type="source"
+			id="value"
+			position={Position.Right}
+			style="right: 0; top: 50%; transform: translate(50%, -50%);"
+			class={`${handleTone(rerouteValueType)} !h-3 !w-3 !border-0 !shadow-sm`}
+		/>
 	</div>
-
-	<!-- Outputs (top, right-aligned, inline editor when property exists) -->
-	{#if data.outputs.length > 0}
-		<div class="border-b border-border/60 py-1">
-			{#each data.outputs as output}
-				{@const property = propertyMap.get(output.id)}
-				{@const editableOutputProperty = data.inputs.length === 0 ? property : undefined}
-				<div
-					class="relative flex min-h-7 items-center gap-2 px-3 pr-4 text-foreground/90 transition hover:bg-surface-subtle-hover"
-					title={portTooltip(output.label, output.valueType, output.description)}
-				>
-					{#if editableOutputProperty}
-						{@render inlineEditor(editableOutputProperty, output.label)}
-					{:else}
-						<p class="min-w-0 flex-1 truncate text-right text-[13px] font-medium">{output.label}</p>
-					{/if}
-					<Handle
-						type="source"
-						id={output.id}
-						position={Position.Right}
-						style="right: 0; top: 50%; transform: translate(50%, -50%);"
-						class={`${handleTone(output.valueType)} !h-2.5 !w-2.5 !border-0 !shadow-sm`}
-					/>
-				</div>
-			{/each}
+{:else}
+	<div
+		class={`overflow-visible rounded-[1.05rem] border text-left shadow-lg backdrop-blur ${
+			isCommentNode(data.typeId)
+				? 'w-[19rem] bg-surface-card text-foreground'
+				: 'w-[15.5rem] bg-surface-node'
+		} ${
+			selected
+				? isCommentNode(data.typeId)
+					? 'border-amber-300 ring-2 ring-amber-200/50 dark:border-amber-500/40 dark:ring-amber-500/20'
+					: 'border-primary ring-2 ring-primary/20'
+				: isCommentNode(data.typeId)
+					? 'border-amber-200/80 dark:border-amber-500/25'
+					: 'border-border/70'
+		}`}
+	>
+		<!-- Header -->
+		<div class={`flex items-center justify-between gap-3 rounded-t-[1.05rem] border-b border-black/10 px-3 py-2 ${categoryHeaderTone(data.category)}`}>
+			<h3 class="min-w-0 flex-1 truncate text-[13px] font-semibold tracking-tight" title={nodeTooltip()}>
+				{data.label}
+			</h3>
+			{#if !isCommentNode(data.typeId)}
+				<span class="rounded-full border border-white/15 bg-black/10 px-1.5 py-0.5 font-mono text-[10px] text-white/80">
+						{data.inputs.length}:{data.outputs.length}
+				</span>
+			{/if}
 		</div>
-	{/if}
 
-	<!-- Inputs (inline: handle + label/editor on same row) -->
-	{#if data.inputs.length > 0}
-		<div class="py-1">
-			{#each data.inputs as input}
-				{@const connected = inputIsConnected(input.id)}
-				{@const property = propertyMap.get(input.id)}
-				{@const showEditor = !connected && property}
-				{@const isColor = isColorInput(input)}
-				{@const isPropertyColor = property?.valueType === 'Color'}
+		<!-- Outputs (top, right-aligned, inline editor when property exists) -->
+		{#if data.outputs.length > 0}
+			<div class="border-b border-border/60 py-1">
+				{#each data.outputs as output}
+					{@const property = propertyMap.get(output.id)}
+					{@const editableOutputProperty = data.inputs.length === 0 ? property : undefined}
+					<div
+						class="relative flex min-h-7 items-center gap-2 px-3 pr-4 text-foreground/90 transition hover:bg-surface-subtle-hover"
+						title={portTooltip(output.label, output.valueType, output.description)}
+					>
+						{#if editableOutputProperty}
+							{@render inlineEditor(editableOutputProperty, output.label)}
+						{:else}
+							<p class="min-w-0 flex-1 truncate text-right text-[13px] font-medium">{output.label}</p>
+						{/if}
+						<Handle
+							type="source"
+							id={output.id}
+							position={Position.Right}
+							style="right: 0; top: 50%; transform: translate(50%, -50%);"
+							class={`${handleTone(output.valueType)} !h-2.5 !w-2.5 !border-0 !shadow-sm`}
+						/>
+					</div>
+				{/each}
+			</div>
+		{/if}
 
-				<div
-					class="relative py-0.5 text-foreground/90 transition hover:bg-surface-subtle-hover"
-					title={portTooltip(input.label, input.valueType, input.description)}
-				>
-					{#if (showEditor && isPropertyColor) || isColor}
-						<!-- Color input: click-to-open color picker -->
-						<div class="px-3 pl-4">
-							<div class="relative">
+		<!-- Inputs (inline: handle + label/editor on same row) -->
+		{#if data.inputs.length > 0}
+			<div class="py-1">
+				{#each data.inputs as input}
+					{@const connected = inputIsConnected(input.id)}
+					{@const property = propertyMap.get(input.id)}
+					{@const showEditor = !connected && property}
+					{@const isColor = isColorInput(input)}
+					{@const isPropertyColor = property?.valueType === 'Color'}
+
+					<div
+						class="relative py-0.5 text-foreground/90 transition hover:bg-surface-subtle-hover"
+						title={portTooltip(input.label, input.valueType, input.description)}
+					>
+						{#if (showEditor && isPropertyColor) || isColor}
+							<!-- Color input: click-to-open color picker -->
+							<div class="px-3 pl-4">
+								<div class="relative">
+									<Handle
+										type="target"
+										id={input.id}
+										position={Position.Left}
+										style="left: -12px; top: 14px; transform: translate(-50%, -50%);"
+										class={`${handleTone(input.valueType)} !h-2.5 !w-2.5 !border-0 !shadow-sm`}
+									/>
+									<NodeColorPicker
+										hex={isColor ? colorHex : propertyColorHex(property!)}
+										label={input.label}
+										onchange={(hex) => isColor ? setColorFromHex(hex) : setColorPropertyFromHex(property!.key, hex)}
+									/>
+								</div>
+							</div>
+						{:else if showEditor && property.valueType === 'Float' && hasRange(property)}
+							<!-- Float with range: Blender-style slider fills the whole row -->
+							<div class="flex min-h-7 items-center pl-4 pr-3">
 								<Handle
 									type="target"
 									id={input.id}
 									position={Position.Left}
-									style="left: -12px; top: 14px; transform: translate(-50%, -50%);"
+									style="left: 0; top: 50%; transform: translate(-50%, -50%);"
 									class={`${handleTone(input.valueType)} !h-2.5 !w-2.5 !border-0 !shadow-sm`}
 								/>
-								<NodeColorPicker
-									hex={isColor ? colorHex : propertyColorHex(property!)}
-									label={input.label}
-									onchange={(hex) => isColor ? setColorFromHex(hex) : setColorPropertyFromHex(property!.key, hex)}
+								<div class="min-w-0 flex-1">
+									{@render sliderField(property, input.label)}
+								</div>
+							</div>
+						{:else if showEditor}
+							<!-- Other editors: label + inline input on same row -->
+							<div class="flex min-h-7 items-center gap-2 px-3 pl-4">
+								<Handle
+									type="target"
+									id={input.id}
+									position={Position.Left}
+									style="left: 0; top: 50%; transform: translate(-50%, -50%);"
+									class={`${handleTone(input.valueType)} !h-2.5 !w-2.5 !border-0 !shadow-sm`}
 								/>
+								<span class="shrink-0 text-[13px] font-medium">{input.label}</span>
+								{@render inlineEditor(property, input.label)}
 							</div>
-						</div>
-					{:else if showEditor && property.valueType === 'Float' && hasRange(property)}
-						<!-- Float with range: Blender-style slider fills the whole row -->
-						<div class="flex min-h-7 items-center pl-4 pr-3">
-							<Handle
-								type="target"
-								id={input.id}
-								position={Position.Left}
-								style="left: 0; top: 50%; transform: translate(-50%, -50%);"
-								class={`${handleTone(input.valueType)} !h-2.5 !w-2.5 !border-0 !shadow-sm`}
-							/>
-							<div class="min-w-0 flex-1">
-								{@render sliderField(property, input.label)}
+						{:else}
+							<!-- Connected or no matching property: just the label -->
+							<div class="flex min-h-7 items-center px-3 pl-4">
+								<Handle
+									type="target"
+									id={input.id}
+									position={Position.Left}
+									style="left: 0; top: 50%; transform: translate(-50%, -50%);"
+									class={`${handleTone(input.valueType)} !h-2.5 !w-2.5 !border-0 !shadow-sm`}
+								/>
+								<p class="min-w-0 flex-1 truncate text-[13px] font-medium">{input.label}</p>
 							</div>
-						</div>
-					{:else if showEditor}
-						<!-- Other editors: label + inline input on same row -->
-						<div class="flex min-h-7 items-center gap-2 px-3 pl-4">
-							<Handle
-								type="target"
-								id={input.id}
-								position={Position.Left}
-								style="left: 0; top: 50%; transform: translate(-50%, -50%);"
-								class={`${handleTone(input.valueType)} !h-2.5 !w-2.5 !border-0 !shadow-sm`}
-							/>
-							<span class="shrink-0 text-[13px] font-medium">{input.label}</span>
-							{@render inlineEditor(property, input.label)}
-						</div>
-					{:else}
-						<!-- Connected or no matching property: just the label -->
-						<div class="flex min-h-7 items-center px-3 pl-4">
-							<Handle
-								type="target"
-								id={input.id}
-								position={Position.Left}
-								style="left: 0; top: 50%; transform: translate(-50%, -50%);"
-								class={`${handleTone(input.valueType)} !h-2.5 !w-2.5 !border-0 !shadow-sm`}
-							/>
-							<p class="min-w-0 flex-1 truncate text-[13px] font-medium">{input.label}</p>
-						</div>
-					{/if}
+						{/if}
+					</div>
+
+				{/each}
+			</div>
+		{/if}
+
+		{#if isOutputNode(data.typeId)}
+			<div class="border-t border-border/60 px-3 py-2">
+				<div class="space-y-1.5">
+					<p class="text-[11px] font-semibold uppercase tracking-[0.18em] text-muted-foreground">
+						Targets
+					</p>
+					<OutputTargetPicker
+						value={stringValue('segmentIds', '')}
+						devices={data.deviceOptions}
+						segments={data.segmentOptions}
+						onChange={(nextValue) => setProperty('segmentIds', nextValue)}
+					/>
 				</div>
+			</div>
+		{/if}
 
-			{/each}
-		</div>
-	{/if}
+		<!-- Standalone properties (no matching input or output handle) -->
+		{#if isCommentNode(data.typeId)}
+			<div class="space-y-3 px-3 py-3">
+				{#if commentProperty('title')}
+					<label class="block space-y-1" title={propertyTooltip(commentProperty('title')!)}>
+						<span class="text-[11px] font-semibold uppercase tracking-[0.18em] text-amber-900/70 dark:text-amber-100/70">
+							{commentProperty('title')?.label}
+						</span>
+						<input
+							class="nodrag nopan h-8 w-full rounded-md border border-amber-200/80 bg-background/90 px-2 text-[12px] font-medium shadow-sm outline-none transition focus:border-ring focus:ring-4 focus:ring-ring/20 dark:border-amber-500/25 dark:bg-input/30"
+							type="text"
+							value={stringValue(commentProperty('title')?.key ?? 'title', String(valueFor(commentProperty('title')!) ?? ''))}
+							oninput={(event) => setProperty(commentProperty('title')?.key ?? 'title', (event.currentTarget as HTMLInputElement).value)}
+						/>
+					</label>
+				{/if}
 
-	{#if isOutputNode(data.typeId)}
-		<div class="border-t border-border/60 px-3 py-2">
-			<div class="space-y-1.5">
-				<p class="text-[11px] font-semibold uppercase tracking-[0.18em] text-muted-foreground">
-					Targets
-				</p>
-				<OutputTargetPicker
-					value={stringValue('segmentIds', '')}
-					devices={data.deviceOptions}
-					segments={data.segmentOptions}
-					onChange={(nextValue) => setProperty('segmentIds', nextValue)}
+				{#if commentProperty('body')}
+					<label class="block space-y-1" title={propertyTooltip(commentProperty('body')!)}>
+						<span class="text-[11px] font-semibold uppercase tracking-[0.18em] text-amber-900/70 dark:text-amber-100/70">
+							{commentProperty('body')?.label}
+						</span>
+						<textarea
+							class="nodrag nopan min-h-28 w-full rounded-lg border border-amber-200/80 bg-background/90 px-2.5 py-2 text-[12px] leading-5 shadow-sm outline-none transition focus:border-ring focus:ring-4 focus:ring-ring/20 dark:border-amber-500/25 dark:bg-input/30"
+							placeholder="Describe what this section does, leave a TODO, or explain why the graph is wired this way."
+							value={stringValue(commentProperty('body')?.key ?? 'body', String(valueFor(commentProperty('body')!) ?? ''))}
+							oninput={(event) => setProperty(commentProperty('body')?.key ?? 'body', (event.currentTarget as HTMLTextAreaElement).value)}
+						></textarea>
+					</label>
+				{/if}
+			</div>
+		{:else if isConstantColorNode(data.typeId)}
+			<div class="border-t border-border/60 px-3 py-2">
+				<NodeColorPicker
+					hex={colorHex}
+					label="Color"
+					onchange={(hex) => setColorFromHex(hex)}
 				/>
 			</div>
-		</div>
-	{/if}
-
-	<!-- Standalone properties (no matching input or output handle) -->
-	{#if isCommentNode(data.typeId)}
-		<div class="space-y-3 px-3 py-3">
-			{#if commentProperty('title')}
-				<label class="block space-y-1" title={propertyTooltip(commentProperty('title')!)}>
-					<span class="text-[11px] font-semibold uppercase tracking-[0.18em] text-amber-900/70 dark:text-amber-100/70">
-						{commentProperty('title')?.label}
-					</span>
-					<input
-						class="nodrag nopan h-8 w-full rounded-md border border-amber-200/80 bg-background/90 px-2 text-[12px] font-medium shadow-sm outline-none transition focus:border-ring focus:ring-4 focus:ring-ring/20 dark:border-amber-500/25 dark:bg-input/30"
-						type="text"
-						value={stringValue(commentProperty('title')?.key ?? 'title', String(valueFor(commentProperty('title')!) ?? ''))}
-						oninput={(event) => setProperty(commentProperty('title')?.key ?? 'title', (event.currentTarget as HTMLInputElement).value)}
-					/>
-				</label>
-			{/if}
-
-			{#if commentProperty('body')}
-				<label class="block space-y-1" title={propertyTooltip(commentProperty('body')!)}>
-					<span class="text-[11px] font-semibold uppercase tracking-[0.18em] text-amber-900/70 dark:text-amber-100/70">
-						{commentProperty('body')?.label}
-					</span>
-					<textarea
-						class="nodrag nopan min-h-28 w-full rounded-lg border border-amber-200/80 bg-background/90 px-2.5 py-2 text-[12px] leading-5 shadow-sm outline-none transition focus:border-ring focus:ring-4 focus:ring-ring/20 dark:border-amber-500/25 dark:bg-input/30"
-						placeholder="Describe what this section does, leave a TODO, or explain why the graph is wired this way."
-						value={stringValue(commentProperty('body')?.key ?? 'body', String(valueFor(commentProperty('body')!) ?? ''))}
-						oninput={(event) => setProperty(commentProperty('body')?.key ?? 'body', (event.currentTarget as HTMLTextAreaElement).value)}
-					></textarea>
-				</label>
-			{/if}
-		</div>
-	{:else if isConstantColorNode(data.typeId)}
-		<div class="border-t border-border/60 px-3 py-2">
-			<NodeColorPicker
-				hex={colorHex}
-				label="Color"
-				onchange={(hex) => setColorFromHex(hex)}
-			/>
-		</div>
-	{:else if isGradientNode(data.typeId)}
-		<div class="space-y-2 border-t border-border/60 px-3 py-2">
-			<GradientEditor
-				stops={parseGradientStops(stringValue('stops', '[]'))}
-				interpolation={stringValue('interpolation', 'linear')}
-				onchange={(next) => setProperty('stops', serializeGradientStops(next))}
-			/>
-			{#each standaloneProperties.filter((p) => p.key !== 'stops') as property}
-				<div class="space-y-1" title={propertyTooltip(property)}>
-					{#if property.valueType === 'Float' && hasRange(property)}
-						{@render sliderField(property, property.label)}
-					{:else}
-						<div class="flex h-7 items-center gap-2">
-							<span class="shrink-0 text-[12px] font-medium">{property.label}</span>
-							{@render inlineEditor(property, property.label)}
-						</div>
-					{/if}
-				</div>
-			{/each}
-		</div>
-	{:else if standaloneProperties.length > 0}
-		<div class="space-y-1 border-t border-border/60 px-3 py-2">
-			{#each standaloneProperties as property}
-				<div class="space-y-1" title={propertyTooltip(property)}>
-					{#if property.valueType === 'Float' && hasRange(property)}
-						{@render sliderField(property, property.label)}
-					{:else if property.valueType === 'Bool'}
-						<label class="flex h-7 items-center gap-2 text-[12px] font-medium">
-							<input
-								class="nodrag nopan size-4 rounded border-border text-primary"
-								type="checkbox"
-								checked={boolValue(property.key, Boolean(valueFor(property)))}
-								onchange={(event) => setProperty(property.key, (event.currentTarget as HTMLInputElement).checked)}
-							/>
-							{property.label}
-						</label>
-					{:else}
-						<div class="flex h-7 items-center gap-2">
-							<span class="shrink-0 text-[12px] font-medium">{property.label}</span>
-							{@render inlineEditor(property, property.label)}
-						</div>
-					{/if}
-				</div>
-			{/each}
-		</div>
-	{/if}
-</div>
+		{:else if isGradientNode(data.typeId)}
+			<div class="space-y-2 border-t border-border/60 px-3 py-2">
+				<GradientEditor
+					stops={parseGradientStops(stringValue('stops', '[]'))}
+					interpolation={stringValue('interpolation', 'linear')}
+					onchange={(next) => setProperty('stops', serializeGradientStops(next))}
+				/>
+				{#each standaloneProperties.filter((p) => p.key !== 'stops') as property}
+					<div class="space-y-1" title={propertyTooltip(property)}>
+						{#if property.valueType === 'Float' && hasRange(property)}
+							{@render sliderField(property, property.label)}
+						{:else}
+							<div class="flex h-7 items-center gap-2">
+								<span class="shrink-0 text-[12px] font-medium">{property.label}</span>
+								{@render inlineEditor(property, property.label)}
+							</div>
+						{/if}
+					</div>
+				{/each}
+			</div>
+		{:else if standaloneProperties.length > 0}
+			<div class="space-y-1 border-t border-border/60 px-3 py-2">
+				{#each standaloneProperties as property}
+					<div class="space-y-1" title={propertyTooltip(property)}>
+						{#if property.valueType === 'Float' && hasRange(property)}
+							{@render sliderField(property, property.label)}
+						{:else if property.valueType === 'Bool'}
+							<label class="flex h-7 items-center gap-2 text-[12px] font-medium">
+								<input
+									class="nodrag nopan size-4 rounded border-border text-primary"
+									type="checkbox"
+									checked={boolValue(property.key, Boolean(valueFor(property)))}
+									onchange={(event) => setProperty(property.key, (event.currentTarget as HTMLInputElement).checked)}
+								/>
+								{property.label}
+							</label>
+						{:else}
+							<div class="flex h-7 items-center gap-2">
+								<span class="shrink-0 text-[12px] font-medium">{property.label}</span>
+								{@render inlineEditor(property, property.label)}
+							</div>
+						{/if}
+					</div>
+				{/each}
+			</div>
+		{/if}
+	</div>
+{/if}

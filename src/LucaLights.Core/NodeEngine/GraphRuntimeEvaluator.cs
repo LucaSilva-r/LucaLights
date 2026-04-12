@@ -174,6 +174,18 @@ public sealed class GraphRuntimeEvaluator
                 case "annotation.comment":
                     break;
 
+                case "reroute.bool":
+                case "reroute.float":
+                case "reroute.color":
+                {
+                    if (TryGetInputValue(preparedEffect, outputs, node.Id, "value", out var reroutedValue))
+                    {
+                        outputs[BuildOutputKey(node.Id, "value")] = reroutedValue;
+                    }
+
+                    break;
+                }
+
                 case "constant.color":
                     outputs[BuildOutputKey(node.Id, "color")] = RuntimeValue.FromColor(ReadColor(node.Properties));
                     break;

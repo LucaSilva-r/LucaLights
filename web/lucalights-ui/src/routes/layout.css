@@ -159,3 +159,27 @@
 		@apply font-sans;
 	}
 }
+
+.svelte-flow__edge.lucalights-edge .svelte-flow__edge-path {
+	stroke-linecap: round;
+	stroke-linejoin: round;
+	transition:
+		stroke 120ms ease,
+		stroke-width 120ms ease,
+		filter 120ms ease,
+		opacity 120ms ease;
+}
+
+.svelte-flow__edge.lucalights-edge.selectable:hover .svelte-flow__edge-path {
+	stroke: var(--lucalights-edge-hover-stroke, var(--xy-edge-stroke, var(--xy-edge-stroke-default)));
+	stroke-width: 4.25px;
+	filter: drop-shadow(0 0 6px var(--lucalights-edge-hover-stroke, var(--xy-edge-stroke, var(--xy-edge-stroke-default))));
+}
+
+.svelte-flow__edge.lucalights-edge.selected .svelte-flow__edge-path,
+.svelte-flow__edge.lucalights-edge.selectable:focus .svelte-flow__edge-path,
+.svelte-flow__edge.lucalights-edge.selectable:focus-visible .svelte-flow__edge-path {
+	stroke: var(--xy-edge-stroke-selected, var(--xy-edge-stroke-selected-default));
+	stroke-width: 4.75px;
+	filter: drop-shadow(0 0 7px var(--xy-edge-stroke-selected, var(--xy-edge-stroke-selected-default)));
+}
