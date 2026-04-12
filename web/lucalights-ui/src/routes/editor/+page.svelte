@@ -496,7 +496,11 @@
 		edges = edges.filter((edge) => !conflicts.some((conflict) => conflict.id === edge.id));
 	}
 
-	function isValidConnection(connection: Connection | Edge) {
+	function isValidConnection(
+		connection: Connection | Edge,
+		nodeList: EditorFlowNode[] = nodes,
+		edgeList: Edge[] = edges
+	) {
 		const sourceHandle = connection.sourceHandle ?? undefined;
 		const targetHandle = connection.targetHandle ?? undefined;
 
@@ -508,8 +512,8 @@
 			return false;
 		}
 
-		const sourceNode = nodes.find((node) => node.id === connection.source);
-		const targetNode = nodes.find((node) => node.id === connection.target);
+		const sourceNode = nodeList.find((node) => node.id === connection.source);
+		const targetNode = nodeList.find((node) => node.id === connection.target);
 		const sourcePort = getPort(sourceNode, sourceHandle, 'output');
 		const targetPort = getPort(targetNode, targetHandle, 'input');
 
@@ -522,7 +526,7 @@
 		}
 
 		if (
-			edges.some(
+			edgeList.some(
 				(edge) =>
 					edge.source === connection.source &&
 					edge.sourceHandle === sourceHandle &&
@@ -757,15 +761,18 @@
 					nodeType,
 					cloneProperties(clipboardNode.properties)
 				)
-			} satisfies EditorFlowNode;
+				} satisfies EditorFlowNode;
 		});
 
-		const pastedEdges = graphClipboard.edges.flatMap((clipboardEdge) => {
+		const nextNodes = [...nodes, ...pastedNodes];
+		const pastedEdges: Edge[] = [];
+
+		for (const clipboardEdge of graphClipboard.edges) {
 			const source = nodeIdMap.get(clipboardEdge.source);
 			const target = nodeIdMap.get(clipboardEdge.target);
 
 			if (!source || !target) {
-				return [];
+				continue;
 			}
 
 			const nextEdge: Edge = {
@@ -778,8 +785,10 @@
 				selected: true
 			};
 
-			return isValidConnection(nextEdge) ? [nextEdge] : [];
-		});
+			if (isValidConnection(nextEdge, nextNodes, [...edges, ...pastedEdges])) {
+				pastedEdges.push(nextEdge);
+			}
+		}
 
 		nodes = [
 			...nodes.map((node) => ({
