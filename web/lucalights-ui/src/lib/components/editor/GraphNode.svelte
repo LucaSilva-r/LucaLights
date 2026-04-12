@@ -384,6 +384,20 @@
 				{ value: 'color', label: 'Color' },
 				{ value: 'value', label: 'Value' }
 			]
+		},
+		'output.segment-color': {
+			blendMode: [
+				{ value: 'override', label: 'Override (replace)' },
+				{ value: 'add', label: 'Add' },
+				{ value: 'screen', label: 'Screen' },
+				{ value: 'lighten', label: 'Lighten' },
+				{ value: 'multiply', label: 'Multiply' },
+				{ value: 'darken', label: 'Darken' },
+				{ value: 'difference', label: 'Difference' },
+				{ value: 'overlay', label: 'Overlay' },
+				{ value: 'subtract', label: 'Subtract' },
+				{ value: 'exclusion', label: 'Exclusion' }
+			]
 		}
 	};
 

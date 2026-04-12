@@ -11,6 +11,13 @@ public sealed class GraphRuntimeEvaluator
 
     private readonly record struct HsvColor(float Hue, float Saturation, float Value);
 
+    private readonly record struct PendingSegmentColorOutput(
+        IReadOnlySet<string> SegmentIds,
+        Color Color,
+        float Priority,
+        string BlendMode,
+        int EvaluationIndex);
+
     public readonly record struct PixelContext(int Index, int Length, float Normalized);
 
     private readonly NodeGraphCompiler _nodeGraphCompiler;
@@ -156,9 +163,12 @@ public sealed class GraphRuntimeEvaluator
         Dictionary<string, RuntimeValue> outputs)
     {
         var totalSeconds = (float)frameContext.TotalElapsed.TotalSeconds;
+        var pendingSegmentColorOutputs = new List<PendingSegmentColorOutput>();
 
-        foreach (var node in preparedEffect.CompiledGraph.EvaluationOrder)
+        for (var evaluationIndex = 0; evaluationIndex < preparedEffect.CompiledGraph.EvaluationOrder.Count; evaluationIndex++)
         {
+            var node = preparedEffect.CompiledGraph.EvaluationOrder[evaluationIndex];
+
             switch (node.TypeId)
             {
                 case "annotation.comment":
@@ -426,13 +436,31 @@ public sealed class GraphRuntimeEvaluator
                 }
 
                 case "output.segment-color":
-                    ApplySegmentColor(
-                        settings,
-                        node,
-                        GetInputColor(preparedEffect, outputs, node.Id, "color", ReadColor(node.Properties, "color", Color.FromRgb(255, 255, 255))));
+                {
+                    var isActive = GetInputBool(
+                        preparedEffect,
+                        outputs,
+                        node.Id,
+                        "active",
+                        ReadBool(node.Properties, "active", true));
+
+                    if (!isActive)
+                    {
+                        break;
+                    }
+
+                    pendingSegmentColorOutputs.Add(new PendingSegmentColorOutput(
+                        ParseStringSet(ReadString(node.Properties, "segmentIds", string.Empty)),
+                        GetInputColor(preparedEffect, outputs, node.Id, "color", ReadColor(node.Properties, "color", Color.FromRgb(255, 255, 255))),
+                        ReadFloat(node.Properties, "priority", 0f),
+                        ReadString(node.Properties, "blendMode", "override"),
+                        evaluationIndex));
                     break;
+                }
             }
         }
+
+        ApplySegmentColorOutputs(settings, pendingSegmentColorOutputs);
     }
 
     private static bool GetInputBool(
@@ -496,17 +524,43 @@ public sealed class GraphRuntimeEvaluator
         return $"{nodeId}:{portId}";
     }
 
-    private void ApplySegmentColor(Settings settings, NodeInstance node, Color color)
+    private void ApplySegmentColorOutputs(
+        Settings settings,
+        List<PendingSegmentColorOutput> pendingOutputs)
     {
-        var segmentIds = ParseStringSet(ReadString(node.Properties, "segmentIds", string.Empty));
+        if (pendingOutputs.Count == 0)
+        {
+            return;
+        }
+
+        pendingOutputs.Sort(static (a, b) =>
+        {
+            var priorityComparison = a.Priority.CompareTo(b.Priority);
+            return priorityComparison != 0
+                ? priorityComparison
+                : a.EvaluationIndex.CompareTo(b.EvaluationIndex);
+        });
 
         if (_currentPixel is { } px && _currentSegment is not null)
         {
-            if (IsSegmentTargeted(_currentSegment, segmentIds)
-                && px.Index < _currentSegment.Leds.Length)
+            if (px.Index >= _currentSegment.Leds.Length)
             {
-                _currentSegment.Leds[px.Index] = color;
+                return;
             }
+
+            var currentColor = _currentSegment.Leds[px.Index];
+
+            foreach (var pendingOutput in pendingOutputs)
+            {
+                if (!IsSegmentTargeted(_currentSegment, pendingOutput.SegmentIds))
+                {
+                    continue;
+                }
+
+                currentColor = BlendOutputColor(currentColor, pendingOutput.Color, pendingOutput.BlendMode);
+            }
+
+            _currentSegment.Leds[px.Index] = currentColor;
 
             return;
         }
@@ -515,14 +569,51 @@ public sealed class GraphRuntimeEvaluator
         {
             foreach (var segment in device.Segments)
             {
-                if (!IsSegmentTargeted(segment, segmentIds))
-                {
-                    continue;
-                }
-
-                FillSegment(segment, color);
+                ApplySegmentColor(segment, pendingOutputs);
             }
         }
+    }
+
+    private static void ApplySegmentColor(
+        Segment segment,
+        IReadOnlyList<PendingSegmentColorOutput> pendingOutputs)
+    {
+        foreach (var pendingOutput in pendingOutputs)
+        {
+            if (!IsSegmentTargeted(segment, pendingOutput.SegmentIds))
+            {
+                continue;
+            }
+
+            for (var i = 0; i < segment.Leds.Length; i++)
+            {
+                segment.Leds[i] = BlendOutputColor(segment.Leds[i], pendingOutput.Color, pendingOutput.BlendMode);
+            }
+        }
+    }
+
+    private static Color BlendOutputColor(Color baseColor, Color outputColor, string blendMode)
+    {
+        var normalizedMode = string.IsNullOrWhiteSpace(blendMode)
+            ? "override"
+            : blendMode.Trim().ToLowerInvariant();
+
+        if (normalizedMode is "override" or "replace" or "mix")
+        {
+            return outputColor;
+        }
+
+        var graphBlendMode = normalizedMode switch
+        {
+            "max" => "lighten",
+            "min" => "darken",
+            _ => normalizedMode
+        };
+
+        return DenormalizeColor(BlendColors(
+            NormalizeColor(baseColor),
+            NormalizeColor(outputColor),
+            graphBlendMode));
     }
 
     private static bool IsSegmentTargeted(Segment segment, IReadOnlySet<string> segmentIds)
@@ -982,60 +1073,67 @@ public sealed class GraphRuntimeEvaluator
             ToByte(color.B * 255f));
     }
 
-    private static NormalizedColor LerpColor(
-        NormalizedColor start,
-        NormalizedColor end,
-        float factor)
-    {
-        return new NormalizedColor(
-            LerpFloat(start.R, end.R, factor),
-            LerpFloat(start.G, end.G, factor),
-            LerpFloat(start.B, end.B, factor));
-    }
-
-    private static float LerpFloat(float start, float end, float factor)
-    {
-        return start + ((end - start) * factor);
-    }
-
     private static byte ToByte(float value)
     {
         return (byte)Math.Clamp((int)MathF.Round(value), byte.MinValue, byte.MaxValue);
     }
 
+    private static NormalizedColor LerpColor(NormalizedColor from, NormalizedColor to, float factor)
+    {
+        return new NormalizedColor(
+            from.R + ((to.R - from.R) * factor),
+            from.G + ((to.G - from.G) * factor),
+            from.B + ((to.B - from.B) * factor));
+    }
+
+    private static List<string> ReadStringList(JsonObject properties, string key)
+    {
+        return ReadString(properties, key, string.Empty)
+            .Split(',', StringSplitOptions.TrimEntries | StringSplitOptions.RemoveEmptyEntries)
+            .Distinct(StringComparer.OrdinalIgnoreCase)
+            .ToList();
+    }
+
     private static byte ReadByte(JsonObject properties, string key, byte defaultValue)
     {
-        return (byte)Math.Clamp(ReadFloat(properties, key, defaultValue), byte.MinValue, byte.MaxValue);
+        var raw = ReadFloat(properties, key, defaultValue);
+        return (byte)Math.Clamp((int)MathF.Round(raw), byte.MinValue, byte.MaxValue);
     }
 
     private static float ReadFloat(JsonObject properties, string key, float defaultValue = 0f)
     {
-        var node = properties[key];
-        if (node is null)
+        if (!properties.TryGetPropertyValue(key, out var node) || node is null)
         {
             return defaultValue;
         }
 
-        if (node is JsonValue floatNode && floatNode.TryGetValue<float>(out var floatValue))
+        if (node is JsonValue valueNode)
         {
-            return floatValue;
-        }
+            if (valueNode.TryGetValue<float>(out var floatValue))
+            {
+                return floatValue;
+            }
 
-        if (node is JsonValue intNode && intNode.TryGetValue<int>(out var intValue))
-        {
-            return intValue;
-        }
+            if (valueNode.TryGetValue<double>(out var doubleValue))
+            {
+                return (float)doubleValue;
+            }
 
-        if (node is JsonValue doubleNode && doubleNode.TryGetValue<double>(out var doubleValue))
-        {
-            return (float)doubleValue;
-        }
+            if (valueNode.TryGetValue<int>(out var intValue))
+            {
+                return intValue;
+            }
 
-        if (node is JsonValue stringNode
-            && stringNode.TryGetValue<string>(out var stringValue)
-            && float.TryParse(stringValue, out var parsedFloat))
-        {
-            return parsedFloat;
+            if (valueNode.TryGetValue<long>(out var longValue))
+            {
+                return longValue;
+            }
+
+            if (valueNode.TryGetValue<string>(out var stringValue)
+                && float.TryParse(stringValue, out var parsed))
+            {
+                return parsed;
+            }
         }
 
         return defaultValue;
@@ -1043,55 +1141,55 @@ public sealed class GraphRuntimeEvaluator
 
     private static bool ReadBool(JsonObject properties, string key, bool defaultValue = false)
     {
-        var node = properties[key];
-        if (node is null)
+        if (!properties.TryGetPropertyValue(key, out var node) || node is null)
         {
             return defaultValue;
         }
 
-        if (node is JsonValue boolNode && boolNode.TryGetValue<bool>(out var boolValue))
+        if (node is JsonValue valueNode)
         {
-            return boolValue;
-        }
+            if (valueNode.TryGetValue<bool>(out var boolValue))
+            {
+                return boolValue;
+            }
 
-        if (node is JsonValue stringNode
-            && stringNode.TryGetValue<string>(out var stringValue)
-            && bool.TryParse(stringValue, out var parsedBool))
-        {
-            return parsedBool;
-        }
-
-        return defaultValue;
-    }
-
-    private static string ReadString(JsonObject properties, string key, string defaultValue)
-    {
-        var node = properties[key];
-        if (node is JsonValue stringNode && stringNode.TryGetValue<string>(out var value))
-        {
-            return value?.Trim() ?? defaultValue;
+            if (valueNode.TryGetValue<string>(out var stringValue)
+                && bool.TryParse(stringValue, out var parsed))
+            {
+                return parsed;
+            }
         }
 
         return defaultValue;
     }
 
-    private static IReadOnlyList<string> ReadStringList(JsonObject properties, string key)
+    private static string ReadString(JsonObject properties, string key, string defaultValue = "")
     {
-        return ReadString(properties, key, string.Empty)
-            .Split(',', StringSplitOptions.TrimEntries | StringSplitOptions.RemoveEmptyEntries)
-            .Distinct(StringComparer.OrdinalIgnoreCase)
-            .ToArray();
+        if (!properties.TryGetPropertyValue(key, out var node) || node is null)
+        {
+            return defaultValue;
+        }
+
+        if (node is JsonValue valueNode && valueNode.TryGetValue<string>(out var value))
+        {
+            return value;
+        }
+
+        return defaultValue;
     }
 
     private static HashSet<string> ParseStringSet(string value)
     {
+        if (string.IsNullOrWhiteSpace(value))
+        {
+            return [];
+        }
+
         return value
             .Split(',', StringSplitOptions.TrimEntries | StringSplitOptions.RemoveEmptyEntries)
             .ToHashSet(StringComparer.OrdinalIgnoreCase);
     }
-
 }
-
 public sealed record PreparedGraph(
     CompiledNodeGraph CompiledGraph,
     IReadOnlyDictionary<string, NodeTypeDefinition> NodeTypesByNodeId,

@@ -607,11 +607,17 @@ public sealed class DefaultNodeTypeCatalog : INodeTypeCatalog
             "output.segment-color",
             "Output",
             "Outputs",
-            "Writes a color to the selected output segments. Leave targets empty to write to every segment.",
-            [Input("color", "Color", NodeValueType.Color, "Color to write to the target segments.")],
+            "Writes a color to the selected output segments. Outputs are applied in priority order, then blended into the current LED state.",
+            [
+                Input("color", "Color", NodeValueType.Color, "Color to write to the target segments."),
+                Input("active", "Active", NodeValueType.Bool, "When false, this output is skipped entirely.")
+            ],
             [],
             [
                 ColorProperty("color", "Color", "Fallback output color.", 255, 255, 255),
+                Property("active", "Active", NodeValueType.Bool, "Fallback enabled state when no active input is connected.", true),
+                Property("blendMode", "Blend", NodeValueType.String, "How this output combines with lower-priority output colors.", "override"),
+                Property("priority", "Priority", NodeValueType.Float, "Higher priority outputs apply later and can override lower-priority outputs.", 0),
                 Property("segmentIds", "Segments", NodeValueType.String, "Comma-separated segment IDs. Empty means all segments.", string.Empty)
             ]);
     }
