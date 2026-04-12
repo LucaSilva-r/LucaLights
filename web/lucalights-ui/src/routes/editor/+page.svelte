@@ -79,6 +79,8 @@
 		edges: GraphClipboardEdge[];
 	};
 
+	const centeredRerouteOrigin: [number, number] = [0.5, 0.5];
+
 	let nodeTypes = $state<NodeTypeDefinition[]>([]);
 	let inputDefinitions = $state<InputDefinition[]>([]);
 	let devices = $state<Device[]>([]);
@@ -208,6 +210,47 @@
 		return Object.fromEntries(
 			Object.entries(properties).map(([key, value]) => [key, value])
 		);
+	}
+
+	function isRerouteType(typeId: string) {
+		return typeId.startsWith('reroute.');
+	}
+
+	function nodePropertiesForType(typeId: string, properties: Record<string, unknown>) {
+		if (!isRerouteType(typeId)) {
+			return properties;
+		}
+
+		return {
+			...properties,
+			_centerOrigin: true
+		};
+	}
+
+	function nodeOriginForType(typeId: string, properties: Record<string, unknown>) {
+		return isRerouteType(typeId) && properties._centerOrigin === true
+			? centeredRerouteOrigin
+			: undefined;
+	}
+
+	function normalizeLoadedNodePosition(
+		typeId: string,
+		position: { x: number; y: number },
+		properties: Record<string, unknown>
+	) {
+		if (!isRerouteType(typeId)) {
+			return position;
+		}
+
+		if (properties._centerOrigin === true) {
+			return position;
+		}
+
+		properties._centerOrigin = true;
+		return {
+			x: position.x + 10,
+			y: position.y + 10
+		};
 	}
 
 	function connectedInputIdsFor(nodeId: string, edgeList: Edge[] = edges) {
@@ -359,17 +402,25 @@
 		typeMap: Map<string, NodeTypeDefinition>
 	) {
 		const mappedNodes = graph.nodes.map(
-			(graphNode): EditorFlowNode => ({
-				id: graphNode.id,
-				type: graphNode.type,
-				position: graphNode.position,
-				data: createNodeData(
-					graphNode.id,
-					typeMap.get(graphNode.type),
-					graphNode.data.properties ?? {},
-					[]
-				)
-			})
+			(graphNode): EditorFlowNode => {
+				const properties = nodePropertiesForType(
+					graphNode.type,
+					cloneProperties(graphNode.data.properties ?? {})
+				);
+
+					return {
+						id: graphNode.id,
+						type: graphNode.type,
+						position: normalizeLoadedNodePosition(graphNode.type, graphNode.position, properties),
+						origin: nodeOriginForType(graphNode.type, properties),
+						data: createNodeData(
+						graphNode.id,
+						typeMap.get(graphNode.type),
+						properties,
+						[]
+					)
+				};
+			}
 		);
 
 		const mappedEdges = graph.edges.map((edge) =>
@@ -520,6 +571,58 @@
 		};
 	}
 
+	function snapNodePositionForType(
+		typeId: string,
+		position: { x: number; y: number },
+		properties: Record<string, unknown>
+	) {
+		if (isRerouteType(typeId) && properties._centerOrigin === true) {
+			return snapPosition(position);
+		}
+
+		return position;
+	}
+
+	function applyDraggedNodeSnap(draggedNodes: EditorFlowNode[]) {
+		if (draggedNodes.length === 0) {
+			return false;
+		}
+
+		const draggedNodeMap = new Map(draggedNodes.map((node) => [node.id, node]));
+		let changed = false;
+
+		nodes = nodes.map((node) => {
+			const draggedNode = draggedNodeMap.get(node.id);
+			if (!draggedNode) {
+				return node;
+			}
+
+			const snappedPosition = snapNodePositionForType(
+				draggedNode.data.typeId,
+				draggedNode.position,
+				draggedNode.data.properties
+			);
+			const nextNode = {
+				...node,
+				...draggedNode,
+				position: snappedPosition
+			};
+
+			if (
+				nextNode.position.x === node.position.x &&
+				nextNode.position.y === node.position.y &&
+				nextNode.dragging === node.dragging
+			) {
+				return node;
+			}
+
+			changed = true;
+			return nextNode;
+		});
+
+		return changed;
+	}
+
 	function canvasCenterPosition() {
 		const bounds = canvasHost?.getBoundingClientRect();
 		if (!bounds) {
@@ -536,6 +639,7 @@
 		}
 
 		const nodeId = createNodeId(typeId);
+		const properties = nodePropertiesForType(typeId, defaultPropertiesFor(nodeType));
 		const snappedPosition = snapPosition({
 			x: position.x + nodes.length * 8,
 			y: position.y + nodes.length * 8
@@ -544,7 +648,8 @@
 			id: nodeId,
 			type: typeId,
 			position: snappedPosition,
-			data: createNodeData(nodeId, nodeType, defaultPropertiesFor(nodeType))
+			origin: nodeOriginForType(typeId, properties),
+			data: createNodeData(nodeId, nodeType, properties)
 		};
 
 		nodes = [...nodes, nextNode];
@@ -576,16 +681,18 @@
 		}
 
 		const rerouteId = createNodeId(rerouteTypeId);
+		const rerouteProperties = nodePropertiesForType(
+			rerouteTypeId,
+			defaultPropertiesFor(rerouteType)
+		);
 		const flowPosition = clientToFlowPosition(clientX, clientY);
 		const rerouteNode: EditorFlowNode = {
 			id: rerouteId,
 			type: rerouteTypeId,
-			position: snapPosition({
-				x: flowPosition.x - 10,
-				y: flowPosition.y - 10
-			}),
+			position: flowPosition,
+			origin: nodeOriginForType(rerouteTypeId, rerouteProperties),
 			selected: true,
-			data: createNodeData(rerouteId, rerouteType, defaultPropertiesFor(rerouteType))
+			data: createNodeData(rerouteId, rerouteType, rerouteProperties)
 		};
 		const nextNodes = [...nodes, rerouteNode];
 		const nextEdges: Edge[] = edges
@@ -822,6 +929,16 @@
 		markDirty();
 	}
 
+	function handleNodeDrag({
+		nodes: draggedNodes
+	}: {
+		nodes: EditorFlowNode[];
+		event: MouseEvent | TouchEvent;
+		targetNode: EditorFlowNode | null;
+	}) {
+		applyDraggedNodeSnap(draggedNodes);
+	}
+
 	function handleBeforeReconnect(nextEdge: Edge, previousEdge: Edge) {
 		if (!isValidConnection(nextEdge)) {
 			return false;
@@ -854,7 +971,18 @@
 		markDirty();
 	}
 
-	function handleNodeDragStop() {
+	function handleNodeDragStop({
+		nodes: draggedNodes
+	}: {
+		nodes: EditorFlowNode[];
+		event: MouseEvent | TouchEvent;
+		targetNode: EditorFlowNode | null;
+	}) {
+		if (draggedNodes.length === 0) {
+			markDirty();
+			return;
+		}
+		applyDraggedNodeSnap(draggedNodes);
 		markDirty();
 	}
 
@@ -971,6 +1099,10 @@
 			const nodeType = nodeTypeMap.get(clipboardNode.typeId);
 			const nodeId = createNodeId(clipboardNode.typeId);
 			nodeIdMap.set(clipboardNode.id, nodeId);
+			const properties = nodePropertiesForType(
+				clipboardNode.typeId,
+				cloneProperties(clipboardNode.properties)
+			);
 
 			return {
 				id: nodeId,
@@ -979,11 +1111,12 @@
 					x: clipboardNode.position.x + offsetX,
 					y: clipboardNode.position.y + offsetY
 				}),
+				origin: nodeOriginForType(clipboardNode.typeId, properties),
 				selected: true,
 				data: createNodeData(
 					nodeId,
 					nodeType,
-					cloneProperties(clipboardNode.properties)
+					properties
 				)
 				} satisfies EditorFlowNode;
 		});
@@ -1240,12 +1373,13 @@
 					multiSelectionKey="Shift"
 					selectionKey="Shift"
 					zoomOnDoubleClick={false}
-					onbeforeconnect={handleBeforeConnect}
-					onbeforereconnect={handleBeforeReconnect}
-					onconnect={handleConnect}
-					ondelete={handleDelete}
-					onnodedragstop={handleNodeDragStop}
-					onmoveend={handleMoveEnd}
+						onbeforeconnect={handleBeforeConnect}
+						onbeforereconnect={handleBeforeReconnect}
+						onconnect={handleConnect}
+						ondelete={handleDelete}
+						onnodedrag={handleNodeDrag}
+						onnodedragstop={handleNodeDragStop}
+						onmoveend={handleMoveEnd}
 					onreconnect={handleReconnect}
 					isValidConnection={isValidConnection}
 					class="h-full bg-transparent"

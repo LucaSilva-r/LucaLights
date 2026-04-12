@@ -567,7 +567,7 @@
 {#if isRerouteNode(data.typeId)}
 	{@const rerouteValueType = data.outputs[0]?.valueType ?? data.inputs[0]?.valueType ?? 'Float'}
 	<div
-		class={`relative flex h-5 w-5 items-center justify-center rounded-full border bg-background/95 shadow-lg ${
+		class={`relative box-border flex h-5 w-5 items-center justify-center rounded-full border bg-background/95 shadow-lg ${
 			selected ? 'border-primary ring-2 ring-primary/25' : 'border-border/80'
 		}`}
 		title={nodeTooltip()}
@@ -576,7 +576,7 @@
 			type="target"
 			id="value"
 			position={Position.Left}
-			style="left: 0; top: 50%; transform: translate(-50%, -50%);"
+			style="left: 0; top: calc(50% + 1px); transform: translate(-50%, -50%);"
 			class={`${handleTone(rerouteValueType)} !h-3 !w-3 !border-0 !shadow-sm`}
 		/>
 		<div class={`h-2.5 w-2.5 rounded-full border-2 ${rerouteCenterTone(rerouteValueType)}`}></div>
@@ -584,7 +584,7 @@
 			type="source"
 			id="value"
 			position={Position.Right}
-			style="right: 0; top: 50%; transform: translate(50%, -50%);"
+			style="right: 0; top: calc(50% + 1px); transform: translate(50%, -50%);"
 			class={`${handleTone(rerouteValueType)} !h-3 !w-3 !border-0 !shadow-sm`}
 		/>
 	</div>
@@ -605,7 +605,7 @@
 		}`}
 	>
 		<!-- Header -->
-		<div class={`flex items-center justify-between gap-3 rounded-t-[1.05rem] border-b border-black/10 px-3 py-2 ${categoryHeaderTone(data.category)}`}>
+		<div class={`flex h-10 items-center justify-between gap-3 rounded-t-[1.05rem] border-b border-black/10 px-3 ${categoryHeaderTone(data.category)}`}>
 			<h3 class="min-w-0 flex-1 truncate text-[13px] font-semibold tracking-tight" title={nodeTooltip()}>
 				{data.label}
 			</h3>
@@ -618,12 +618,12 @@
 
 		<!-- Outputs (top, right-aligned, inline editor when property exists) -->
 		{#if data.outputs.length > 0}
-			<div class="border-b border-border/60 py-1">
+			<div class="relative">
 				{#each data.outputs as output}
 					{@const property = propertyMap.get(output.id)}
 					{@const editableOutputProperty = data.inputs.length === 0 ? property : undefined}
 					<div
-						class="relative flex min-h-7 items-center gap-2 px-3 pr-4 text-foreground/90 transition hover:bg-surface-subtle-hover"
+						class="relative flex h-10 items-center gap-2 px-3 pr-4 text-foreground/90 transition hover:bg-surface-subtle-hover"
 						title={portTooltip(output.label, output.valueType, output.description)}
 					>
 						{#if editableOutputProperty}
@@ -640,12 +640,13 @@
 						/>
 					</div>
 				{/each}
+				<div class="pointer-events-none absolute inset-x-0 bottom-0 h-px bg-border/60"></div>
 			</div>
 		{/if}
 
 		<!-- Inputs (inline: handle + label/editor on same row) -->
 		{#if data.inputs.length > 0}
-			<div class="py-1">
+			<div>
 				{#each data.inputs as input}
 					{@const connected = inputIsConnected(input.id)}
 					{@const property = propertyMap.get(input.id)}
@@ -654,12 +655,12 @@
 					{@const isPropertyColor = property?.valueType === 'Color'}
 
 					<div
-						class="relative py-0.5 text-foreground/90 transition hover:bg-surface-subtle-hover"
+						class="relative text-foreground/90 transition hover:bg-surface-subtle-hover"
 						title={portTooltip(input.label, input.valueType, input.description)}
 					>
 						{#if (showEditor && isPropertyColor) || isColor}
 							<!-- Color input: click-to-open color picker -->
-							<div class="flex min-h-7 items-center pl-4 pr-3">
+							<div class="flex h-10 items-center pl-4 pr-3">
 								<Handle
 									type="target"
 									id={input.id}
@@ -677,7 +678,7 @@
 							</div>
 						{:else if showEditor && property.valueType === 'Float' && hasRange(property)}
 							<!-- Float with range: Blender-style slider fills the whole row -->
-							<div class="flex min-h-7 items-center pl-4 pr-3">
+							<div class="flex h-10 items-center pl-4 pr-3">
 								<Handle
 									type="target"
 									id={input.id}
@@ -691,7 +692,7 @@
 							</div>
 						{:else if showEditor}
 							<!-- Other editors: label + inline input on same row -->
-							<div class="flex min-h-7 items-center gap-2 px-3 pl-4">
+							<div class="flex h-10 items-center gap-2 px-3 pl-4">
 								<Handle
 									type="target"
 									id={input.id}
@@ -704,7 +705,7 @@
 							</div>
 						{:else}
 							<!-- Connected or no matching property: just the label -->
-							<div class="flex min-h-7 items-center px-3 pl-4">
+							<div class="flex h-10 items-center px-3 pl-4">
 								<Handle
 									type="target"
 									id={input.id}
