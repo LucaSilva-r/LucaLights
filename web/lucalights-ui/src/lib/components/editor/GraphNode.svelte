@@ -659,15 +659,15 @@
 					>
 						{#if (showEditor && isPropertyColor) || isColor}
 							<!-- Color input: click-to-open color picker -->
-							<div class="px-3 pl-4">
-								<div class="relative">
-									<Handle
-										type="target"
-										id={input.id}
-										position={Position.Left}
-										style="left: -12px; top: 14px; transform: translate(-50%, -50%);"
-										class={`${handleTone(input.valueType)} !h-2.5 !w-2.5 !border-0 !shadow-sm`}
-									/>
+							<div class="flex min-h-7 items-center pl-4 pr-3">
+								<Handle
+									type="target"
+									id={input.id}
+									position={Position.Left}
+									style="left: 0; top: 50%; transform: translate(-50%, -50%);"
+									class={`${handleTone(input.valueType)} !h-2.5 !w-2.5 !border-0 !shadow-sm`}
+								/>
+								<div class="min-w-0 flex-1">
 									<NodeColorPicker
 										hex={isColor ? colorHex : propertyColorHex(property!)}
 										label={input.label}

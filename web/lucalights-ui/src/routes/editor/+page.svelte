@@ -8,6 +8,7 @@
 		type Connection,
 		type Edge,
 		type NodeTypes,
+		type SnapGrid,
 		type Viewport
 	} from '@xyflow/svelte';
 	import '@xyflow/svelte/dist/style.css';
@@ -57,6 +58,7 @@
 
 	const defaultViewport: Viewport = { x: 0, y: 0, zoom: 1 };
 	const pasteOffset = { x: 42, y: 42 };
+	const editorSnapGrid: SnapGrid = [20, 20];
 
 	type GraphClipboardNode = {
 		id: string;
@@ -499,20 +501,29 @@
 	function clientToFlowPosition(clientX: number, clientY: number) {
 		const bounds = canvasHost?.getBoundingClientRect();
 		if (!bounds) {
-			return { x: 40, y: 40 };
+			return snapPosition({ x: 40, y: 40 });
 		}
 
 		const zoom = viewport.zoom || 1;
-		return {
+		return snapPosition({
 			x: (clientX - bounds.left - viewport.x) / zoom,
 			y: (clientY - bounds.top - viewport.y) / zoom
+		});
+	}
+
+	function snapPosition(position: { x: number; y: number }) {
+		const [gridX, gridY] = editorSnapGrid;
+
+		return {
+			x: Math.round(position.x / gridX) * gridX,
+			y: Math.round(position.y / gridY) * gridY
 		};
 	}
 
 	function canvasCenterPosition() {
 		const bounds = canvasHost?.getBoundingClientRect();
 		if (!bounds) {
-			return { x: 80 + nodes.length * 20, y: 80 + nodes.length * 20 };
+			return snapPosition({ x: 80 + nodes.length * 20, y: 80 + nodes.length * 20 });
 		}
 
 		return clientToFlowPosition(bounds.left + bounds.width / 2, bounds.top + bounds.height / 2);
@@ -525,13 +536,14 @@
 		}
 
 		const nodeId = createNodeId(typeId);
+		const snappedPosition = snapPosition({
+			x: position.x + nodes.length * 8,
+			y: position.y + nodes.length * 8
+		});
 		const nextNode: EditorFlowNode = {
 			id: nodeId,
 			type: typeId,
-			position: {
-				x: position.x + nodes.length * 8,
-				y: position.y + nodes.length * 8
-			},
+			position: snappedPosition,
 			data: createNodeData(nodeId, nodeType, defaultPropertiesFor(nodeType))
 		};
 
@@ -568,10 +580,10 @@
 		const rerouteNode: EditorFlowNode = {
 			id: rerouteId,
 			type: rerouteTypeId,
-			position: {
+			position: snapPosition({
 				x: flowPosition.x - 10,
 				y: flowPosition.y - 10
-			},
+			}),
 			selected: true,
 			data: createNodeData(rerouteId, rerouteType, defaultPropertiesFor(rerouteType))
 		};
@@ -963,10 +975,10 @@
 			return {
 				id: nodeId,
 				type: clipboardNode.typeId,
-				position: {
+				position: snapPosition({
 					x: clipboardNode.position.x + offsetX,
 					y: clipboardNode.position.y + offsetY
-				},
+				}),
 				selected: true,
 				data: createNodeData(
 					nodeId,
@@ -1224,6 +1236,7 @@
 					bind:viewport
 					nodeTypes={flowNodeTypes}
 					colorMode={theme.resolved}
+					snapGrid={editorSnapGrid}
 					multiSelectionKey="Shift"
 					selectionKey="Shift"
 					zoomOnDoubleClick={false}
