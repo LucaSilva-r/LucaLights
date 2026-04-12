@@ -262,33 +262,86 @@
 		};
 	}
 
+	function edgeColorForValueType(valueType: string | null | undefined) {
+		switch (valueType) {
+			case 'Bool':
+				return '#f59e0b';
+			case 'Float':
+				return '#0ea5e9';
+			case 'Color':
+				return '#f43f5e';
+			case 'String':
+				return '#10b981';
+			default:
+				return '#71717a';
+		}
+	}
+
+	function resolveConnectionValueType(
+		connection: Pick<Edge, 'source' | 'sourceHandle' | 'target' | 'targetHandle'>,
+		nodeList: EditorFlowNode[]
+	) {
+		const sourceHandle = connection.sourceHandle ?? undefined;
+		const targetHandle = connection.targetHandle ?? undefined;
+		const sourceNode = nodeList.find((node) => node.id === connection.source);
+		const targetNode = nodeList.find((node) => node.id === connection.target);
+		const sourcePort = getPort(sourceNode, sourceHandle, 'output');
+		const targetPort = getPort(targetNode, targetHandle, 'input');
+
+		return sourcePort?.valueType ?? targetPort?.valueType ?? null;
+	}
+
+	function decorateEdge(edge: Edge, nodeList: EditorFlowNode[] = nodes): Edge {
+		const valueType = resolveConnectionValueType(edge, nodeList);
+		const stroke = edgeColorForValueType(valueType);
+
+		return {
+			type: edge.type ?? 'smoothstep',
+			...edge,
+			style: `stroke: ${stroke}; stroke-width: 3.25px;`
+		};
+	}
+
 	function graphDocumentToFlow(
 		graph: SvelteFlowGraphDocument,
 		typeMap: Map<string, NodeTypeDefinition>
 	) {
-		const mappedEdges = graph.edges.map(
-			(edge): Edge => ({
-				id: edge.id,
-				source: edge.source,
-				sourceHandle: edge.sourceHandle || undefined,
-				target: edge.target,
-				targetHandle: edge.targetHandle || undefined,
-				animated: false
+		const mappedNodes = graph.nodes.map(
+			(graphNode): EditorFlowNode => ({
+				id: graphNode.id,
+				type: graphNode.type,
+				position: graphNode.position,
+				data: createNodeData(
+					graphNode.id,
+					typeMap.get(graphNode.type),
+					graphNode.data.properties ?? {},
+					[]
+				)
 			})
 		);
 
+		const mappedEdges = graph.edges.map((edge) =>
+			decorateEdge(
+				{
+					id: edge.id,
+					source: edge.source,
+					sourceHandle: edge.sourceHandle || undefined,
+					target: edge.target,
+					targetHandle: edge.targetHandle || undefined,
+					animated: false
+				},
+				mappedNodes
+			)
+		);
+
 		return {
-			nodes: graph.nodes.map(
-				(graphNode): EditorFlowNode => ({
-					id: graphNode.id,
-					type: graphNode.type,
-					position: graphNode.position,
-					data: createNodeData(
-						graphNode.id,
-						typeMap.get(graphNode.type),
-						graphNode.data.properties ?? {},
-						mappedEdges
-					)
+			nodes: mappedNodes.map(
+				(node): EditorFlowNode => ({
+					...node,
+					data: {
+						...node.data,
+						connectedInputIds: connectedInputIdsFor(node.id, mappedEdges)
+					}
 				})
 			),
 			edges: mappedEdges,
@@ -468,11 +521,11 @@
 	}
 
 	function createEdgeFromConnection(connection: Connection): Edge {
-		return {
+		return decorateEdge({
 			...connection,
 			id: createNodeId('edge'),
 			animated: false
-		};
+		});
 	}
 
 	function resolveTargetPort(connection: {
@@ -633,9 +686,12 @@
 		}
 
 		return {
-			...nextEdge,
+			...decorateEdge({
+				...nextEdge,
+				id: previousEdge.id,
+				animated: false
+			}),
 			id: previousEdge.id,
-			animated: false
 		};
 	}
 
@@ -775,7 +831,7 @@
 				continue;
 			}
 
-			const nextEdge: Edge = {
+			const nextEdge = decorateEdge({
 				id: createNodeId('edge'),
 				source,
 				sourceHandle: clipboardEdge.sourceHandle ?? undefined,
@@ -783,7 +839,7 @@
 				targetHandle: clipboardEdge.targetHandle ?? undefined,
 				animated: false,
 				selected: true
-			};
+			}, nextNodes);
 
 			if (isValidConnection(nextEdge, nextNodes, [...edges, ...pastedEdges])) {
 				pastedEdges.push(nextEdge);
