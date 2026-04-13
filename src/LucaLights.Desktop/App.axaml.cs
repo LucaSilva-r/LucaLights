@@ -5,19 +5,26 @@ using Avalonia.Markup.Xaml;
 using Avalonia.Threading;
 using System.Diagnostics;
 using System.Net.Http;
+using Velopack;
+using Velopack.Sources;
 
 namespace LucaLights.Desktop;
 
 public partial class App : Application
 {
     private const string DefaultServerUrl = "http://127.0.0.1:5050";
+    private const string UpdatesRepositoryUrl = "https://github.com/LucaSilva-r/LucaLights";
 
     private readonly SemaphoreSlim _lifecycleGate = new(1, 1);
     private readonly HttpClient _httpClient = new();
     private Process? _serverProcess;
     private TrayIcon? _trayIcon;
     private IClassicDesktopStyleApplicationLifetime? _desktop;
+    private CancellationTokenSource? _updateCheckCancellation;
+    private UpdateManager? _updateManager;
+    private VelopackAsset? _pendingUpdate;
     private string _webInterfaceUrl = DefaultServerUrl;
+    private int _shouldApplyPendingUpdateOnExit;
     private int _isShuttingDown;
 
     public override void Initialize()
@@ -35,6 +42,7 @@ public partial class App : Application
 
             ConfigureTrayIcon();
             _ = StartServerAsync();
+            _ = StartUpdateFlowAsync();
         }
 
         base.OnFrameworkInitializationCompleted();
@@ -110,6 +118,52 @@ public partial class App : Application
         finally
         {
             _lifecycleGate.Release();
+        }
+    }
+
+    private async Task StartUpdateFlowAsync()
+    {
+        _updateCheckCancellation = new CancellationTokenSource();
+
+        try
+        {
+            await Task.Delay(TimeSpan.FromSeconds(3), _updateCheckCancellation.Token);
+
+            var updateManager = new UpdateManager(new GithubSource(UpdatesRepositoryUrl, null, false, null));
+            if (!updateManager.IsInstalled)
+            {
+                return;
+            }
+
+            _updateManager = updateManager;
+            _pendingUpdate = updateManager.UpdatePendingRestart;
+            if (_pendingUpdate is not null)
+            {
+                Debug.WriteLine($"LucaLights update {_pendingUpdate.Version} is pending restart.");
+                return;
+            }
+
+            var availableUpdate = await updateManager.CheckForUpdatesAsync();
+            if (availableUpdate is null)
+            {
+                return;
+            }
+
+            Debug.WriteLine($"Downloading LucaLights update {availableUpdate.TargetFullRelease.Version}.");
+            await updateManager.DownloadUpdatesAsync(
+                availableUpdate,
+                progress => Debug.WriteLine($"LucaLights update download progress: {progress}%"),
+                _updateCheckCancellation.Token);
+
+            _pendingUpdate = updateManager.UpdatePendingRestart ?? availableUpdate.TargetFullRelease;
+            Debug.WriteLine($"LucaLights update {_pendingUpdate.Version} downloaded and ready to apply on exit.");
+        }
+        catch (OperationCanceledException)
+        {
+        }
+        catch (Exception exception)
+        {
+            Debug.WriteLine($"Failed to check for LucaLights updates: {exception}");
         }
     }
 
@@ -275,6 +329,12 @@ public partial class App : Application
             return;
         }
 
+        _updateCheckCancellation?.Cancel();
+        if (_pendingUpdate is not null || _updateManager?.UpdatePendingRestart is not null)
+        {
+            Interlocked.Exchange(ref _shouldApplyPendingUpdateOnExit, 1);
+        }
+
         await Dispatcher.UIThread.InvokeAsync(() => _desktop.Shutdown());
     }
 
@@ -337,14 +397,27 @@ public partial class App : Application
         await _lifecycleGate.WaitAsync();
         try
         {
+            _updateCheckCancellation?.Cancel();
             _trayIcon?.Dispose();
             _trayIcon = null;
 
             await StopServerProcessAsync();
-            _httpClient.Dispose();
+
+            if (Interlocked.CompareExchange(ref _shouldApplyPendingUpdateOnExit, 0, 0) == 1)
+            {
+                var pendingUpdate = _pendingUpdate ?? _updateManager?.UpdatePendingRestart;
+                if (pendingUpdate is not null && _updateManager is not null)
+                {
+                    Debug.WriteLine($"Applying LucaLights update {pendingUpdate.Version}.");
+                    _updateManager.ApplyUpdatesAndRestart(pendingUpdate);
+                    return;
+                }
+            }
         }
         finally
         {
+            _updateCheckCancellation?.Dispose();
+            _httpClient.Dispose();
             _lifecycleGate.Release();
             _lifecycleGate.Dispose();
         }
