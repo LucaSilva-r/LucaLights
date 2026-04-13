@@ -6,7 +6,7 @@
             "type": "coreclr",
             "request": "launch",
             "preLaunchTask": "build desktop",
-            "program": "${workspaceFolder}/LTEK ULed.Desktop/bin/Debug/net10.0/LucaLights",
+            "program": "${workspaceFolder}/src/LucaLights.Desktop/bin/Debug/net10.0/LucaLights.Desktop",
             "args": [],
             "cwd": "${workspaceFolder}",
             "env": {

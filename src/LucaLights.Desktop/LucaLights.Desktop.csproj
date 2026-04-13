@@ -1,0 +1,48 @@
+<Project Sdk="Microsoft.NET.Sdk">
+  <PropertyGroup>
+    <OutputType>WinExe</OutputType>
+    <TargetFramework>net10.0</TargetFramework>
+    <Nullable>enable</Nullable>
+    <ImplicitUsings>enable</ImplicitUsings>
+    <BuiltInComInteropSupport>false</BuiltInComInteropSupport>
+    <ApplicationManifest>app.manifest</ApplicationManifest>
+    <ApplicationIcon>logo.ico</ApplicationIcon>
+    <AssemblyName>LucaLights.Desktop</AssemblyName>
+    <RootNamespace>LucaLights.Desktop</RootNamespace>
+    <BundledServerPublishDir>$(BaseIntermediateOutputPath)BundledServerPublish/</BundledServerPublishDir>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <None Include="logo.ico">
+      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+    </None>
+  </ItemGroup>
+
+  <ItemGroup>
+    <PackageReference Include="Avalonia.Desktop" Version="11.3.2" />
+    <PackageReference Include="CommunityToolkit.Mvvm" Version="8.4.0" />
+    <PackageReference Include="Velopack" Version="0.0.1298" />
+  </ItemGroup>
+
+  <Target Name="BuildBundledServer" BeforeTargets="Build">
+    <RemoveDir Directories="$(BundledServerPublishDir)" Condition="Exists('$(BundledServerPublishDir)')" />
+    <MSBuild
+      Projects="..\LucaLights.Server\LucaLights.Server.csproj"
+      Targets="Publish"
+      Properties="Configuration=$(Configuration);ShouldBuildFrontendAssets=true;PublishDir=$(BundledServerPublishDir)" />
+  </Target>
+
+  <Target Name="CopyBundledServer" AfterTargets="Build">
+    <RemoveDir Directories="$(OutDir)server" Condition="Exists('$(OutDir)server')" />
+    <MakeDir Directories="$(OutDir)server" />
+    <ItemGroup>
+      <BundledServerFiles Include="$(BundledServerPublishDir)**/*.*" />
+      <BundledServerFiles Include="$(BundledServerPublishDir)LucaLights.Server" Condition="Exists('$(BundledServerPublishDir)LucaLights.Server')" />
+      <BundledServerFiles Include="$(BundledServerPublishDir)LucaLights.Server.exe" Condition="Exists('$(BundledServerPublishDir)LucaLights.Server.exe')" />
+    </ItemGroup>
+    <Copy
+      SourceFiles="@(BundledServerFiles)"
+      DestinationFolder="$(OutDir)server/%(RecursiveDir)"
+      SkipUnchangedFiles="true" />
+  </Target>
+</Project>

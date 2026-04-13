@@ -259,11 +259,10 @@ For a 10-node graph, 300 LEDs, 60fps = ~180K evaluations/sec of simple float mat
 
 ## Critical Files (Current Codebase Reference)
 
-- `LTEK ULed/Code/LightingManager.cs` - Render loop heart. Remove Dispatcher/MainWindow/MainViewModel refs, add OnFrameRendered event.
-- `LTEK ULed/Code/Effect.cs` - Gradient rendering (lines 213-331) is what the node engine replaces entirely.
-- `LTEK ULed/Code/Settings.cs` - Singleton + ObservableCollection pattern becomes clean DI + POCO.
-- `LTEK ULed/Code/GameState.cs` - Enum definitions + parse logic become the seed for the first `ITGManiaInputModule`. Remove Dispatcher on line 93.
-- `LTEK ULed/Code/Device.cs` - Send() + Recalculate() preserved. UI commands become controller actions.
-- `LTEK ULed/Code/PipeManager.cs` - Dual Windows/Linux pipe reader becomes transport logic inside the first input module. Remove MainViewModel.debug coupling.
-- `LTEK ULed/Code/Utils/DDPSend.cs` - Swap Color type, otherwise unchanged.
-- `LTEK ULed/Code/Utils/UdpRealtimeSend.cs` - Swap Color type, otherwise unchanged.
+- `src/LucaLights.Core/Engine/LightingManager.cs` - Render loop heart. `OnFrameRendered` now lives in core/server flow.
+- Old gradient `Effect.cs` path removed from active app. Node engine replaces that rendering path entirely.
+- `src/LucaLights.Core/Models/Settings.cs` - Clean POCO settings model replaces singleton + observable pattern.
+- `src/LucaLights.Core/GameInput/Modules/ITGManiaInputModule.cs` - Current seed for migrated game-state and pipe logic.
+- `src/LucaLights.Core/Models/Device.cs` - `Send()` + `Recalculate()` preserved through core migration.
+- `src/LucaLights.Core/Transport/DDPSend.cs` - Current DDP transport path.
+- `src/LucaLights.Core/Transport/UdpRealtimeSend.cs` - Current UDP Realtime transport path.

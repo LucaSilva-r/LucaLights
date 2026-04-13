@@ -140,8 +140,7 @@ With this boundary, LucaLights becomes:
 
 The first implementation should be a compatibility module built from the existing:
 
-- [`LTEK ULed/Code/GameState.cs`](../../LTEK%20ULed/Code/GameState.cs)
-- [`LTEK ULed/Code/PipeManager.cs`](../../LTEK%20ULed/Code/PipeManager.cs)
+- legacy `GameState.cs` and `PipeManager.cs` logic now migrated into `src/LucaLights.Core/GameInput/Modules/ITGManiaInputModule.cs`
 
 Its job is not to preserve the old API shape. Its job is to preserve behavior while translating ITGMania signals into normalized channels.
 

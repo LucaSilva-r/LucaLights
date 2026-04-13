@@ -13,8 +13,9 @@ LucaLights is a lighting control application for ITGMania (dance game) that uses
 - Velopack for auto-updates
 
 **Project Structure:**
-- `LTEK ULed/` - Core library project containing all business logic and UI
-- `LTEK ULed.Desktop/` - Desktop launcher project (entry point)
+- `src/LucaLights.Core/` - Core library project containing business logic
+- `src/LucaLights.Server/` - ASP.NET host serving API + web UI
+- `src/LucaLights.Desktop/` - Tray icon desktop launcher
 - Solution is named "Luca Lights.sln"
 
 ## Build & Run Commands
@@ -26,7 +27,7 @@ dotnet build "Luca Lights.sln"
 
 ### Run the application
 ```bash
-dotnet run --project "LTEK ULed.Desktop/LucaLights.csproj"
+dotnet run --project "src/LucaLights.Desktop/LucaLights.Desktop.csproj"
 ```
 
 ### Build for release
@@ -36,7 +37,7 @@ dotnet build "Luca Lights.sln" -c Release
 
 ### Publish for Windows distribution
 ```bash
-dotnet publish ".\LTEK ULed.Desktop\LucaLights.csproj" -c Release -o publish -r win-x64 --self-contained true
+dotnet publish ".\src\LucaLights.Desktop\LucaLights.Desktop.csproj" -c Release -o publish -r win-x64 --self-contained true
 ```
 
 ## Architecture Overview
@@ -174,8 +175,9 @@ ITGMania -> Named Pipe -> PipeManager -> GameState -> LightingManager -> Effects
 
 - Settings: `%AppData%\LucaLights\settings.json`
 - Solution: `Luca Lights.sln`
-- Main project: `LTEK ULed\LTEK ULed.csproj`
-- Desktop launcher: `LTEK ULed.Desktop\LucaLights.csproj`
+- Core project: `src\LucaLights.Core\LucaLights.Core.csproj`
+- Server host: `src\LucaLights.Server\LucaLights.Server.csproj`
+- Desktop launcher: `src\LucaLights.Desktop\LucaLights.Desktop.csproj`
 
 ## Release Process
 
