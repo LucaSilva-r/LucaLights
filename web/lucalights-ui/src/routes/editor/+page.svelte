@@ -182,28 +182,22 @@
 	}
 
 	function buildInputChannelOptions() {
-		if (activeInputDefinition) {
-			return activeInputDefinition.channels.map((channel) => ({
-				...channel,
-				moduleId: activeInputDefinition.moduleId,
-				moduleDisplayName: activeInputDefinition.displayName
-			}));
-		}
-
-		const channelsByKey = new Map<string, InputChannelDefinition>();
+		const channels: InputChannelDefinition[] = [];
 		for (const definition of inputDefinitions) {
 			for (const channel of definition.channels) {
-				if (!channelsByKey.has(channel.key)) {
-					channelsByKey.set(channel.key, {
-						...channel,
-						moduleId: definition.moduleId,
-						moduleDisplayName: definition.displayName
-					});
-				}
+				channels.push({
+					...channel,
+					moduleId: definition.moduleId,
+					moduleDisplayName: definition.displayName
+				});
 			}
 		}
 
-		return Array.from(channelsByKey.values());
+		return channels.sort((a, b) => {
+			const moduleCmp = (a.moduleDisplayName ?? '').localeCompare(b.moduleDisplayName ?? '');
+			if (moduleCmp !== 0) return moduleCmp;
+			return a.label.localeCompare(b.label);
+		});
 	}
 
 	function cloneProperties(properties: Record<string, unknown>) {

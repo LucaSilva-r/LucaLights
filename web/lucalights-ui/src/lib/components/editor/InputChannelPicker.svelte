@@ -289,7 +289,7 @@
 				<Dialog.Header class="gap-2">
 					<Dialog.Title class="text-base">Input Channels</Dialog.Title>
 					<Dialog.Description>
-						Grouped by the active module so large game integrations stay manageable.
+						Grouped by input module so large game integrations stay manageable.
 					</Dialog.Description>
 				</Dialog.Header>
 
