@@ -36,6 +36,9 @@ public sealed class EngineHostedService : IHostedService
         _gameInputManager.RegisterModule(ITGManiaInputModule.CreateFromSettings(
             _settings,
             message => _logger.LogInformation("{Message}", message)));
+        _gameInputManager.RegisterModule(OsuInputModule.CreateFromSettings(
+            _settings,
+            message => _logger.LogInformation("{Message}", message)));
 
         await _gameInputManager.StartAsync(_settings, cancellationToken);
         _lightingManager.Start();

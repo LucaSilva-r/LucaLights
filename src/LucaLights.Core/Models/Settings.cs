@@ -75,6 +75,15 @@ public sealed class Settings
                 ["pipeName"] = GetDefaultItgPipeName()
             };
         }
+
+        if (!InputModuleSettings.ContainsKey("osu"))
+        {
+            InputModuleSettings["osu"] = new JsonObject
+            {
+                ["tosuUrl"] = "ws://127.0.0.1:24050",
+                ["autoManage"] = true
+            };
+        }
     }
 
     private static string GetDefaultItgPipeName()

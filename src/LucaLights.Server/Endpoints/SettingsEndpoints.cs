@@ -1,9 +1,11 @@
 using LucaLights.Core.Configuration;
 using LucaLights.Core.Engine;
 using LucaLights.Core.GameInput;
+using LucaLights.Core.GameInput.Modules;
 using LucaLights.Core.Models;
 using LucaLights.Core.NodeEngine;
 using LucaLights.Server.Services;
+using Microsoft.AspNetCore.Mvc;
 
 namespace LucaLights.Server.Endpoints;
 
@@ -41,12 +43,13 @@ public static class SettingsEndpoints
     }
 
     private static async Task<IResult> ReplaceSettings(
-        Settings replacement,
+        [FromBody] Settings replacement,
         Settings settings,
         ConfigManager configManager,
         LightingManager lightingManager,
         RuntimeEventBroadcaster eventBroadcaster,
         GameInputManager inputManager,
+        ILoggerFactory loggerFactory,
         CancellationToken cancellationToken)
     {
         if (replacement is null)
@@ -57,15 +60,10 @@ public static class SettingsEndpoints
         NormalizeSettings(replacement);
 
         var activeInputModuleId = replacement.ActiveInputModuleId;
-        var activeInputModuleChanged = false;
+        var logger = loggerFactory.CreateLogger("SettingsEndpoints");
 
         lock (lightingManager.SyncRoot)
         {
-            activeInputModuleChanged = !string.Equals(
-                settings.ActiveInputModuleId,
-                activeInputModuleId,
-                StringComparison.OrdinalIgnoreCase);
-
             foreach (var device in settings.Devices)
             {
                 device.Dispose();
@@ -76,13 +74,20 @@ public static class SettingsEndpoints
             settings.ActiveInputModuleId = activeInputModuleId;
             settings.InputModuleSettings = replacement.InputModuleSettings;
 
+            // Re-register modules with the new settings so that their configuration is updated.
+            inputManager.RegisterModule(ITGManiaInputModule.CreateFromSettings(
+                settings,
+                message => logger.LogInformation("{Message}", message)));
+            inputManager.RegisterModule(OsuInputModule.CreateFromSettings(
+                settings,
+                message => logger.LogInformation("{Message}", message)));
+
             SaveDirty(settings, configManager, eventBroadcaster, "settings.replaced");
         }
 
-        if (activeInputModuleChanged)
-        {
-            await inputManager.SetActiveModuleAsync(activeInputModuleId, cancellationToken);
-        }
+        // Always call SetActiveModuleAsync to ensure the module is re-started if the instance changed
+        // (which it just did because we re-registered it).
+        await inputManager.SetActiveModuleAsync(activeInputModuleId, cancellationToken);
 
         return Results.Ok(new SettingsResponse(configManager.SettingsPath, settings));
     }
