@@ -82,6 +82,7 @@ jobs:
         shell: pwsh
         run: >
           vpk download github
+          -c win
           --repoUrl "https://github.com/${{ github.repository }}"
           --token "${{ secrets.GITHUB_TOKEN }}"
         continue-on-error: true
@@ -90,6 +91,8 @@ jobs:
         shell: pwsh
         run: >
           vpk pack
+          -c win
+          -r win-x64
           -u LucaLights
           -v ${{ steps.version.outputs.version }}
           -p publish
@@ -100,9 +103,13 @@ jobs:
         shell: pwsh
         run: >
           vpk upload github
+          -o Releases
+          -c win
           --repoUrl "https://github.com/${{ github.repository }}"
           --tag "${{ steps.version.outputs.tag }}"
           --releaseName "LucaLights v${{ steps.version.outputs.version }}"
+          --merge
+          --publish
           --token "${{ secrets.GITHUB_TOKEN }}"
 
       - name: Upload Workflow Artifact
@@ -110,4 +117,105 @@ jobs:
         with:
           name: LucaLights-${{ steps.version.outputs.version }}-windows-velopack
           path: Releases/*
+          if-no-files-found: error
+
+  build-linux-release:
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout Repository
+        uses: actions/checkout@v4
+
+      - name: Resolve Release Version
+        id: version
+        shell: bash
+        run: |
+          if [ "${{ github.event_name }}" = "workflow_dispatch" ]; then
+            version="${{ github.event.inputs.version }}"
+          else
+            version="${{ github.ref_name }}"
+          fi
+
+          version="${version#"${version%%[![:space:]]*}"}"
+          version="${version%"${version##*[![:space:]]}"}"
+          version="${version#v}"
+
+          if [ -z "$version" ]; then
+            echo "Release version could not be resolved." >&2
+            exit 1
+          fi
+
+          echo "version=$version" >> "$GITHUB_OUTPUT"
+          echo "tag=v$version" >> "$GITHUB_OUTPUT"
+
+      - name: Setup .NET
+        uses: actions/setup-dotnet@v4
+        with:
+          dotnet-version: 10.0.x
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: npm
+          cache-dependency-path: web/lucalights-ui/package-lock.json
+
+      - name: Install Velopack CLI
+        shell: bash
+        run: dotnet tool install -g vpk --version 0.0.1298
+
+      - name: Restore Dependencies
+        shell: bash
+        run: dotnet restore "Luca Lights.sln"
+
+      - name: Publish Desktop App
+        shell: bash
+        run: >
+          dotnet publish ./src/LucaLights.Desktop/LucaLights.Desktop.csproj
+          -c Release
+          -o publish-linux
+          -r linux-x64
+          --self-contained true
+          /p:Version=${{ steps.version.outputs.version }}
+
+      - name: Download Previous Linux Velopack Releases
+        shell: bash
+        run: >
+          vpk download github
+          --repoUrl "https://github.com/${{ github.repository }}"
+          --channel linux
+          --token "${{ secrets.GITHUB_TOKEN }}"
+        continue-on-error: true
+
+      - name: Pack Linux Velopack Release
+        shell: bash
+        run: >
+          vpk pack
+          -o Releases-linux
+          -c linux
+          -r linux-x64
+          -u LucaLights
+          -v ${{ steps.version.outputs.version }}
+          -p publish-linux
+          -e LucaLights.Desktop
+          -i ./Assets/logo.png
+
+      - name: Upload Linux Velopack Release
+        shell: bash
+        run: >
+          vpk upload github
+          -o Releases-linux
+          --repoUrl "https://github.com/${{ github.repository }}"
+          --channel linux
+          --tag "${{ steps.version.outputs.tag }}"
+          --releaseName "LucaLights v${{ steps.version.outputs.version }}"
+          --merge
+          --publish
+          --token "${{ secrets.GITHUB_TOKEN }}"
+
+      - name: Upload Workflow Artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: LucaLights-${{ steps.version.outputs.version }}-linux-velopack
+          path: Releases-linux/*
           if-no-files-found: error

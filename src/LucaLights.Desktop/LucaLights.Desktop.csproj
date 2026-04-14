@@ -29,7 +29,7 @@
     <MSBuild
       Projects="..\LucaLights.Server\LucaLights.Server.csproj"
       Targets="Publish"
-      Properties="Configuration=$(Configuration);ShouldBuildFrontendAssets=true;PublishDir=$(BundledServerPublishDir)" />
+      Properties="Configuration=$(Configuration);ShouldBuildFrontendAssets=true;PublishDir=$(BundledServerPublishDir);RuntimeIdentifier=$(RuntimeIdentifier);Restore=true;SelfContained=false" />
   </Target>
 
   <Target Name="CopyBundledServer" AfterTargets="Build">
