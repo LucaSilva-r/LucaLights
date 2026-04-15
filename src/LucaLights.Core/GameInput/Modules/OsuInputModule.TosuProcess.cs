@@ -8,6 +8,7 @@ namespace LucaLights.Core.GameInput.Modules;
 
 public sealed partial class OsuInputModule
 {
+    private readonly object _processLock = new();
     private Process? _tosuProcess;
 
     private static string TosuDirectory =>
@@ -36,20 +37,27 @@ public sealed partial class OsuInputModule
 
         await EnsureTosuConfigAsync(ct);
 
+        if (ct.IsCancellationRequested) return;
+
         try
         {
-            _tosuProcess = new Process
+            lock (_processLock)
             {
-                StartInfo = new ProcessStartInfo
+                if (ct.IsCancellationRequested) return;
+
+                _tosuProcess = new Process
                 {
-                    FileName         = exePath,
-                    WorkingDirectory = Path.GetDirectoryName(exePath),
-                    UseShellExecute  = false,
-                    CreateNoWindow   = true,
-                }
-            };
-            _tosuProcess.Start();
-            _log?.Invoke($"osu: launched tosu from {exePath}.");
+                    StartInfo = new ProcessStartInfo
+                    {
+                        FileName         = exePath,
+                        WorkingDirectory = Path.GetDirectoryName(exePath),
+                        UseShellExecute  = false,
+                        CreateNoWindow   = true,
+                    }
+                };
+                _tosuProcess.Start();
+                _log?.Invoke($"osu: launched tosu from {exePath}.");
+            }
 
             // Wait up to 15 seconds for tosu to start serving.
             var deadline = DateTimeOffset.UtcNow.AddSeconds(15);
@@ -62,6 +70,14 @@ public sealed partial class OsuInputModule
                 }
                 await Task.Delay(500, ct);
             }
+
+            if (ct.IsCancellationRequested)
+            {
+                _log?.Invoke("osu: tosu startup cancelled.");
+                StopTosuProcess();
+                return;
+            }
+
             _log?.Invoke("osu: tosu did not become ready within 15s.");
         }
         catch (OperationCanceledException) { throw; }
@@ -241,19 +257,29 @@ public sealed partial class OsuInputModule
 
     private void StopTosuProcess()
     {
-        try
+        lock (_processLock)
         {
-            if (_tosuProcess is not null && !_tosuProcess.HasExited)
+            try
             {
-                _tosuProcess.Kill();
-                _tosuProcess.WaitForExit(3000);
+                if (_tosuProcess is not null)
+                {
+                    if (!_tosuProcess.HasExited)
+                    {
+                        _log?.Invoke("osu: killing tosu process tree...");
+                        _tosuProcess.Kill(entireProcessTree: true);
+                        _tosuProcess.WaitForExit(3000);
+                    }
+                }
             }
-        }
-        catch { }
-        finally
-        {
-            _tosuProcess?.Dispose();
-            _tosuProcess = null;
+            catch (Exception ex)
+            {
+                _log?.Invoke($"osu: failed to kill tosu: {ex.Message}");
+            }
+            finally
+            {
+                _tosuProcess?.Dispose();
+                _tosuProcess = null;
+            }
         }
     }
 

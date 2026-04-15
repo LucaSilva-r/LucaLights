@@ -1,3 +1,4 @@
+using System.Threading.Channels;
 using LucaLights.Core.Models;
 
 namespace LucaLights.Core.GameInput.Modules;
@@ -21,6 +22,11 @@ public sealed partial class OsuInputModule : IGameInputModule, IDisposable
     private          bool                 _disposed       = false;
     private          long                 _sequence       = 0;
 
+    // Snapshot dispatch channel — WebSocket/note-engine threads write here instead of invoking
+    // SnapshotUpdated directly, so they can never be blocked by a slow event handler.
+    private readonly Channel<InputSnapshot> _snapshotDispatch = Channel.CreateBounded<InputSnapshot>(
+        new BoundedChannelOptions(32) { FullMode = BoundedChannelFullMode.DropOldest, SingleReader = true });
+
     // Snapshot state — all protected by _syncRoot
     private InputSnapshot _latestSnapshot = InputSnapshot.Empty;
     private bool          _v2Connected    = false;
@@ -42,11 +48,26 @@ public sealed partial class OsuInputModule : IGameInputModule, IDisposable
     internal bool _m1Pressed = false;
     internal bool _m2Pressed = false;
 
+    // Key hit state (pulse) — updated by precise WebSocket based on counter change
+    internal int            _k1Count   = -1;
+    internal int            _k2Count   = -1;
+    internal int            _m1Count   = -1;
+    internal int            _m2Count   = -1;
+    internal DateTimeOffset _k1HitUntil = DateTimeOffset.MinValue;
+    internal DateTimeOffset _k2HitUntil = DateTimeOffset.MinValue;
+    internal DateTimeOffset _m1HitUntil = DateTimeOffset.MinValue;
+    internal DateTimeOffset _m2HitUntil = DateTimeOffset.MinValue;
+
     public OsuInputModule(string tosuUrl, bool autoManageProcess = true, Action<string>? log = null)
     {
         _tosuUrl           = tosuUrl.TrimEnd('/');
         _autoManageProcess = autoManageProcess;
         _log               = log;
+
+        if (_autoManageProcess)
+        {
+            AppDomain.CurrentDomain.ProcessExit += (_, _) => StopTosuProcess();
+        }
     }
 
     public string ModuleId    => ModuleIdValue;
@@ -126,25 +147,46 @@ public sealed partial class OsuInputModule : IGameInputModule, IDisposable
 
     private async Task RunAll(CancellationToken ct)
     {
-        if (_autoManageProcess)
-            await EnsureTosuRunningAsync(ct);
+        try
+        {
+            if (_autoManageProcess)
+                await EnsureTosuRunningAsync(ct);
 
-        await Task.WhenAll(
-            RunV2LoopAsync(ct),
-            RunPreciseLoopAsync(ct));
+            await Task.WhenAll(
+                RunV2LoopAsync(ct),
+                RunPreciseLoopAsync(ct),
+                DispatchSnapshotsAsync(ct));
+        }
+        finally
+        {
+            _snapshotDispatch.Writer.TryComplete();
+            if (_autoManageProcess)
+                StopTosuProcess();
+        }
+    }
+
+    private async Task DispatchSnapshotsAsync(CancellationToken ct)
+    {
+        try
+        {
+            await foreach (var snapshot in _snapshotDispatch.Reader.ReadAllAsync(ct))
+                SnapshotUpdated?.Invoke(snapshot);
+        }
+        catch (OperationCanceledException) { }
     }
 
     // Called from any background task after updating shared state.
-    // Acquires _syncRoot, builds snapshot, stores it, then fires event outside lock.
+    // Acquires _syncRoot, builds snapshot, stores it, then enqueues for dispatch.
+    // Returns immediately — never blocks on event handlers.
     internal void PublishCurrentSnapshot()
     {
         InputSnapshot snapshot;
         lock (_syncRoot)
         {
-            snapshot       = BuildSnapshot();
+            snapshot        = BuildSnapshot();
             _latestSnapshot = snapshot;
         }
-        SnapshotUpdated?.Invoke(snapshot);
+        _snapshotDispatch.Writer.TryWrite(snapshot);
     }
 
     private void PublishDisconnectedSnapshot()
@@ -177,6 +219,12 @@ public sealed partial class OsuInputModule : IGameInputModule, IDisposable
         var connected = _v2Connected;
         var playing   = v2?.State.Number == TosuStateNumber.Playing;
         var mode      = v2?.Beatmap.Mode.Number ?? -1;
+        var now       = DateTimeOffset.UtcNow;
+
+        var k1Hit = now < _k1HitUntil;
+        var k2Hit = now < _k2HitUntil;
+        var m1Hit = now < _m1HitUntil;
+        var m2Hit = now < _m2HitUntil;
 
         var bools = new Dictionary<string, bool>(StringComparer.OrdinalIgnoreCase)
         {
@@ -190,6 +238,10 @@ public sealed partial class OsuInputModule : IGameInputModule, IDisposable
             ["raw.osu.keys.k2"]          = _k2Pressed,
             ["raw.osu.keys.m1"]          = _m1Pressed,
             ["raw.osu.keys.m2"]          = _m2Pressed,
+            ["raw.osu.keys.k1_hit"]      = k1Hit,
+            ["raw.osu.keys.k2_hit"]      = k2Hit,
+            ["raw.osu.keys.m1_hit"]      = m1Hit,
+            ["raw.osu.keys.m2_hit"]      = m2Hit,
             ["raw.osu.note_active"]      = _noteActive,
             ["raw.osu.taiko.don"]        = _taikoDon,
             ["raw.osu.taiko.kat"]        = _taikoKat,
@@ -213,15 +265,15 @@ public sealed partial class OsuInputModule : IGameInputModule, IDisposable
         }
         else if (mode == TosuModeNumber.Taiko)
         {
-            bools["raw.osu.taiko.user.k1"] = _k1Pressed;
-            bools["raw.osu.taiko.user.k2"] = _k2Pressed;
-            bools["raw.osu.taiko.user.m1"] = _m1Pressed;
-            bools["raw.osu.taiko.user.m2"] = _m2Pressed;
+            bools["raw.osu.taiko.user.k1"] = k1Hit;
+            bools["raw.osu.taiko.user.k2"] = k2Hit;
+            bools["raw.osu.taiko.user.m1"] = m1Hit;
+            bools["raw.osu.taiko.user.m2"] = m2Hit;
             // Descriptive aliases for Taiko
-            bools["raw.osu.taiko.user.left_kat"]  = _k1Pressed;
-            bools["raw.osu.taiko.user.left_don"]  = _k2Pressed;
-            bools["raw.osu.taiko.user.right_don"] = _m1Pressed;
-            bools["raw.osu.taiko.user.right_kat"] = _m2Pressed;
+            bools["raw.osu.taiko.user.left_kat"]  = k1Hit;
+            bools["raw.osu.taiko.user.left_don"]  = k2Hit;
+            bools["raw.osu.taiko.user.right_don"] = m1Hit;
+            bools["raw.osu.taiko.user.right_kat"] = m2Hit;
         }
         else if (mode == TosuModeNumber.Catch)
         {
@@ -262,7 +314,10 @@ public sealed partial class OsuInputModule : IGameInputModule, IDisposable
 
         var metadata = new Dictionary<string, string>(StringComparer.OrdinalIgnoreCase)
         {
-            ["raw.osu.beatmap_checksum"] = v2?.Beatmap.Checksum ?? string.Empty
+            ["raw.osu.beatmap_checksum"] = v2?.Beatmap.Checksum ?? string.Empty,
+            ["raw.osu.mode_id"]          = mode.ToString(),
+            ["raw.osu.debug.v2_state"]   = v2?.State.Number.ToString() ?? "none",
+            ["raw.osu.debug.note_count"] = _hitObjects.Count.ToString()
         };
 
         if (v2 != null && !string.IsNullOrEmpty(v2.Beatmap.Checksum))
@@ -273,12 +328,15 @@ public sealed partial class OsuInputModule : IGameInputModule, IDisposable
                 $"{v2.Beatmap.Artist} - {v2.Beatmap.Title} [{v2.Beatmap.Version}]{modeSuffix}";
         }
 
+        // Module is active if connected AND (tosu says playing OR there is any current activity)
+        var hasAnyActivity = _noteActive || k1Hit || k2Hit || m1Hit || m2Hit || _k1Pressed || _k2Pressed || _m1Pressed || _m2Pressed;
+
         return new InputSnapshot
         {
             TimestampUtc = DateTimeOffset.UtcNow,
             Sequence     = ++_sequence,
             IsConnected  = connected,
-            IsActive     = connected && playing,
+            IsActive     = connected && (playing || hasAnyActivity),
             BoolValues   = bools,
             FloatValues  = floats,
             Metadata     = metadata
@@ -310,6 +368,11 @@ public sealed partial class OsuInputModule : IGameInputModule, IDisposable
         def.Channels.Add(Bool("raw.osu.keys.k2", "K2", "Keys (Generic)", "Raw / Keys", "Keyboard key 2 is pressed."));
         def.Channels.Add(Bool("raw.osu.keys.m1", "M1", "Keys (Generic)", "Raw / Keys", "Mouse button 1 is pressed."));
         def.Channels.Add(Bool("raw.osu.keys.m2", "M2", "Keys (Generic)", "Raw / Keys", "Mouse button 2 is pressed."));
+
+        def.Channels.Add(Bool("raw.osu.keys.k1_hit", "K1 Hit", "Keys (Generic)", "Raw / Keys", "Pulse triggered when Keyboard key 1 is hit."));
+        def.Channels.Add(Bool("raw.osu.keys.k2_hit", "K2 Hit", "Keys (Generic)", "Raw / Keys", "Pulse triggered when Keyboard key 2 is hit."));
+        def.Channels.Add(Bool("raw.osu.keys.m1_hit", "M1 Hit", "Keys (Generic)", "Raw / Keys", "Pulse triggered when Mouse button 1 is hit."));
+        def.Channels.Add(Bool("raw.osu.keys.m2_hit", "M2 Hit", "Keys (Generic)", "Raw / Keys", "Pulse triggered when Mouse button 2 is hit."));
 
         // Mode-specific User Inputs
         def.Channels.Add(Bool("raw.osu.standard.user.k1", "Standard K1", "Standard Keys", "Raw / Keys", "Standard K1 (only in Standard mode)."));

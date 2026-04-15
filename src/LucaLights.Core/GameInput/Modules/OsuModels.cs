@@ -141,9 +141,17 @@ public sealed class TosuDirectPath
 
 public sealed class TosuPreciseData
 {
-    [JsonPropertyName("currentTime")] public int            CurrentTime { get; set; }
-    [JsonPropertyName("keys")]        public TosuKeyOverlay Keys        { get; set; } = new();
-    [JsonPropertyName("hitErrors")]   public List<int>      HitErrors   { get; set; } = [];
+    [JsonPropertyName("currentTime")] public int                    CurrentTime { get; set; }
+    [JsonPropertyName("keys")]        public TosuKeyOverlay         Keys        { get; set; } = new();
+    [JsonPropertyName("hitErrors")]   public List<double>              HitErrors   { get; set; } = [];
+    [JsonPropertyName("tourney")]     public List<TosuPreciseTourney> Tourney   { get; set; } = [];
+}
+
+public sealed class TosuPreciseTourney
+{
+    [JsonPropertyName("ipcId")]     public int           IpcId     { get; set; }
+    [JsonPropertyName("keys")]      public TosuKeyOverlay Keys     { get; set; } = new();
+    [JsonPropertyName("hitErrors")] public List<int>     HitErrors { get; set; } = [];
 }
 
 public sealed class TosuKeyOverlay

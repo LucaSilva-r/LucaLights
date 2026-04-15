@@ -132,7 +132,7 @@ public sealed partial class OsuInputModule
         int    windowStart   = 0;
         double previousMs    = 0;
 
-        // Track previous state to avoid redundant publishes
+        // Track previous state to avoid redundant state updates
         bool prevNoteActive  = false;
         bool prevDon         = false;
         bool prevKat         = false;
@@ -144,110 +144,125 @@ public sealed partial class OsuInputModule
 
         while (!ct.IsCancellationRequested)
         {
-            if (_noteEnginePaused)
+            try
             {
-                Thread.Sleep(10);
-                continue;
-            }
-
-            double lastV2Time;
-            long   elapsed;
-            lock (_syncRoot)
-            {
-                lastV2Time = _lastV2TimeMs;
-                elapsed    = _interpolationTimer.ElapsedMilliseconds;
-            }
-
-            var currentMs = lastV2Time + elapsed;
-
-            // Time jumped backward — song restarted or seeked
-            if (currentMs < previousMs - 500)
-                windowStart = 0;
-            previousMs = currentMs;
-
-            List<OsuHitObject> hitObjects;
-            int mode;
-            lock (_syncRoot)
-            {
-                hitObjects = _hitObjects;
-                mode       = _currentMode;
-            }
-
-            // Advance window past expired objects
-            while (windowStart < hitObjects.Count && hitObjects[windowStart].EndTimeMs < currentMs - 20)
-                windowStart++;
-
-            // Build active state
-            var  cols           = new bool[MaxManiaColumns];
-            bool noteActive     = false;
-            bool don            = false;
-            bool kat            = false;
-            bool standardCircle = false;
-            bool standardSlider = false;
-            bool standardSpin   = false;
-            bool catchFruit     = false;
-
-            for (var i = windowStart; i < hitObjects.Count; i++)
-            {
-                var obj = hitObjects[i];
-                if (obj.StartTimeMs > currentMs) break;
-                if (obj.EndTimeMs   < currentMs) continue;
-
-                noteActive = true;
-
-                switch (obj.Type)
+                if (_noteEnginePaused)
                 {
-                    case OsuHitObjectType.TaikoDon: don = true; break;
-                    case OsuHitObjectType.TaikoKat: kat = true; break;
-                    case OsuHitObjectType.Circle:
-                        if (mode == TosuModeNumber.Standard) standardCircle = true;
-                        else if (mode == TosuModeNumber.Mania && obj.Column < MaxManiaColumns) cols[obj.Column] = true;
-                        break;
-                    case OsuHitObjectType.Slider:   standardSlider = true; break;
-                    case OsuHitObjectType.Spinner:  standardSpin = true;   break;
-                    case OsuHitObjectType.Hold:
-                        if (mode == TosuModeNumber.Mania && obj.Column < MaxManiaColumns) cols[obj.Column] = true;
-                        break;
-                    case OsuHitObjectType.CatchFruit: catchFruit = true; break;
+                    Thread.Sleep(10);
+                    continue;
                 }
-            }
 
-            // Check if state actually changed
-            var changed = noteActive != prevNoteActive || don != prevDon || kat != prevKat
-                          || standardCircle != prevCircle || standardSlider != prevSlider
-                          || standardSpin != prevSpin || catchFruit != prevCatch
-                          || !cols.SequenceEqual(prevCols);
-
-            if (changed || publishTimer.ElapsedMilliseconds >= 16) // cap at ~60fps when unchanged
-            {
+                double lastV2Time;
+                long   elapsed;
                 lock (_syncRoot)
                 {
-                    _noteActive      = noteActive;
-                    _taikoDon        = don;
-                    _taikoKat        = kat;
-                    _standardCircle  = standardCircle;
-                    _standardSlider  = standardSlider;
-                    _standardSpinner = standardSpin;
-                    _catchFruit      = catchFruit;
-                    Array.Copy(cols, _columnBools, MaxManiaColumns);
+                    lastV2Time = _lastV2TimeMs;
+                    elapsed    = _interpolationTimer.ElapsedMilliseconds;
                 }
 
-                if (changed) PublishCurrentSnapshot();
+                var currentMs = lastV2Time + elapsed;
 
-                Array.Copy(cols, prevCols, MaxManiaColumns);
-                prevNoteActive = noteActive;
-                prevDon        = don;
-                prevKat        = kat;
-                prevCircle     = standardCircle;
-                prevSlider     = standardSlider;
-                prevSpin       = standardSpin;
-                prevCatch      = catchFruit;
-                publishTimer.Restart();
+                // Time jumped backward — song restarted or seeked
+                if (currentMs < previousMs - 500)
+                    windowStart = 0;
+                previousMs = currentMs;
+
+                List<OsuHitObject> hitObjects;
+                int mode;
+                lock (_syncRoot)
+                {
+                    hitObjects = _hitObjects;
+                    mode       = _currentMode;
+                }
+
+                // Advance window past expired objects
+                while (windowStart < hitObjects.Count && hitObjects[windowStart].EndTimeMs < currentMs - 20)
+                    windowStart++;
+
+                // Build active state
+                var  cols           = new bool[MaxManiaColumns];
+                bool noteActive     = false;
+                bool don            = false;
+                bool kat            = false;
+                bool standardCircle = false;
+                bool standardSlider = false;
+                bool standardSpin   = false;
+                bool catchFruit     = false;
+
+                for (var i = windowStart; i < hitObjects.Count; i++)
+                {
+                    var obj = hitObjects[i];
+                    if (obj.StartTimeMs > currentMs) break;
+                    if (obj.EndTimeMs   < currentMs) continue;
+
+                    noteActive = true;
+
+                    switch (obj.Type)
+                    {
+                        case OsuHitObjectType.TaikoDon: don = true; break;
+                        case OsuHitObjectType.TaikoKat: kat = true; break;
+                        case OsuHitObjectType.Circle:
+                            if (mode == TosuModeNumber.Standard) standardCircle = true;
+                            else if (mode == TosuModeNumber.Mania && obj.Column < MaxManiaColumns) cols[obj.Column] = true;
+                            break;
+                        case OsuHitObjectType.Slider:   standardSlider = true; break;
+                        case OsuHitObjectType.Spinner:  standardSpin = true;   break;
+                        case OsuHitObjectType.Hold:
+                            if (mode == TosuModeNumber.Mania && obj.Column < MaxManiaColumns) cols[obj.Column] = true;
+                            break;
+                        case OsuHitObjectType.CatchFruit: catchFruit = true; break;
+                    }
+                }
+
+                // Check if state actually changed
+                var changed = noteActive != prevNoteActive || don != prevDon || kat != prevKat
+                              || standardCircle != prevCircle || standardSlider != prevSlider
+                              || standardSpin != prevSpin || catchFruit != prevCatch
+                              || !cols.SequenceEqual(prevCols);
+
+                if (changed || publishTimer.ElapsedMilliseconds >= 16) // ~60fps minimum
+                {
+                    InputSnapshot snapshot;
+                    lock (_syncRoot)
+                    {
+                        _noteActive      = noteActive;
+                        _taikoDon        = don;
+                        _taikoKat        = kat;
+                        _standardCircle  = standardCircle;
+                        _standardSlider  = standardSlider;
+                        _standardSpinner = standardSpin;
+                        _catchFruit      = catchFruit;
+                        Array.Copy(cols, _columnBools, MaxManiaColumns);
+
+                        // Build snapshot while holding the lock to ensure consistency
+                        snapshot        = BuildSnapshot();
+                        _latestSnapshot = snapshot;
+                    }
+
+                    // Enqueue for dispatch — never blocks the note engine thread
+                    _snapshotDispatch.Writer.TryWrite(snapshot);
+
+                    Array.Copy(cols, prevCols, MaxManiaColumns);
+                    prevNoteActive = noteActive;
+                    prevDon        = don;
+                    prevKat        = kat;
+                    prevCircle     = standardCircle;
+                    prevSlider     = standardSlider;
+                    prevSpin       = standardSpin;
+                    prevCatch      = catchFruit;
+                    publishTimer.Restart();
+                }
+            }
+            catch (OperationCanceledException) { break; }
+            catch (Exception ex)
+            {
+                _log?.Invoke($"osu: note engine loop error: {ex.Message}");
             }
 
-            Thread.Sleep(1);
+            Thread.Sleep(4);
         }
     }
+
 
     // ---------------------------------------------------------------------------
     // .osu file parser — handles all four game modes
