@@ -31,27 +31,37 @@ public sealed partial class OsuInputModule
             _interpolationTimer.Restart();
         }
 
-        _noteEnginePaused = data.Game.Paused;
+        // Only a full gameplay session pauses via tosu's Game.Paused; in menus/song-select
+        // the audio preview keeps advancing, so we want the engine active there too.
+        _noteEnginePaused = data.State.Number == TosuStateNumber.Playing && data.Game.Paused;
 
-        var isPlaying  = data.State.Number == TosuStateNumber.Playing;
         var hasBeatmap = !string.IsNullOrEmpty(data.Beatmap.Checksum);
 
-        if (isPlaying && hasBeatmap)
+        if (hasBeatmap)
         {
             if (data.Beatmap.Checksum != _currentChecksum)
                 LoadBeatmap(data);
 
             StartNoteEngine();
         }
-        else if (!isPlaying)
+        else
         {
             StopNoteEngine();
             lock (_syncRoot)
             {
-                Array.Clear(_columnBools);
-                _noteActive = false;
-                _taikoDon   = false;
-                _taikoKat   = false;
+                Array.Clear(_columnLevel);
+                Array.Clear(_columnPulsePending);
+                _noteActive     = false;
+                _taikoDon       = false;
+                _taikoKat       = false;
+                _standardCircle = false;
+                _standardSlider = false;
+                _standardSpinner= false;
+                _taikoDrumroll  = false;
+                _taikoDenden    = false;
+                _catchFruit     = false;
+                _currentMode    = -1;
+                _currentChecksum = string.Empty;
             }
         }
     }
@@ -129,18 +139,15 @@ public sealed partial class OsuInputModule
     private void NoteEngineLoop(CancellationToken ct)
     {
         var    publishTimer  = Stopwatch.StartNew();
-        int    windowStart   = 0;
-        double previousMs    = 0;
+        double lastScanMs    = double.NegativeInfinity;
 
-        // Track previous state to avoid redundant state updates
-        bool prevNoteActive  = false;
-        bool prevDon         = false;
-        bool prevKat         = false;
-        bool prevCircle      = false;
-        bool prevSlider      = false;
-        bool prevSpin        = false;
-        bool prevCatch       = false;
-        var  prevCols        = new bool[MaxManiaColumns];
+        // Track previous level-state to avoid redundant publishes (pulses publish on every onset).
+        bool prevNoteActive = false;
+        bool prevSlider     = false;
+        bool prevSpin       = false;
+        bool prevDrumroll   = false;
+        bool prevDenden     = false;
+        var  prevCols       = new bool[MaxManiaColumns];
 
         while (!ct.IsCancellationRequested)
         {
@@ -152,20 +159,17 @@ public sealed partial class OsuInputModule
                     continue;
                 }
 
-                double lastV2Time;
+                double baseTime;
                 long   elapsed;
                 lock (_syncRoot)
                 {
-                    lastV2Time = _lastV2TimeMs;
-                    elapsed    = _interpolationTimer.ElapsedMilliseconds;
+                    // v2's Beatmap.Time.Live is the right clock here: during gameplay it
+                    // tracks audio time, and during song-select it ticks from 0 per map
+                    baseTime = _lastV2TimeMs;
+                    elapsed  = _interpolationTimer.ElapsedMilliseconds;
                 }
 
-                var currentMs = lastV2Time + elapsed;
-
-                // Time jumped backward — song restarted or seeked
-                if (currentMs < previousMs - 500)
-                    windowStart = 0;
-                previousMs = currentMs;
+                var currentMs = baseTime + elapsed;
 
                 List<OsuHitObject> hitObjects;
                 int mode;
@@ -175,50 +179,66 @@ public sealed partial class OsuInputModule
                     mode       = _currentMode;
                 }
 
-                // Advance window past expired objects
-                while (windowStart < hitObjects.Count && hitObjects[windowStart].EndTimeMs < currentMs - 20)
-                    windowStart++;
+                // On a large backward jump (song restart), treat everything as fresh.
+                if (currentMs < lastScanMs - 500) lastScanMs = double.NegativeInfinity;
 
-                // Build active state
-                var  cols           = new bool[MaxManiaColumns];
+                // Level state — only long notes populate these.
+                var  levelCols      = new bool[MaxManiaColumns];
                 bool noteActive     = false;
-                bool don            = false;
-                bool kat            = false;
-                bool standardCircle = false;
                 bool standardSlider = false;
                 bool standardSpin   = false;
-                bool catchFruit     = false;
+                bool taikoDrumroll  = false;
+                bool taikoDenden    = false;
 
-                for (var i = windowStart; i < hitObjects.Count; i++)
+                // Pulse onsets this tick — short notes whose StartTimeMs is in (lastScanMs, currentMs].
+                bool donOnset    = false;
+                bool katOnset    = false;
+                bool circleOnset = false;
+                bool fruitOnset  = false;
+                var  colOnset    = new bool[MaxManiaColumns];
+                var  onsetLo     = lastScanMs;
+
+                for (var i = 0; i < hitObjects.Count; i++)
                 {
                     var obj = hitObjects[i];
                     if (obj.StartTimeMs > currentMs) break;
-                    if (obj.EndTimeMs   < currentMs) continue;
 
-                    noteActive = true;
+                    var isOnset = obj.StartTimeMs > onsetLo && obj.StartTimeMs <= currentMs;
+                    var isLive  = obj.EndTimeMs  >= currentMs;
+
+                    if (isLive) noteActive = true;
 
                     switch (obj.Type)
                     {
-                        case OsuHitObjectType.TaikoDon: don = true; break;
-                        case OsuHitObjectType.TaikoKat: kat = true; break;
+                        case OsuHitObjectType.TaikoDon:   if (isOnset) donOnset    = true; break;
+                        case OsuHitObjectType.TaikoKat:   if (isOnset) katOnset    = true; break;
+                        case OsuHitObjectType.CatchFruit: if (isOnset) fruitOnset  = true; break;
                         case OsuHitObjectType.Circle:
-                            if (mode == TosuModeNumber.Standard) standardCircle = true;
-                            else if (mode == TosuModeNumber.Mania && obj.Column < MaxManiaColumns) cols[obj.Column] = true;
+                            if (mode == TosuModeNumber.Standard) { if (isOnset) circleOnset = true; }
+                            else if (mode == TosuModeNumber.Mania && obj.Column < MaxManiaColumns)
+                            { if (isOnset) colOnset[obj.Column] = true; }
                             break;
-                        case OsuHitObjectType.Slider:   standardSlider = true; break;
-                        case OsuHitObjectType.Spinner:  standardSpin = true;   break;
+                        case OsuHitObjectType.Slider:        if (isLive) standardSlider = true; break;
+                        case OsuHitObjectType.Spinner:       if (isLive) standardSpin   = true; break;
+                        case OsuHitObjectType.TaikoDrumroll: if (isLive) taikoDrumroll  = true; break;
+                        case OsuHitObjectType.TaikoDenden:   if (isLive) taikoDenden    = true; break;
                         case OsuHitObjectType.Hold:
-                            if (mode == TosuModeNumber.Mania && obj.Column < MaxManiaColumns) cols[obj.Column] = true;
+                            if (isLive && mode == TosuModeNumber.Mania && obj.Column < MaxManiaColumns)
+                                levelCols[obj.Column] = true;
                             break;
-                        case OsuHitObjectType.CatchFruit: catchFruit = true; break;
                     }
                 }
 
-                // Check if state actually changed
-                var changed = noteActive != prevNoteActive || don != prevDon || kat != prevKat
-                              || standardCircle != prevCircle || standardSlider != prevSlider
-                              || standardSpin != prevSpin || catchFruit != prevCatch
-                              || !cols.SequenceEqual(prevCols);
+                lastScanMs = currentMs;
+
+                var anyColOnset = false;
+                for (var i = 0; i < MaxManiaColumns; i++) if (colOnset[i]) { anyColOnset = true; break; }
+
+                var changed = noteActive != prevNoteActive
+                              || standardSlider != prevSlider || standardSpin != prevSpin
+                              || taikoDrumroll != prevDrumroll || taikoDenden != prevDenden
+                              || donOnset || katOnset || circleOnset || fruitOnset || anyColOnset
+                              || !levelCols.SequenceEqual(prevCols);
 
                 if (changed || publishTimer.ElapsedMilliseconds >= 16) // ~60fps minimum
                 {
@@ -226,30 +246,33 @@ public sealed partial class OsuInputModule
                     lock (_syncRoot)
                     {
                         _noteActive      = noteActive;
-                        _taikoDon        = don;
-                        _taikoKat        = kat;
-                        _standardCircle  = standardCircle;
                         _standardSlider  = standardSlider;
                         _standardSpinner = standardSpin;
-                        _catchFruit      = catchFruit;
-                        Array.Copy(cols, _columnBools, MaxManiaColumns);
+                        _taikoDrumroll   = taikoDrumroll;
+                        _taikoDenden     = taikoDenden;
 
-                        // Build snapshot while holding the lock to ensure consistency
+                        // Latch onset pulses — cleared by AcknowledgePulses after the renderer reads them.
+                        if (donOnset)    _taikoDon       = true;
+                        if (katOnset)    _taikoKat       = true;
+                        if (circleOnset) _standardCircle = true;
+                        if (fruitOnset)  _catchFruit     = true;
+
+                        Array.Copy(levelCols, _columnLevel, MaxManiaColumns);
+                        for (var i = 0; i < MaxManiaColumns; i++)
+                            if (colOnset[i]) _columnPulsePending[i] = true;
+
                         snapshot        = BuildSnapshot();
                         _latestSnapshot = snapshot;
                     }
 
-                    // Enqueue for dispatch — never blocks the note engine thread
                     _snapshotDispatch.Writer.TryWrite(snapshot);
 
-                    Array.Copy(cols, prevCols, MaxManiaColumns);
+                    Array.Copy(levelCols, prevCols, MaxManiaColumns);
                     prevNoteActive = noteActive;
-                    prevDon        = don;
-                    prevKat        = kat;
-                    prevCircle     = standardCircle;
                     prevSlider     = standardSlider;
                     prevSpin       = standardSpin;
-                    prevCatch      = catchFruit;
+                    prevDrumroll   = taikoDrumroll;
+                    prevDenden     = taikoDenden;
                     publishTimer.Restart();
                 }
             }
@@ -270,10 +293,13 @@ public sealed partial class OsuInputModule
 
     private static List<OsuHitObject> ParseOsuFile(string path, int mode, int keyCountHint)
     {
-        var    lines        = File.ReadAllLines(path);
-        var    result       = new List<OsuHitObject>();
-        string? section     = null;
-        var    keyCount     = keyCountHint > 0 ? keyCountHint : 4;
+        var     lines            = File.ReadAllLines(path);
+        var     result           = new List<OsuHitObject>();
+        string? section          = null;
+        var     keyCount         = keyCountHint > 0 ? keyCountHint : 4;
+        var     sliderMultiplier = 1.4;           // .osu default
+        var     beatLength       = 500.0;         // fallback ~120 bpm
+        var     gotBeatLength    = false;
 
         foreach (var rawLine in lines)
         {
@@ -295,10 +321,31 @@ public sealed partial class OsuInputModule
                         if (float.TryParse(val, NumberStyles.Float, CultureInfo.InvariantCulture, out var cs))
                             keyCount = (int)cs;
                     }
+                    else if (line.StartsWith("SliderMultiplier:", StringComparison.Ordinal))
+                    {
+                        var val = line["SliderMultiplier:".Length..].Trim();
+                        if (double.TryParse(val, NumberStyles.Float, CultureInfo.InvariantCulture, out var sm))
+                            sliderMultiplier = sm;
+                    }
+                    break;
+
+                case "TimingPoints":
+                    // First uninherited timing point: positive beatLength = ms per beat.
+                    if (!gotBeatLength)
+                    {
+                        var tp = line.Split(',');
+                        if (tp.Length >= 2 &&
+                            double.TryParse(tp[1].Trim(), NumberStyles.Float, CultureInfo.InvariantCulture, out var bl)
+                            && bl > 0)
+                        {
+                            beatLength    = bl;
+                            gotBeatLength = true;
+                        }
+                    }
                     break;
 
                 case "HitObjects":
-                    var obj = ParseHitObject(line, mode, keyCount);
+                    var obj = ParseHitObject(line, mode, keyCount, sliderMultiplier, beatLength);
                     if (obj is not null) result.Add(obj);
                     break;
             }
@@ -312,7 +359,8 @@ public sealed partial class OsuInputModule
         return result;
     }
 
-    private static OsuHitObject? ParseHitObject(string line, int mode, int keyCount)
+    private static OsuHitObject? ParseHitObject(string line, int mode, int keyCount,
+        double sliderMultiplier, double beatLength)
     {
         var parts = line.Split(',');
         if (parts.Length < 5) return null;
@@ -335,6 +383,24 @@ public sealed partial class OsuInputModule
                 endTime = parsed;
         }
 
+        // Spinner end time lives in parts[5] (osu!std + taiko denden).
+        int spinnerEnd = endTime;
+        if (isSpinner && parts.Length >= 6
+            && int.TryParse(parts[5].Split(':')[0].Trim(), out var se) && se > startTime)
+            spinnerEnd = se;
+
+        // Slider duration for taiko drumrolls: slides * length / (100 * SliderMultiplier) * beatLength ms.
+        // Ignores inherited velocity changes (approximation — good enough for lighting).
+        int sliderEnd = endTime;
+        if (isSlider && parts.Length >= 8
+            && int.TryParse(parts[6].Trim(), out var slides) && slides > 0
+            && double.TryParse(parts[7].Trim(), NumberStyles.Float, CultureInfo.InvariantCulture, out var length)
+            && length > 0 && sliderMultiplier > 0 && beatLength > 0)
+        {
+            var durMs = slides * length / (100.0 * sliderMultiplier) * beatLength;
+            sliderEnd = startTime + (int)Math.Round(durMs);
+        }
+
         return mode switch
         {
             TosuModeNumber.Mania => new OsuHitObject
@@ -349,8 +415,11 @@ public sealed partial class OsuInputModule
             {
                 Column      = 0,
                 StartTimeMs = startTime,
-                EndTimeMs   = endTime,
-                Type        = IsKatHitSound(hitSound) ? OsuHitObjectType.TaikoKat : OsuHitObjectType.TaikoDon
+                EndTimeMs   = isSpinner ? spinnerEnd : isSlider ? sliderEnd : endTime,
+                Type        = isSpinner ? OsuHitObjectType.TaikoDenden
+                            : isSlider  ? OsuHitObjectType.TaikoDrumroll
+                            : IsKatHitSound(hitSound) ? OsuHitObjectType.TaikoKat
+                                                      : OsuHitObjectType.TaikoDon
             },
             TosuModeNumber.Catch => new OsuHitObject
             {
@@ -363,9 +432,7 @@ public sealed partial class OsuInputModule
             {
                 Column      = 0,
                 StartTimeMs = startTime,
-                EndTimeMs   = isSpinner && parts.Length >= 6
-                              && int.TryParse(parts[5].Split(':')[0].Trim(), out var spinEnd) && spinEnd > startTime
-                              ? spinEnd : endTime,
+                EndTimeMs   = isSpinner ? spinnerEnd : endTime,
                 IsHold      = isSlider,
                 Type        = isSpinner ? OsuHitObjectType.Spinner
                             : isSlider  ? OsuHitObjectType.Slider

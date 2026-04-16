@@ -33,10 +33,15 @@ public sealed partial class OsuInputModule : IGameInputModule, IDisposable
     private TosuV2Data?   _latestV2       = null;
 
     // Note engine output — updated by NoteEngine partial, read by BuildSnapshot
-    internal readonly bool[] _columnBools     = new bool[MaxManiaColumns];
+    // Mania columns: level reflects active holds; pulse pending latches on circle onsets.
+    internal readonly bool[] _columnLevel        = new bool[MaxManiaColumns];
+    internal readonly bool[] _columnPulsePending = new bool[MaxManiaColumns];
     internal          bool   _noteActive      = false;
     internal          bool   _taikoDon        = false;
     internal          bool   _taikoKat        = false;
+    internal          bool   _taikoDrumroll   = false;
+    internal          bool   _taikoDenden     = false;
+
     internal          bool   _standardCircle  = false;
     internal          bool   _standardSlider  = false;
     internal          bool   _standardSpinner = false;
@@ -201,10 +206,26 @@ public sealed partial class OsuInputModule : IGameInputModule, IDisposable
         lock (_syncRoot)
         {
             bool clearedAny = false;
-            if (_k1HitPending && Observed(consumed, "raw.osu.keys.k1_hit")) { _k1HitPending = false; clearedAny = true; }
-            if (_k2HitPending && Observed(consumed, "raw.osu.keys.k2_hit")) { _k2HitPending = false; clearedAny = true; }
-            if (_m1HitPending && Observed(consumed, "raw.osu.keys.m1_hit")) { _m1HitPending = false; clearedAny = true; }
-            if (_m2HitPending && Observed(consumed, "raw.osu.keys.m2_hit")) { _m2HitPending = false; clearedAny = true; }
+            if (_k1HitPending  && Observed(consumed, "raw.osu.keys.k1_hit")) { _k1HitPending  = false; clearedAny = true; }
+            if (_k2HitPending  && Observed(consumed, "raw.osu.keys.k2_hit")) { _k2HitPending  = false; clearedAny = true; }
+            if (_m1HitPending  && Observed(consumed, "raw.osu.keys.m1_hit")) { _m1HitPending  = false; clearedAny = true; }
+            if (_m2HitPending  && Observed(consumed, "raw.osu.keys.m2_hit")) { _m2HitPending  = false; clearedAny = true; }
+
+            // Tap-type note pulses — latched one-frame signals driven by NoteEngine onsets.
+            // Slider/spinner/hold remain level (not touched here).
+            if (_taikoDon       && Observed(consumed, "raw.osu.taiko.don"))        { _taikoDon       = false; clearedAny = true; }
+            if (_taikoKat       && Observed(consumed, "raw.osu.taiko.kat"))        { _taikoKat       = false; clearedAny = true; }
+            if (_standardCircle && Observed(consumed, "raw.osu.standard.circle")) { _standardCircle = false; clearedAny = true; }
+            if (_catchFruit     && Observed(consumed, "raw.osu.catch.fruit"))     { _catchFruit     = false; clearedAny = true; }
+
+            for (var i = 0; i < MaxManiaColumns; i++)
+            {
+                if (_columnPulsePending[i] && Observed(consumed, $"raw.osu.mania.col_{i}"))
+                {
+                    _columnPulsePending[i] = false;
+                    clearedAny = true;
+                }
+            }
 
             if (clearedAny)
                 _latestSnapshot = BuildSnapshot();
@@ -239,8 +260,14 @@ public sealed partial class OsuInputModule : IGameInputModule, IDisposable
     {
         var v2        = _latestV2;
         var connected = _v2Connected;
-        var playing   = v2?.State.Number == TosuStateNumber.Playing;
-        var mode      = v2?.Beatmap.Mode.Number ?? -1;
+        var stateNum  = v2?.State.Number ?? -1;
+        var playing   = stateNum == TosuStateNumber.Playing;
+        var inMenu    = stateNum == TosuStateNumber.MainMenu;
+        var inSelect  = stateNum == TosuStateNumber.SelectPlay || stateNum == TosuStateNumber.SelectEdit;
+        var inResults = stateNum == TosuStateNumber.Ranking;
+        // Mode is driven by the beatmap loaded in the note engine, so effects follow the
+        // currently previewed beatmap (e.g. while browsing song select).
+        var mode      = _currentMode;
         // Pulse flags stay latched until AcknowledgePulses() is called by the renderer.
         var k1Hit = _k1HitPending;
         var k2Hit = _k2HitPending;
@@ -251,6 +278,9 @@ public sealed partial class OsuInputModule : IGameInputModule, IDisposable
         {
             ["raw.osu.connected"]        = connected,
             ["raw.osu.playing"]          = playing,
+            ["raw.osu.state.menu"]       = inMenu,
+            ["raw.osu.state.song_select"]= inSelect,
+            ["raw.osu.state.results"]    = inResults,
             ["raw.osu.paused"]           = v2?.Game.Paused ?? false,
             ["raw.osu.failed"]           = v2?.Play.Failed ?? false,
             ["raw.osu.is_kiai"]          = v2?.Beatmap.IsKiai ?? false,
@@ -266,6 +296,8 @@ public sealed partial class OsuInputModule : IGameInputModule, IDisposable
             ["raw.osu.note_active"]      = _noteActive,
             ["raw.osu.taiko.don"]        = _taikoDon,
             ["raw.osu.taiko.kat"]        = _taikoKat,
+            ["raw.osu.taiko.drumroll"]   = _taikoDrumroll,
+            ["raw.osu.taiko.denden"]     = _taikoDenden,
             ["raw.osu.standard.circle"]  = _standardCircle,
             ["raw.osu.standard.slider"]  = _standardSlider,
             ["raw.osu.standard.spinner"] = _standardSpinner,
@@ -312,7 +344,7 @@ public sealed partial class OsuInputModule : IGameInputModule, IDisposable
         }
 
         for (var i = 0; i < MaxManiaColumns; i++)
-            bools[$"raw.osu.mania.col_{i}"] = _columnBools[i];
+            bools[$"raw.osu.mania.col_{i}"] = _columnLevel[i] || _columnPulsePending[i];
 
         var timeMs  = v2?.Beatmap.Time.Live      ?? 0;
         var totalMs = v2?.Beatmap.Time.Mp3Length ?? 1;
@@ -379,6 +411,9 @@ public sealed partial class OsuInputModule : IGameInputModule, IDisposable
         def.Channels.Add(Bool("raw.osu.playing",    "Playing",   "System", "Raw / System", "True while actively in gameplay (state = playing)."));
         def.Channels.Add(Bool("raw.osu.paused",     "Paused",    "System", "Raw / System", "True while the game is paused."));
         def.Channels.Add(Bool("raw.osu.failed",     "Failed",    "System", "Raw / System", "True after the player fails."));
+        def.Channels.Add(Bool("raw.osu.state.menu",        "Main Menu",   "System", "Raw / System", "True while in the osu! main menu."));
+        def.Channels.Add(Bool("raw.osu.state.song_select", "Song Select", "System", "Raw / System", "True while in the song select screen."));
+        def.Channels.Add(Bool("raw.osu.state.results",     "Results",     "System", "Raw / System", "True while on the results/ranking screen."));
 
         // Beatmap state
         def.Channels.Add(Bool("raw.osu.is_kiai",  "Kiai",  "Beatmap", "Raw / Beatmap", "True during kiai (chorus/hype) sections."));
@@ -414,21 +449,23 @@ public sealed partial class OsuInputModule : IGameInputModule, IDisposable
 
         // Notes (from .osu file timing engine)
         def.Channels.Add(Bool("raw.osu.note_active", "Note Active", "Notes", "Raw / Notes", "True when any hit object is active at the current song time."));
-        def.Channels.Add(Bool("raw.osu.taiko.don",   "Taiko Don",   "Notes", "Raw / Notes", "True when a don (centre/red) note is active."));
-        def.Channels.Add(Bool("raw.osu.taiko.kat",   "Taiko Kat",   "Notes", "Raw / Notes", "True when a kat (rim/blue) note is active."));
+        def.Channels.Add(Bool("raw.osu.taiko.don",      "Taiko Don",      "Notes", "Raw / Notes", "One-frame pulse on each don (centre/red) note onset."));
+        def.Channels.Add(Bool("raw.osu.taiko.kat",      "Taiko Kat",      "Notes", "Raw / Notes", "One-frame pulse on each kat (rim/blue) note onset."));
+        def.Channels.Add(Bool("raw.osu.taiko.drumroll", "Taiko Drumroll", "Notes", "Raw / Notes", "True while a drumroll (yellow slider) is active."));
+        def.Channels.Add(Bool("raw.osu.taiko.denden",   "Taiko Denden",   "Notes", "Raw / Notes", "True while a denden (spinner) is active."));
 
         // Standard
-        def.Channels.Add(Bool("raw.osu.standard.circle",  "Standard Circle",  "Notes", "Raw / Notes", "True when a standard hit circle is active."));
+        def.Channels.Add(Bool("raw.osu.standard.circle",  "Standard Circle",  "Notes", "Raw / Notes", "One-frame pulse on each standard hit circle onset."));
         def.Channels.Add(Bool("raw.osu.standard.slider",  "Standard Slider",  "Notes", "Raw / Notes", "True when a standard slider is active."));
         def.Channels.Add(Bool("raw.osu.standard.spinner", "Standard Spinner", "Notes", "Raw / Notes", "True when a standard spinner is active."));
 
         // Catch
-        def.Channels.Add(Bool("raw.osu.catch.fruit", "Catch Fruit", "Notes", "Raw / Notes", "True when a catch fruit (or droplet) is active."));
+        def.Channels.Add(Bool("raw.osu.catch.fruit", "Catch Fruit", "Notes", "Raw / Notes", "One-frame pulse on each catch fruit/droplet onset."));
 
         // Mania columns
         for (var i = 0; i < MaxManiaColumns; i++)
             def.Channels.Add(Bool($"raw.osu.mania.col_{i}", $"Mania Col {i}", "Mania Columns",
-                "Raw / Notes", $"True when mania column {i} has an active note."));
+                "Raw / Notes", $"Pulse on circle onset in mania column {i}; level while a hold in column {i} is active."));
 
         // Mode
         def.Channels.Add(Bool("raw.osu.mode.standard", "Standard", "Mode", "Raw / Mode", "True when playing osu!standard."));

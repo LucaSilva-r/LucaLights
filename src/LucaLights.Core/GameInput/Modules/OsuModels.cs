@@ -30,7 +30,13 @@ public sealed class TosuState
 
 public static class TosuStateNumber
 {
-    public const int Playing = 2;
+    public const int MainMenu       = 0;
+    public const int Edit           = 1;
+    public const int Playing        = 2;
+    public const int Exit           = 3;
+    public const int SelectEdit     = 4;
+    public const int SelectPlay     = 5; // Song select (play)
+    public const int Ranking        = 7; // Results screen
 }
 
 public sealed class TosuBeatmap
@@ -189,5 +195,7 @@ public enum OsuHitObjectType
     Hold,        // mania hold note
     TaikoDon,
     TaikoKat,
+    TaikoDrumroll, // yellow slider — roll the drum
+    TaikoDenden,   // spinner — alternate don/kat
     CatchFruit,
 }
