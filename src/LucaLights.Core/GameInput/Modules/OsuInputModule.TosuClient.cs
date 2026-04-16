@@ -184,14 +184,6 @@ public sealed partial class OsuInputModule
             _lastPrecisePublish.Restart();
         }
 
-        if (anyNewHit)
-            _log?.Invoke($"[precise] HIT — k1={data.Keys.K1.Count} k2={data.Keys.K2.Count} m1={data.Keys.M1.Count} m2={data.Keys.M2.Count}");
-
-        if (_debugLogTimer.ElapsedMilliseconds >= 2000)
-        {
-            _log?.Invoke($"[precise] alive — k1={data.Keys.K1.Count} k2={data.Keys.K2.Count} t={data.CurrentTime}ms");
-            _debugLogTimer.Restart();
-        }
     }
 
     // ---------------------------------------------------------------------------
