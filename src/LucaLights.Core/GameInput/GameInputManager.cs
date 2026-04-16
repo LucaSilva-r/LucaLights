@@ -54,6 +54,18 @@ public sealed class GameInputManager : IDisposable
 
     public bool IsRenderingActive => LatestSnapshot.IsActive;
 
+    // Call once per render frame after sampling LatestSnapshot. Lets pulse/edge modules
+    // clear their latched state so the next frame reflects fresh inputs.
+    public void AcknowledgePulses(InputSnapshot consumed)
+    {
+        IGameInputModule? active;
+        lock (_syncRoot)
+        {
+            active = _activeModule;
+        }
+        active?.AcknowledgePulses(consumed);
+    }
+
     public IReadOnlyCollection<IGameInputModule> Modules
     {
         get

@@ -162,6 +162,9 @@ public sealed class LightingManager : IDisposable
 
             FrameRendered?.Invoke(frameContext);
 
+            // Clear any pulse/edge-triggered inputs now that this frame has consumed them.
+            _gameInputManager?.AcknowledgePulses(inputSnapshot);
+
             var remaining = targetFrameTimeMs - (int)sw.ElapsedMilliseconds;
             if (remaining > 1)
             {

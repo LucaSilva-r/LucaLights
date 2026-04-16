@@ -190,6 +190,27 @@ public sealed partial class OsuInputModule : IGameInputModule, IDisposable
         _snapshotDispatch.Writer.TryWrite(snapshot);
     }
 
+    // Renderer signals a frame has consumed the current snapshot. Clear the pulse latches
+    // and refresh _latestSnapshot so a later sample without an intervening publish cannot
+    // re-deliver the same pulse.
+    public void AcknowledgePulses(InputSnapshot consumed)
+    {
+        static bool Observed(InputSnapshot s, string key) =>
+            s.BoolValues.TryGetValue(key, out var v) && v;
+
+        lock (_syncRoot)
+        {
+            bool clearedAny = false;
+            if (_k1HitPending && Observed(consumed, "raw.osu.keys.k1_hit")) { _k1HitPending = false; clearedAny = true; }
+            if (_k2HitPending && Observed(consumed, "raw.osu.keys.k2_hit")) { _k2HitPending = false; clearedAny = true; }
+            if (_m1HitPending && Observed(consumed, "raw.osu.keys.m1_hit")) { _m1HitPending = false; clearedAny = true; }
+            if (_m2HitPending && Observed(consumed, "raw.osu.keys.m2_hit")) { _m2HitPending = false; clearedAny = true; }
+
+            if (clearedAny)
+                _latestSnapshot = BuildSnapshot();
+        }
+    }
+
     private void PublishDisconnectedSnapshot()
     {
         InputSnapshot snap;
@@ -220,11 +241,11 @@ public sealed partial class OsuInputModule : IGameInputModule, IDisposable
         var connected = _v2Connected;
         var playing   = v2?.State.Number == TosuStateNumber.Playing;
         var mode      = v2?.Beatmap.Mode.Number ?? -1;
-        // Consume pulse flags — each pulse is delivered in exactly one snapshot.
-        var k1Hit = _k1HitPending; _k1HitPending = false;
-        var k2Hit = _k2HitPending; _k2HitPending = false;
-        var m1Hit = _m1HitPending; _m1HitPending = false;
-        var m2Hit = _m2HitPending; _m2HitPending = false;
+        // Pulse flags stay latched until AcknowledgePulses() is called by the renderer.
+        var k1Hit = _k1HitPending;
+        var k2Hit = _k2HitPending;
+        var m1Hit = _m1HitPending;
+        var m2Hit = _m2HitPending;
 
         var bools = new Dictionary<string, bool>(StringComparer.OrdinalIgnoreCase)
         {
