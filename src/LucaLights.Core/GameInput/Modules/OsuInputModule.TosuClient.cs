@@ -146,9 +146,6 @@ public sealed partial class OsuInputModule
 
         lock (_syncRoot)
         {
-            var now    = DateTimeOffset.UtcNow;
-            var window = TimeSpan.FromMilliseconds(120);
-
             // _k*Count == -1 → first frame after (re)connect; snapshot counts without triggering hits.
             if (_k1Count == -1)
             {
@@ -159,10 +156,10 @@ public sealed partial class OsuInputModule
             }
             else
             {
-                if (data.Keys.K1.Count != _k1Count) { _k1HitUntil = now.Add(window); anyNewHit = true; }
-                if (data.Keys.K2.Count != _k2Count) { _k2HitUntil = now.Add(window); anyNewHit = true; }
-                if (data.Keys.M1.Count != _m1Count) { _m1HitUntil = now.Add(window); anyNewHit = true; }
-                if (data.Keys.M2.Count != _m2Count) { _m2HitUntil = now.Add(window); anyNewHit = true; }
+                if (data.Keys.K1.Count != _k1Count) { _k1HitPending = true; anyNewHit = true; }
+                if (data.Keys.K2.Count != _k2Count) { _k2HitPending = true; anyNewHit = true; }
+                if (data.Keys.M1.Count != _m1Count) { _m1HitPending = true; anyNewHit = true; }
+                if (data.Keys.M2.Count != _m2Count) { _m2HitPending = true; anyNewHit = true; }
 
                 _k1Count = data.Keys.K1.Count;
                 _k2Count = data.Keys.K2.Count;

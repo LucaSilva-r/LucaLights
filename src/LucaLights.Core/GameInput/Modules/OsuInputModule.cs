@@ -53,10 +53,11 @@ public sealed partial class OsuInputModule : IGameInputModule, IDisposable
     internal int            _k2Count   = -1;
     internal int            _m1Count   = -1;
     internal int            _m2Count   = -1;
-    internal DateTimeOffset _k1HitUntil = DateTimeOffset.MinValue;
-    internal DateTimeOffset _k2HitUntil = DateTimeOffset.MinValue;
-    internal DateTimeOffset _m1HitUntil = DateTimeOffset.MinValue;
-    internal DateTimeOffset _m2HitUntil = DateTimeOffset.MinValue;
+    // Pulse flags — set on counter change, cleared when consumed by BuildSnapshot.
+    internal bool _k1HitPending;
+    internal bool _k2HitPending;
+    internal bool _m1HitPending;
+    internal bool _m2HitPending;
 
     public OsuInputModule(string tosuUrl, bool autoManageProcess = true, Action<string>? log = null)
     {
@@ -219,12 +220,11 @@ public sealed partial class OsuInputModule : IGameInputModule, IDisposable
         var connected = _v2Connected;
         var playing   = v2?.State.Number == TosuStateNumber.Playing;
         var mode      = v2?.Beatmap.Mode.Number ?? -1;
-        var now       = DateTimeOffset.UtcNow;
-
-        var k1Hit = now < _k1HitUntil;
-        var k2Hit = now < _k2HitUntil;
-        var m1Hit = now < _m1HitUntil;
-        var m2Hit = now < _m2HitUntil;
+        // Consume pulse flags — each pulse is delivered in exactly one snapshot.
+        var k1Hit = _k1HitPending; _k1HitPending = false;
+        var k2Hit = _k2HitPending; _k2HitPending = false;
+        var m1Hit = _m1HitPending; _m1HitPending = false;
+        var m2Hit = _m2HitPending; _m2HitPending = false;
 
         var bools = new Dictionary<string, bool>(StringComparer.OrdinalIgnoreCase)
         {
