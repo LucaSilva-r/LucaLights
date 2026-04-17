@@ -9,6 +9,10 @@ public sealed partial class OsuInputModule
 {
     private static readonly JsonSerializerOptions JsonOpts = new() { PropertyNameCaseInsensitive = true };
 
+    // If tosu stops sending v2 updates for this long we assume osu! quit — tosu doesn't
+    // close the socket in that case, it just goes silent.
+    private static readonly TimeSpan V2IdleTimeout = TimeSpan.FromMilliseconds(500);
+
     // Rate-limit precise publishes to ~60 fps; always publish immediately on a new hit.
     private readonly Stopwatch _lastPrecisePublish = Stopwatch.StartNew();
 
@@ -28,23 +32,49 @@ public sealed partial class OsuInputModule
         while (!ct.IsCancellationRequested)
         {
             using var ws = new ClientWebSocket();
+            // `idleDisconnected` tracks whether we've already fired the idle-disconnect
+            // side effects for this socket, so we do it exactly once per osu! close and
+            // silently re-arm when messages resume without spamming connect/disconnect logs.
+            // Note: we must NOT cancel ReceiveAsync — ClientWebSocket aborts the socket on
+            // cancellation, so we detect idle via Task.WhenAny with a timer instead.
+            bool idleDisconnected = false;
             try
             {
                 await ws.ConnectAsync(url, ct).ConfigureAwait(false);
 
                 lock (_syncRoot) { _v2Connected = true; }
-                _log?.Invoke("osu: v2 connected.");
                 PublishCurrentSnapshot();
+
+                var                              lastMsgTicks = Environment.TickCount64;
+                Task<WebSocketReceiveResult>?    receiveTask  = null;
 
                 while (!ct.IsCancellationRequested)
                 {
                     sb.Clear();
                     bool closed = false;
-                    WebSocketReceiveResult msg;
+                    WebSocketReceiveResult msg = default!;
 
                     do
                     {
-                        msg = await ws.ReceiveAsync(new ArraySegment<byte>(buf), ct).ConfigureAwait(false);
+                        receiveTask ??= ws.ReceiveAsync(new ArraySegment<byte>(buf), ct);
+                        var completed = await Task.WhenAny(receiveTask, Task.Delay(V2IdleTimeout, ct)).ConfigureAwait(false);
+
+                        if (completed != receiveTask)
+                        {
+                            // Timer fired before a frame arrived.
+                            if (!idleDisconnected &&
+                                Environment.TickCount64 - lastMsgTicks >= (long)V2IdleTimeout.TotalMilliseconds)
+                            {
+                                ResetOsuState();
+                                idleDisconnected = true;
+                            }
+                            continue;
+                        }
+
+                        msg          = await receiveTask.ConfigureAwait(false);
+                        receiveTask  = null;
+                        lastMsgTicks = Environment.TickCount64;
+
                         if (msg.MessageType == WebSocketMessageType.Close) { closed = true; break; }
                         if (msg.MessageType == WebSocketMessageType.Text)
                             sb.Append(Encoding.UTF8.GetString(buf, 0, msg.Count));
@@ -57,24 +87,49 @@ public sealed partial class OsuInputModule
                     var data = TryDeserialize<TosuV2Data>(sb.ToString());
                     if (data is null) continue;
 
+                    if (idleDisconnected)
+                    {
+                        lock (_syncRoot) { _v2Connected = true; }
+                        idleDisconnected = false;
+                    }
+
                     lock (_syncRoot) { _latestV2 = data; }
                     OnV2DataReceived(data);
                     PublishCurrentSnapshot();
                 }
             }
             catch (OperationCanceledException) when (ct.IsCancellationRequested) { break; }
-            catch (Exception ex) when (!ct.IsCancellationRequested)
-            {
-                _log?.Invoke($"osu: v2 error — {ex.Message}");
-            }
+            catch when (!ct.IsCancellationRequested) { /* swallow — reconnect quietly */ }
 
-            lock (_syncRoot) { _v2Connected = false; }
-            PublishCurrentSnapshot();
-            _log?.Invoke("osu: v2 disconnected.");
+            ResetOsuState();
 
             try { await Task.Delay(2000, ct).ConfigureAwait(false); }
             catch (OperationCanceledException) { break; }
         }
+    }
+
+    private void ResetOsuState()
+    {
+        StopNoteEngine();
+        lock (_syncRoot)
+        {
+            _v2Connected = false;
+            _latestV2    = null;
+            Array.Clear(_columnLevel);
+            Array.Clear(_columnPulsePending);
+            _noteActive      = false;
+            _taikoDon        = false;
+            _taikoKat        = false;
+            _taikoDrumroll   = false;
+            _taikoDenden     = false;
+            _standardCircle  = false;
+            _standardSlider  = false;
+            _standardSpinner = false;
+            _catchFruit      = false;
+            _currentMode     = -1;
+            _currentChecksum = string.Empty;
+        }
+        PublishCurrentSnapshot();
     }
 
     // ---------------------------------------------------------------------------
