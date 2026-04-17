@@ -38,6 +38,9 @@ public sealed class DefaultNodeTypeCatalog : INodeTypeCatalog
             MathAbs(),
             MathStep(),
             MathSmoothStep(),
+            MathSin(),
+            MathCos(),
+            MathTan(),
             ColorBrightness(),
             ColorHsv(),
             ColorGradient(),
@@ -493,6 +496,42 @@ public sealed class DefaultNodeTypeCatalog : INodeTypeCatalog
                 Property("edge0", "Edge 0", NodeValueType.Float, "Lower edge of the transition.", 0, 0, 1),
                 Property("edge1", "Edge 1", NodeValueType.Float, "Upper edge of the transition.", 1, 0, 1)
             ]);
+    }
+
+    private static NodeTypeDefinition MathSin()
+    {
+        return new NodeTypeDefinition(
+            "math.sin",
+            "Sine",
+            "Math",
+            "Computes the sine of the input value (radians).",
+            [Input("value", "Value", NodeValueType.Float, "Input in radians.")],
+            [Output("value", "Value", NodeValueType.Float, "Sine result (-1 to 1).")],
+            [Property("value", "Value", NodeValueType.Float, "Fallback input value (radians).", 0)]);
+    }
+
+    private static NodeTypeDefinition MathCos()
+    {
+        return new NodeTypeDefinition(
+            "math.cos",
+            "Cosine",
+            "Math",
+            "Computes the cosine of the input value (radians).",
+            [Input("value", "Value", NodeValueType.Float, "Input in radians.")],
+            [Output("value", "Value", NodeValueType.Float, "Cosine result (-1 to 1).")],
+            [Property("value", "Value", NodeValueType.Float, "Fallback input value (radians).", 0)]);
+    }
+
+    private static NodeTypeDefinition MathTan()
+    {
+        return new NodeTypeDefinition(
+            "math.tan",
+            "Tangent",
+            "Math",
+            "Computes the tangent of the input value (radians).",
+            [Input("value", "Value", NodeValueType.Float, "Input in radians.")],
+            [Output("value", "Value", NodeValueType.Float, "Tangent result.")],
+            [Property("value", "Value", NodeValueType.Float, "Fallback input value (radians).", 0)]);
     }
 
     private static NodeTypeDefinition ColorBrightness()

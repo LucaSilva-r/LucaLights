@@ -385,6 +385,27 @@ public sealed class GraphRuntimeEvaluator
                     break;
                 }
 
+                case "math.sin":
+                {
+                    var value = GetInputFloat(preparedEffect, outputs, node.Id, "value", ReadFloat(node.Properties, "value", 0f));
+                    outputs[BuildOutputKey(node.Id, "value")] = RuntimeValue.FromFloat(MathF.Sin(value));
+                    break;
+                }
+
+                case "math.cos":
+                {
+                    var value = GetInputFloat(preparedEffect, outputs, node.Id, "value", ReadFloat(node.Properties, "value", 0f));
+                    outputs[BuildOutputKey(node.Id, "value")] = RuntimeValue.FromFloat(MathF.Cos(value));
+                    break;
+                }
+
+                case "math.tan":
+                {
+                    var value = GetInputFloat(preparedEffect, outputs, node.Id, "value", ReadFloat(node.Properties, "value", 0f));
+                    outputs[BuildOutputKey(node.Id, "value")] = RuntimeValue.FromFloat(MathF.Tan(value));
+                    break;
+                }
+
                 case "color.brightness":
                 {
                     var color = GetInputColor(preparedEffect, outputs, node.Id, "color", ReadColor(node.Properties, "color", Color.FromRgb(255, 255, 255)));
