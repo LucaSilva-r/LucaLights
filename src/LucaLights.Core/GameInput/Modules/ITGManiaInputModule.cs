@@ -11,7 +11,7 @@ public sealed class ITGManiaInputModule : IGameInputModule, IDisposable
     private const int FullSextetCount = 33;
     // ITGMania has no "closing" signal — it just stops writing to the pipe. If we see no
     // bytes for this long we declare the connection dead and tear the stream down.
-    private static readonly TimeSpan IdleTimeout = TimeSpan.FromSeconds(10);
+    private static readonly TimeSpan IdleTimeout = TimeSpan.FromMilliseconds(500);
 
     private static readonly Lazy<InputDefinition> Definition = new(BuildDefinition);
 
@@ -271,7 +271,7 @@ public sealed class ITGManiaInputModule : IGameInputModule, IDisposable
         {
             try
             {
-                using var stream = new FileStream(_pipeName, FileMode.Open, FileAccess.ReadWrite, FileShare.ReadWrite);
+                using var stream = new FileStream(_pipeName, FileMode.Open, FileAccess.ReadWrite, FileShare.ReadWrite, 4096, FileOptions.Asynchronous);
                 SetActiveStream(stream);
                 _log?.Invoke($"ITGMania FIFO open: {_pipeName}");
                 ReadStream(stream, cancellationToken);
@@ -297,6 +297,8 @@ public sealed class ITGManiaInputModule : IGameInputModule, IDisposable
     {
         var counter = 0;
         var lastByteTicks = Environment.TickCount64;
+        var idleFired = 0;
+
         using var watchdogCts = CancellationTokenSource.CreateLinkedTokenSource(cancellationToken);
         var watchdog = Task.Run(async () =>
         {
@@ -304,13 +306,13 @@ public sealed class ITGManiaInputModule : IGameInputModule, IDisposable
             {
                 while (!watchdogCts.IsCancellationRequested)
                 {
-                    await Task.Delay(1000, watchdogCts.Token).ConfigureAwait(false);
+                    await Task.Delay(200, watchdogCts.Token).ConfigureAwait(false);
                     var idleMs = Environment.TickCount64 - Interlocked.Read(ref lastByteTicks);
-                    if (idleMs >= (long)IdleTimeout.TotalMilliseconds)
+                    if (idleMs >= (long)IdleTimeout.TotalMilliseconds &&
+                        Interlocked.Exchange(ref idleFired, 1) == 0)
                     {
-                        _log?.Invoke($"ITGMania pipe idle for {idleMs} ms; treating as disconnected.");
-                        CloseActiveStream();
-                        return;
+                        _log?.Invoke($"ITGMania pipe idle for {idleMs} ms; publishing disconnected.");
+                        PublishDisconnectedSnapshot();
                     }
                 }
             }
@@ -341,6 +343,7 @@ public sealed class ITGManiaInputModule : IGameInputModule, IDisposable
                 }
 
                 Interlocked.Exchange(ref lastByteTicks, Environment.TickCount64);
+                Interlocked.Exchange(ref idleFired, 0);
 
                 if (currentData == (byte)'\n')
                 {
