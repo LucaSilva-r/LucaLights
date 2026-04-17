@@ -9,6 +9,9 @@ public sealed class ITGManiaInputModule : IGameInputModule, IDisposable
 {
     public const string ModuleIdValue = "itgmania";
     private const int FullSextetCount = 33;
+    // ITGMania has no "closing" signal — it just stops writing to the pipe. If we see no
+    // bytes for this long we declare the connection dead and tear the stream down.
+    private static readonly TimeSpan IdleTimeout = TimeSpan.FromSeconds(10);
 
     private static readonly Lazy<InputDefinition> Definition = new(BuildDefinition);
 
@@ -293,43 +296,73 @@ public sealed class ITGManiaInputModule : IGameInputModule, IDisposable
     private void ReadStream(Stream stream, CancellationToken cancellationToken)
     {
         var counter = 0;
-
-        while (!cancellationToken.IsCancellationRequested)
+        var lastByteTicks = Environment.TickCount64;
+        using var watchdogCts = CancellationTokenSource.CreateLinkedTokenSource(cancellationToken);
+        var watchdog = Task.Run(async () =>
         {
-            int currentData;
             try
             {
-                currentData = stream.ReadByte();
+                while (!watchdogCts.IsCancellationRequested)
+                {
+                    await Task.Delay(1000, watchdogCts.Token).ConfigureAwait(false);
+                    var idleMs = Environment.TickCount64 - Interlocked.Read(ref lastByteTicks);
+                    if (idleMs >= (long)IdleTimeout.TotalMilliseconds)
+                    {
+                        _log?.Invoke($"ITGMania pipe idle for {idleMs} ms; treating as disconnected.");
+                        CloseActiveStream();
+                        return;
+                    }
+                }
             }
-            catch (ObjectDisposedException) when (cancellationToken.IsCancellationRequested)
-            {
-                return;
-            }
-            catch
-            {
-                break;
-            }
+            catch (OperationCanceledException) { }
+        }, watchdogCts.Token);
 
-            if (currentData == -1)
+        try
+        {
+            while (!cancellationToken.IsCancellationRequested)
             {
-                break;
-            }
+                int currentData;
+                try
+                {
+                    currentData = stream.ReadByte();
+                }
+                catch (ObjectDisposedException) when (cancellationToken.IsCancellationRequested)
+                {
+                    return;
+                }
+                catch
+                {
+                    break;
+                }
 
-            if (currentData == (byte)'\n')
-            {
-                counter = _buffer.Length;
-            }
-            else if (counter < _buffer.Length)
-            {
-                _buffer[counter] = (byte)currentData;
-                counter++;
-            }
+                if (currentData == -1)
+                {
+                    break;
+                }
 
-            if (counter == _buffer.Length)
-            {
-                PublishSnapshot(ParsePacket(_buffer));
-                counter = 0;
+                Interlocked.Exchange(ref lastByteTicks, Environment.TickCount64);
+
+                if (currentData == (byte)'\n')
+                {
+                    counter = _buffer.Length;
+                }
+                else if (counter < _buffer.Length)
+                {
+                    _buffer[counter] = (byte)currentData;
+                    counter++;
+                }
+
+                if (counter == _buffer.Length)
+                {
+                    PublishSnapshot(ParsePacket(_buffer));
+                    counter = 0;
+                }
             }
+        }
+        finally
+        {
+            watchdogCts.Cancel();
+            try { watchdog.Wait(TimeSpan.FromSeconds(1)); } catch { }
         }
     }
 

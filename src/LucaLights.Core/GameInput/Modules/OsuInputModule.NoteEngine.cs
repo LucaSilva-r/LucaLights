@@ -35,7 +35,10 @@ public sealed partial class OsuInputModule
         // the audio preview keeps advancing, so we want the engine active there too.
         _noteEnginePaused = data.State.Number == TosuStateNumber.Playing && data.Game.Paused;
 
-        var hasBeatmap = !string.IsNullOrEmpty(data.Beatmap.Checksum);
+        // tosu keeps reporting the last beatmap after osu! quits (state = Exit); treat that
+        // as "no beatmap" so the note engine stops instead of looping on stale data.
+        var gameRunning = data.State.Number != TosuStateNumber.Exit;
+        var hasBeatmap  = gameRunning && !string.IsNullOrEmpty(data.Beatmap.Checksum);
 
         if (hasBeatmap)
         {
