@@ -634,10 +634,7 @@
 
 		const nodeId = createNodeId(typeId);
 		const properties = nodePropertiesForType(typeId, defaultPropertiesFor(nodeType));
-		const snappedPosition = snapPosition({
-			x: position.x + nodes.length * 8,
-			y: position.y + nodes.length * 8
-		});
+		const snappedPosition = snapPosition(position);
 		const nextNode: EditorFlowNode = {
 			id: nodeId,
 			type: typeId,
