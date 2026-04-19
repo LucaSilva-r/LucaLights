@@ -1,3 +1,4 @@
+using System.Diagnostics;
 using System.Text.Json.Nodes;
 using LucaLights.Core.Engine;
 using LucaLights.Core.GameInput;
@@ -10,13 +11,6 @@ public sealed class GraphRuntimeEvaluator
     private readonly record struct NormalizedColor(float R, float G, float B);
 
     private readonly record struct HsvColor(float Hue, float Saturation, float Value);
-
-    private readonly record struct PendingSegmentColorOutput(
-        IReadOnlySet<string> SegmentIds,
-        Color Color,
-        float Priority,
-        string BlendMode,
-        int EvaluationIndex);
 
     public readonly record struct PixelContext(int Index, int Length, float Normalized);
 
@@ -34,7 +28,18 @@ public sealed class GraphRuntimeEvaluator
         _nodeTypeCatalog = nodeTypeCatalog;
     }
 
+    public PreparedGraph? Prepare(Settings settings)
+    {
+        ArgumentNullException.ThrowIfNull(settings);
+        return PrepareGraph(settings.Graph, settings);
+    }
+
     public PreparedGraph? Prepare(NodeGraph? graph)
+    {
+        return PrepareGraph(graph, null);
+    }
+
+    private PreparedGraph? PrepareGraph(NodeGraph? graph, Settings? settings)
     {
         if (graph is null)
         {
@@ -66,10 +71,24 @@ public sealed class GraphRuntimeEvaluator
                 connection.SourcePortId);
         }
 
+        var compiledNodes = BuildCompiledNodes(
+            settings,
+            compiled,
+            nodeTypesByNodeId,
+            inputConnectionsByNodeId,
+            out var outputBuffer,
+            out var outputNodes,
+            out var targetSegments);
+
         return new PreparedGraph(
             compiled,
             nodeTypesByNodeId,
-            inputConnectionsByNodeId);
+            inputConnectionsByNodeId,
+            compiledNodes,
+            outputBuffer,
+            outputNodes,
+            targetSegments,
+            settings is not null);
     }
 
     public void Render(
@@ -84,495 +103,592 @@ public sealed class GraphRuntimeEvaluator
             return;
         }
 
+        if (!preparedEffect.TargetsResolved)
+        {
+            preparedEffect.ResolveTargets(settings);
+        }
+
         if (preparedEffect.HasPixelInfoNodes)
         {
-            RenderPerPixel(settings, preparedEffect, frameContext);
+            RenderPerPixel(preparedEffect, frameContext);
         }
         else
         {
-            var outputs = new Dictionary<string, RuntimeValue>(StringComparer.OrdinalIgnoreCase);
-            EvaluateGraph(settings, preparedEffect, frameContext, outputs);
+            EvaluateGraph(preparedEffect, frameContext);
         }
     }
 
     private void RenderPerPixel(
-        Settings settings,
         PreparedGraph preparedEffect,
         LightingFrameContext frameContext)
     {
-        var segments = CollectTargetSegments(settings, preparedEffect);
-        var outputs = new Dictionary<string, RuntimeValue>(StringComparer.OrdinalIgnoreCase);
-
-        foreach (var segment in segments)
+        try
         {
-            var length = segment.Leds.Length;
-            if (length == 0)
+            foreach (var segment in preparedEffect.TargetSegments)
             {
-                continue;
-            }
-
-            for (var i = 0; i < length; i++)
-            {
-                var normalized = length > 1 ? (float)i / (length - 1) : 0f;
-                _currentPixel = new PixelContext(i, length, normalized);
-                _currentSegment = segment;
-
-                outputs.Clear();
-                EvaluateGraph(settings, preparedEffect, frameContext, outputs);
-            }
-        }
-
-        _currentPixel = null;
-        _currentSegment = null;
-    }
-
-    private static HashSet<Segment> CollectTargetSegments(Settings settings, PreparedGraph preparedEffect)
-    {
-        var segments = new HashSet<Segment>();
-
-        foreach (var node in preparedEffect.CompiledGraph.EvaluationOrder)
-        {
-            if (!node.TypeId.StartsWith("output.", StringComparison.Ordinal))
-            {
-                continue;
-            }
-
-            var segmentIds = ParseStringSet(ReadString(node.Properties, "segmentIds", string.Empty));
-
-            foreach (var device in settings.Devices)
-            {
-                foreach (var segment in device.Segments)
+                var length = segment.Leds.Length;
+                if (length == 0)
                 {
-                    if (!IsSegmentTargeted(segment, segmentIds))
-                    {
-                        continue;
-                    }
+                    continue;
+                }
 
-                    segments.Add(segment);
+                for (var i = 0; i < length; i++)
+                {
+                    var normalized = length > 1 ? (float)i / (length - 1) : 0f;
+                    _currentPixel = new PixelContext(i, length, normalized);
+                    _currentSegment = segment;
+
+                    EvaluateGraph(preparedEffect, frameContext);
                 }
             }
         }
-
-        return segments;
+        finally
+        {
+            _currentPixel = null;
+            _currentSegment = null;
+        }
     }
 
     private void EvaluateGraph(
-        Settings settings,
         PreparedGraph preparedEffect,
-        LightingFrameContext frameContext,
-        Dictionary<string, RuntimeValue> outputs)
+        LightingFrameContext frameContext)
     {
         var totalSeconds = (float)frameContext.TotalElapsed.TotalSeconds;
-        var pendingSegmentColorOutputs = new List<PendingSegmentColorOutput>();
+        var nodes = preparedEffect.CompiledNodes;
 
-        for (var evaluationIndex = 0; evaluationIndex < preparedEffect.CompiledGraph.EvaluationOrder.Count; evaluationIndex++)
+        for (var i = 0; i < nodes.Length; i++)
         {
-            var node = preparedEffect.CompiledGraph.EvaluationOrder[evaluationIndex];
+            var node = nodes[i];
 
-            switch (node.TypeId)
+            switch (node.Op)
             {
-                case "annotation.comment":
+                case NodeOp.AnnotationComment:
+                case NodeOp.OutputSegmentColor:
                     break;
 
-                case "reroute.bool":
-                case "reroute.float":
-                case "reroute.color":
-                {
-                    if (TryGetInputValue(preparedEffect, outputs, node.Id, "value", out var reroutedValue))
-                    {
-                        outputs[BuildOutputKey(node.Id, "value")] = reroutedValue;
-                    }
-
-                    break;
-                }
-
-                case "constant.color":
-                    outputs[BuildOutputKey(node.Id, "color")] = RuntimeValue.FromColor(ReadColor(node.Properties));
+                case NodeOp.RerouteBool:
+                case NodeOp.RerouteFloat:
+                case NodeOp.RerouteColor:
+                    WriteOutput(preparedEffect, node, 0, ReadInputValue(preparedEffect, node, 0));
                     break;
 
-                case "constant.float":
-                    outputs[BuildOutputKey(node.Id, "value")] = RuntimeValue.FromFloat(ReadFloat(node.Properties, "value"));
+                case NodeOp.ConstantColor:
+                    WriteOutput(preparedEffect, node, 0, RuntimeValue.FromColor(node.PropColorA));
                     break;
 
-                case "constant.bool":
-                    outputs[BuildOutputKey(node.Id, "value")] = RuntimeValue.FromBool(ReadBool(node.Properties, "value"));
+                case NodeOp.ConstantFloat:
+                    WriteOutput(preparedEffect, node, 0, RuntimeValue.FromFloat(node.PropFloatA));
                     break;
 
-                case "input.bool":
-                    outputs[BuildOutputKey(node.Id, "value")] = RuntimeValue.FromBool(
-                        ReadMergedBool(frameContext.InputSnapshot, node.Properties));
+                case NodeOp.ConstantBool:
+                    WriteOutput(preparedEffect, node, 0, RuntimeValue.FromBool(node.PropBoolA));
                     break;
 
-                case "input.float":
-                    outputs[BuildOutputKey(node.Id, "value")] = RuntimeValue.FromFloat(
-                        ReadMergedFloat(frameContext.InputSnapshot, node.Properties));
+                case NodeOp.InputBool:
+                    WriteOutput(preparedEffect, node, 0, RuntimeValue.FromBool(
+                        ReadMergedBool(frameContext.InputSnapshot, node.InputKeys, node.MergeOp)));
                     break;
 
-                case "input.color":
-                    outputs[BuildOutputKey(node.Id, "value")] = RuntimeValue.FromColor(
-                        ReadMergedColor(frameContext.InputSnapshot, node.Properties));
+                case NodeOp.InputFloat:
+                    WriteOutput(preparedEffect, node, 0, RuntimeValue.FromFloat(
+                        ReadMergedFloat(frameContext.InputSnapshot, node.InputKeys, node.MergeOp)));
                     break;
 
-                case "pixel.info":
+                case NodeOp.InputColor:
+                    WriteOutput(preparedEffect, node, 0, RuntimeValue.FromColor(
+                        ReadMergedColor(frameContext.InputSnapshot, node.InputKeys, node.MergeOp)));
+                    break;
+
+                case NodeOp.PixelInfo:
                 {
                     var px = _currentPixel ?? new PixelContext(0, 1, 0f);
-                    outputs[BuildOutputKey(node.Id, "index")] = RuntimeValue.FromFloat(px.Index);
-                    outputs[BuildOutputKey(node.Id, "length")] = RuntimeValue.FromFloat(px.Length);
-                    outputs[BuildOutputKey(node.Id, "normalized")] = RuntimeValue.FromFloat(px.Normalized);
+                    WriteOutput(preparedEffect, node, 0, RuntimeValue.FromFloat(px.Index));
+                    WriteOutput(preparedEffect, node, 1, RuntimeValue.FromFloat(px.Length));
+                    WriteOutput(preparedEffect, node, 2, RuntimeValue.FromFloat(px.Normalized));
                     break;
                 }
 
-                case "logic.select-color":
+                case NodeOp.LogicSelectColor:
                 {
-                    var condition = GetInputBool(preparedEffect, outputs, node.Id, "condition", ReadBool(node.Properties, "condition"));
+                    var condition = GetInputBool(preparedEffect, node, 0);
                     var selectedColor = condition
-                        ? GetInputColor(preparedEffect, outputs, node.Id, "trueColor", ReadColor(node.Properties, "trueColor", Color.FromRgb(255, 255, 255)))
-                        : GetInputColor(preparedEffect, outputs, node.Id, "falseColor", ReadColor(node.Properties, "falseColor", Color.Black));
-                    outputs[BuildOutputKey(node.Id, "color")] = RuntimeValue.FromColor(selectedColor);
+                        ? GetInputColor(preparedEffect, node, 1)
+                        : GetInputColor(preparedEffect, node, 2);
+                    WriteOutput(preparedEffect, node, 0, RuntimeValue.FromColor(selectedColor));
                     break;
                 }
 
-                case "logic.select-float":
+                case NodeOp.LogicSelectFloat:
                 {
-                    var condition = GetInputBool(preparedEffect, outputs, node.Id, "condition", ReadBool(node.Properties, "condition"));
+                    var condition = GetInputBool(preparedEffect, node, 0);
                     var value = condition
-                        ? GetInputFloat(preparedEffect, outputs, node.Id, "true", ReadFloat(node.Properties, "true", 1f))
-                        : GetInputFloat(preparedEffect, outputs, node.Id, "false", ReadFloat(node.Properties, "false", 0f));
-                    outputs[BuildOutputKey(node.Id, "value")] = RuntimeValue.FromFloat(value);
+                        ? GetInputFloat(preparedEffect, node, 1)
+                        : GetInputFloat(preparedEffect, node, 2);
+                    WriteOutput(preparedEffect, node, 0, RuntimeValue.FromFloat(value));
                     break;
                 }
 
-                case "logic.not":
-                {
-                    var value = GetInputBool(preparedEffect, outputs, node.Id, "value", ReadBool(node.Properties, "value"));
-                    outputs[BuildOutputKey(node.Id, "value")] = RuntimeValue.FromBool(!value);
+                case NodeOp.LogicNot:
+                    WriteOutput(preparedEffect, node, 0, RuntimeValue.FromBool(!GetInputBool(preparedEffect, node, 0)));
                     break;
-                }
 
-                case "logic.and":
-                {
-                    var a = GetInputBool(preparedEffect, outputs, node.Id, "a", ReadBool(node.Properties, "a"));
-                    var b = GetInputBool(preparedEffect, outputs, node.Id, "b", ReadBool(node.Properties, "b"));
-                    outputs[BuildOutputKey(node.Id, "value")] = RuntimeValue.FromBool(a && b);
+                case NodeOp.LogicAnd:
+                    WriteOutput(preparedEffect, node, 0, RuntimeValue.FromBool(
+                        GetInputBool(preparedEffect, node, 0) && GetInputBool(preparedEffect, node, 1)));
                     break;
-                }
 
-                case "logic.or":
-                {
-                    var a = GetInputBool(preparedEffect, outputs, node.Id, "a", ReadBool(node.Properties, "a"));
-                    var b = GetInputBool(preparedEffect, outputs, node.Id, "b", ReadBool(node.Properties, "b"));
-                    outputs[BuildOutputKey(node.Id, "value")] = RuntimeValue.FromBool(a || b);
+                case NodeOp.LogicOr:
+                    WriteOutput(preparedEffect, node, 0, RuntimeValue.FromBool(
+                        GetInputBool(preparedEffect, node, 0) || GetInputBool(preparedEffect, node, 1)));
                     break;
-                }
 
-                case "logic.compare":
+                case NodeOp.LogicCompare:
                 {
-                    var a = GetInputFloat(preparedEffect, outputs, node.Id, "a", ReadFloat(node.Properties, "a", 0f));
-                    var b = GetInputFloat(preparedEffect, outputs, node.Id, "b", ReadFloat(node.Properties, "b", 0.5f));
-                    var mode = ReadString(node.Properties, "mode", "greater");
-                    var result = mode switch
+                    var a = GetInputFloat(preparedEffect, node, 0);
+                    var b = GetInputFloat(preparedEffect, node, 1);
+                    var result = node.CompareOp switch
                     {
-                        "less" => a < b,
-                        "equal" => MathF.Abs(a - b) < 0.0001f,
+                        CompareOp.Less => a < b,
+                        CompareOp.Equal => MathF.Abs(a - b) < 0.0001f,
                         _ => a > b
                     };
-                    outputs[BuildOutputKey(node.Id, "value")] = RuntimeValue.FromBool(result);
+                    WriteOutput(preparedEffect, node, 0, RuntimeValue.FromBool(result));
                     break;
                 }
 
-                case "logic.mix-color":
+                case NodeOp.LogicMixColor:
                 {
-                    var colorA = GetInputColor(preparedEffect, outputs, node.Id, "a", ReadColor(node.Properties, "a", Color.Black));
-                    var colorB = GetInputColor(preparedEffect, outputs, node.Id, "b", ReadColor(node.Properties, "b", Color.FromRgb(255, 255, 255)));
-                    var mode = ReadString(node.Properties, "mode", "mix");
-                    var factor = GetInputFloat(
-                        preparedEffect,
-                        outputs,
-                        node.Id,
-                        "factor",
-                        ReadFloat(node.Properties, "factor", 0.5f));
-                    outputs[BuildOutputKey(node.Id, "color")] = RuntimeValue.FromColor(
-                        MixColors(colorA, colorB, factor, mode));
+                    var colorA = GetInputColor(preparedEffect, node, 0);
+                    var colorB = GetInputColor(preparedEffect, node, 1);
+                    var factor = GetInputFloat(preparedEffect, node, 2);
+                    WriteOutput(preparedEffect, node, 0, RuntimeValue.FromColor(
+                        MixColors(colorA, colorB, factor, node.BlendOp)));
                     break;
                 }
 
-                case "math.add":
+                case NodeOp.MathAdd:
+                    WriteOutput(preparedEffect, node, 0, RuntimeValue.FromFloat(
+                        GetInputFloat(preparedEffect, node, 0) + GetInputFloat(preparedEffect, node, 1)));
+                    break;
+
+                case NodeOp.MathMultiply:
+                    WriteOutput(preparedEffect, node, 0, RuntimeValue.FromFloat(
+                        GetInputFloat(preparedEffect, node, 0) * GetInputFloat(preparedEffect, node, 1)));
+                    break;
+
+                case NodeOp.MathClamp:
+                    WriteOutput(preparedEffect, node, 0, RuntimeValue.FromFloat(Math.Clamp(
+                        GetInputFloat(preparedEffect, node, 0),
+                        GetInputFloat(preparedEffect, node, 1),
+                        GetInputFloat(preparedEffect, node, 2))));
+                    break;
+
+                case NodeOp.MathRemap:
                 {
-                    var a = GetInputFloat(preparedEffect, outputs, node.Id, "a", ReadFloat(node.Properties, "a", 0f));
-                    var b = GetInputFloat(preparedEffect, outputs, node.Id, "b", ReadFloat(node.Properties, "b", 0f));
-                    outputs[BuildOutputKey(node.Id, "value")] = RuntimeValue.FromFloat(a + b);
+                    var value = GetInputFloat(preparedEffect, node, 0);
+                    var inRange = node.PropFloatB - node.PropFloatA;
+                    var t = inRange == 0f ? 0f : (value - node.PropFloatA) / inRange;
+                    WriteOutput(preparedEffect, node, 0, RuntimeValue.FromFloat(
+                        node.PropFloatC + (t * (node.PropFloatD - node.PropFloatC))));
                     break;
                 }
 
-                case "math.multiply":
+                case NodeOp.MathWrap:
+                    WriteOutput(preparedEffect, node, 0, RuntimeValue.FromFloat(WrapValue(
+                        GetInputFloat(preparedEffect, node, 0),
+                        GetInputFloat(preparedEffect, node, 1),
+                        GetInputFloat(preparedEffect, node, 2))));
+                    break;
+
+                case NodeOp.MathPingPong:
+                    WriteOutput(preparedEffect, node, 0, RuntimeValue.FromFloat(PingPongValue(
+                        GetInputFloat(preparedEffect, node, 0),
+                        GetInputFloat(preparedEffect, node, 1))));
+                    break;
+
+                case NodeOp.MathModulo:
                 {
-                    var a = GetInputFloat(preparedEffect, outputs, node.Id, "a", ReadFloat(node.Properties, "a", 1f));
-                    var b = GetInputFloat(preparedEffect, outputs, node.Id, "b", ReadFloat(node.Properties, "b", 1f));
-                    outputs[BuildOutputKey(node.Id, "value")] = RuntimeValue.FromFloat(a * b);
+                    var divisor = GetInputFloat(preparedEffect, node, 1);
+                    WriteOutput(preparedEffect, node, 0, RuntimeValue.FromFloat(
+                        divisor == 0f ? 0f : GetInputFloat(preparedEffect, node, 0) % divisor));
                     break;
                 }
 
-                case "math.clamp":
+                case NodeOp.MathAbs:
+                    WriteOutput(preparedEffect, node, 0, RuntimeValue.FromFloat(
+                        MathF.Abs(GetInputFloat(preparedEffect, node, 0))));
+                    break;
+
+                case NodeOp.MathStep:
+                    WriteOutput(preparedEffect, node, 0, RuntimeValue.FromFloat(
+                        GetInputFloat(preparedEffect, node, 0) >= GetInputFloat(preparedEffect, node, 1) ? 1f : 0f));
+                    break;
+
+                case NodeOp.MathSmoothStep:
                 {
-                    var value = GetInputFloat(preparedEffect, outputs, node.Id, "value", ReadFloat(node.Properties, "value", 0f));
-                    var min = GetInputFloat(preparedEffect, outputs, node.Id, "min", ReadFloat(node.Properties, "min", 0f));
-                    var max = GetInputFloat(preparedEffect, outputs, node.Id, "max", ReadFloat(node.Properties, "max", 1f));
-                    outputs[BuildOutputKey(node.Id, "value")] = RuntimeValue.FromFloat(Math.Clamp(value, min, max));
+                    var value = GetInputFloat(preparedEffect, node, 0);
+                    var range = node.PropFloatB - node.PropFloatA;
+                    var t = Math.Clamp((value - node.PropFloatA) / (range == 0f ? 1f : range), 0f, 1f);
+                    WriteOutput(preparedEffect, node, 0, RuntimeValue.FromFloat(t * t * (3f - 2f * t)));
                     break;
                 }
 
-                case "math.remap":
+                case NodeOp.MathSin:
+                    WriteOutput(preparedEffect, node, 0, RuntimeValue.FromFloat(
+                        MathF.Sin(GetInputFloat(preparedEffect, node, 0))));
+                    break;
+
+                case NodeOp.MathCos:
+                    WriteOutput(preparedEffect, node, 0, RuntimeValue.FromFloat(
+                        MathF.Cos(GetInputFloat(preparedEffect, node, 0))));
+                    break;
+
+                case NodeOp.MathTan:
+                    WriteOutput(preparedEffect, node, 0, RuntimeValue.FromFloat(
+                        MathF.Tan(GetInputFloat(preparedEffect, node, 0))));
+                    break;
+
+                case NodeOp.ColorBrightness:
+                    WriteOutput(preparedEffect, node, 0, RuntimeValue.FromColor(ScaleColor(
+                        GetInputColor(preparedEffect, node, 0),
+                        GetInputFloat(preparedEffect, node, 1))));
+                    break;
+
+                case NodeOp.ColorHsv:
+                    WriteOutput(preparedEffect, node, 0, RuntimeValue.FromColor(HsvToColor(
+                        GetInputFloat(preparedEffect, node, 0),
+                        GetInputFloat(preparedEffect, node, 1),
+                        GetInputFloat(preparedEffect, node, 2))));
+                    break;
+
+                case NodeOp.ColorGradient:
+                    WriteOutput(preparedEffect, node, 0, RuntimeValue.FromColor(SampleGradient(
+                        node.GradientStops,
+                        GetInputFloat(preparedEffect, node, 0),
+                        node.InterpolationOp)));
+                    break;
+
+                case NodeOp.TimeElapsed:
+                    WriteOutput(preparedEffect, node, 0, RuntimeValue.FromFloat(totalSeconds));
+                    break;
+
+                case NodeOp.TimeOscillator:
                 {
-                    var value = GetInputFloat(preparedEffect, outputs, node.Id, "value", ReadFloat(node.Properties, "value", 0f));
-                    var inMin = ReadFloat(node.Properties, "inMin", 0f);
-                    var inMax = ReadFloat(node.Properties, "inMax", 1f);
-                    var outMin = ReadFloat(node.Properties, "outMin", 0f);
-                    var outMax = ReadFloat(node.Properties, "outMax", 1f);
-                    var inRange = inMax - inMin;
-                    var t = inRange == 0f ? 0f : (value - inMin) / inRange;
-                    outputs[BuildOutputKey(node.Id, "value")] = RuntimeValue.FromFloat(outMin + (t * (outMax - outMin)));
+                    var speed = GetInputFloat(preparedEffect, node, 0);
+                    WriteOutput(preparedEffect, node, 0, RuntimeValue.FromFloat(
+                        EvaluateWaveform(node.WaveformOp, totalSeconds * speed)));
                     break;
                 }
 
-                case "math.wrap":
+                case NodeOp.TimePulse:
                 {
-                    var value = GetInputFloat(preparedEffect, outputs, node.Id, "value", ReadFloat(node.Properties, "value", 0f));
-                    var min = GetInputFloat(preparedEffect, outputs, node.Id, "min", ReadFloat(node.Properties, "min", 0f));
-                    var max = GetInputFloat(preparedEffect, outputs, node.Id, "max", ReadFloat(node.Properties, "max", 1f));
-                    outputs[BuildOutputKey(node.Id, "value")] = RuntimeValue.FromFloat(WrapValue(value, min, max));
+                    var trigger = GetInputBool(preparedEffect, node, 0);
+                    var duration = GetInputFloat(preparedEffect, node, 1);
+                    node.PulseState!.UpdatePulse(trigger, totalSeconds, duration, node.EdgeOp == EdgeOp.Falling);
+                    WriteOutput(preparedEffect, node, 0, RuntimeValue.FromFloat(node.PulseState.CurrentValue));
                     break;
                 }
 
-                case "math.ping-pong":
+                case NodeOp.TimeEnvelope:
                 {
-                    var value = GetInputFloat(preparedEffect, outputs, node.Id, "value", ReadFloat(node.Properties, "value", 0f));
-                    var scale = GetInputFloat(preparedEffect, outputs, node.Id, "scale", ReadFloat(node.Properties, "scale", 1f));
-                    outputs[BuildOutputKey(node.Id, "value")] = RuntimeValue.FromFloat(PingPongValue(value, scale));
-                    break;
-                }
-
-                case "math.modulo":
-                {
-                    var value = GetInputFloat(preparedEffect, outputs, node.Id, "value", ReadFloat(node.Properties, "value", 0f));
-                    var divisor = GetInputFloat(preparedEffect, outputs, node.Id, "divisor", ReadFloat(node.Properties, "divisor", 1f));
-                    outputs[BuildOutputKey(node.Id, "value")] = RuntimeValue.FromFloat(
-                        divisor == 0f ? 0f : value % divisor);
-                    break;
-                }
-
-                case "math.abs":
-                {
-                    var value = GetInputFloat(preparedEffect, outputs, node.Id, "value", ReadFloat(node.Properties, "value", 0f));
-                    outputs[BuildOutputKey(node.Id, "value")] = RuntimeValue.FromFloat(MathF.Abs(value));
-                    break;
-                }
-
-                case "math.step":
-                {
-                    var value = GetInputFloat(preparedEffect, outputs, node.Id, "value", ReadFloat(node.Properties, "value", 0f));
-                    var edge = GetInputFloat(preparedEffect, outputs, node.Id, "edge", ReadFloat(node.Properties, "edge", 0.5f));
-                    outputs[BuildOutputKey(node.Id, "value")] = RuntimeValue.FromFloat(value >= edge ? 1f : 0f);
-                    break;
-                }
-
-                case "math.smooth-step":
-                {
-                    var value = GetInputFloat(preparedEffect, outputs, node.Id, "value", ReadFloat(node.Properties, "value", 0f));
-                    var edge0 = ReadFloat(node.Properties, "edge0", 0f);
-                    var edge1 = ReadFloat(node.Properties, "edge1", 1f);
-                    var t = Math.Clamp((value - edge0) / (edge1 - edge0 == 0f ? 1f : edge1 - edge0), 0f, 1f);
-                    outputs[BuildOutputKey(node.Id, "value")] = RuntimeValue.FromFloat(t * t * (3f - 2f * t));
-                    break;
-                }
-
-                case "math.sin":
-                {
-                    var value = GetInputFloat(preparedEffect, outputs, node.Id, "value", ReadFloat(node.Properties, "value", 0f));
-                    outputs[BuildOutputKey(node.Id, "value")] = RuntimeValue.FromFloat(MathF.Sin(value));
-                    break;
-                }
-
-                case "math.cos":
-                {
-                    var value = GetInputFloat(preparedEffect, outputs, node.Id, "value", ReadFloat(node.Properties, "value", 0f));
-                    outputs[BuildOutputKey(node.Id, "value")] = RuntimeValue.FromFloat(MathF.Cos(value));
-                    break;
-                }
-
-                case "math.tan":
-                {
-                    var value = GetInputFloat(preparedEffect, outputs, node.Id, "value", ReadFloat(node.Properties, "value", 0f));
-                    outputs[BuildOutputKey(node.Id, "value")] = RuntimeValue.FromFloat(MathF.Tan(value));
-                    break;
-                }
-
-                case "color.brightness":
-                {
-                    var color = GetInputColor(preparedEffect, outputs, node.Id, "color", ReadColor(node.Properties, "color", Color.FromRgb(255, 255, 255)));
-                    var factor = GetInputFloat(preparedEffect, outputs, node.Id, "factor", ReadFloat(node.Properties, "factor", 1f));
-                    outputs[BuildOutputKey(node.Id, "color")] = RuntimeValue.FromColor(ScaleColor(color, factor));
-                    break;
-                }
-
-                case "color.hsv":
-                {
-                    var hue = GetInputFloat(preparedEffect, outputs, node.Id, "hue", ReadFloat(node.Properties, "hue", 0f));
-                    var saturation = GetInputFloat(preparedEffect, outputs, node.Id, "saturation", ReadFloat(node.Properties, "saturation", 1f));
-                    var brightness = GetInputFloat(preparedEffect, outputs, node.Id, "brightness", ReadFloat(node.Properties, "brightness", 1f));
-                    outputs[BuildOutputKey(node.Id, "color")] = RuntimeValue.FromColor(HsvToColor(hue, saturation, brightness));
-                    break;
-                }
-
-                case "color.gradient":
-                {
-                    var factor = GetInputFloat(preparedEffect, outputs, node.Id, "factor", ReadFloat(node.Properties, "factor", 0.5f));
-                    var stopsJson = ReadString(node.Properties, "stops", string.Empty);
-                    var interpolation = ReadString(node.Properties, "interpolation", "linear");
-                    var stops = preparedEffect.GetOrCreateGradientStops(node.Id, stopsJson);
-                    outputs[BuildOutputKey(node.Id, "color")] = RuntimeValue.FromColor(
-                        SampleGradient(stops, factor, interpolation));
-                    break;
-                }
-
-                case "time.elapsed":
-                    outputs[BuildOutputKey(node.Id, "seconds")] = RuntimeValue.FromFloat(totalSeconds);
-                    break;
-
-                case "time.oscillator":
-                {
-                    var speed = GetInputFloat(preparedEffect, outputs, node.Id, "speed", ReadFloat(node.Properties, "speed", 1f));
-                    var waveform = ReadString(node.Properties, "waveform", "sine");
-                    var phase = totalSeconds * speed;
-                    outputs[BuildOutputKey(node.Id, "value")] = RuntimeValue.FromFloat(EvaluateWaveform(waveform, phase));
-                    break;
-                }
-
-                case "time.pulse":
-                {
-                    var trigger = GetInputBool(preparedEffect, outputs, node.Id, "trigger", ReadBool(node.Properties, "trigger"));
-                    var duration = GetInputFloat(preparedEffect, outputs, node.Id, "duration", ReadFloat(node.Properties, "duration", 0.5f));
-                    var edge = ReadString(node.Properties, "edge", "rising");
-                    var pulseState = preparedEffect.GetOrCreatePulseState(node.Id);
-                    pulseState.UpdatePulse(trigger, totalSeconds, duration, edge == "falling");
-                    outputs[BuildOutputKey(node.Id, "value")] = RuntimeValue.FromFloat(pulseState.CurrentValue);
-                    break;
-                }
-
-                case "time.envelope":
-                {
-                    var trigger = GetInputBool(preparedEffect, outputs, node.Id, "trigger", ReadBool(node.Properties, "trigger"));
-                    var release = GetInputFloat(preparedEffect, outputs, node.Id, "release", ReadFloat(node.Properties, "release", 0.5f));
-                    var envelopeState = preparedEffect.GetOrCreateEnvelopeState(node.Id);
-                    envelopeState.Update(trigger, totalSeconds, release);
-                    outputs[BuildOutputKey(node.Id, "value")] = RuntimeValue.FromFloat(envelopeState.CurrentValue);
-                    break;
-                }
-
-                case "output.segment-color":
-                {
-                    var isActive = GetInputBool(
-                        preparedEffect,
-                        outputs,
-                        node.Id,
-                        "active",
-                        ReadBool(node.Properties, "active", true));
-
-                    if (!isActive)
-                    {
-                        break;
-                    }
-
-                    pendingSegmentColorOutputs.Add(new PendingSegmentColorOutput(
-                        ParseStringSet(ReadString(node.Properties, "segmentIds", string.Empty)),
-                        GetInputColor(preparedEffect, outputs, node.Id, "color", ReadColor(node.Properties, "color", Color.FromRgb(255, 255, 255))),
-                        ReadFloat(node.Properties, "priority", 0f),
-                        ReadString(node.Properties, "blendMode", "override"),
-                        evaluationIndex));
+                    var trigger = GetInputBool(preparedEffect, node, 0);
+                    var release = GetInputFloat(preparedEffect, node, 1);
+                    node.EnvelopeState!.Update(trigger, totalSeconds, release);
+                    WriteOutput(preparedEffect, node, 0, RuntimeValue.FromFloat(node.EnvelopeState.CurrentValue));
                     break;
                 }
             }
         }
 
-        ApplySegmentColorOutputs(settings, pendingSegmentColorOutputs);
+        ApplySegmentColorOutputs(preparedEffect);
+    }
+
+    private static CompiledNode[] BuildCompiledNodes(
+        Settings? settings,
+        CompiledNodeGraph compiled,
+        IReadOnlyDictionary<string, NodeTypeDefinition> nodeTypesByNodeId,
+        IReadOnlyDictionary<string, Dictionary<string, RuntimeConnectionSource>> inputConnectionsByNodeId,
+        out RuntimeValue[] outputBuffer,
+        out CompiledOutputNode[] outputNodes,
+        out Segment[] targetSegments)
+    {
+        var evaluationOrder = compiled.EvaluationOrder;
+        var compiledNodes = new CompiledNode[evaluationOrder.Count];
+        var outputSlotsByNodeId = new Dictionary<string, Dictionary<string, int>>(StringComparer.OrdinalIgnoreCase);
+        var slotCount = 0;
+
+        for (var evaluationIndex = 0; evaluationIndex < evaluationOrder.Count; evaluationIndex++)
+        {
+            var node = evaluationOrder[evaluationIndex];
+            if (!nodeTypesByNodeId.TryGetValue(node.Id, out var nodeType))
+            {
+                continue;
+            }
+
+            var outputSlots = new int[nodeType.Outputs.Count];
+            if (nodeType.Outputs.Count > 0)
+            {
+                var outputSlotsByPortId = new Dictionary<string, int>(nodeType.Outputs.Count, StringComparer.OrdinalIgnoreCase);
+                outputSlotsByNodeId[node.Id] = outputSlotsByPortId;
+
+                for (var outputIndex = 0; outputIndex < nodeType.Outputs.Count; outputIndex++)
+                {
+                    var slot = slotCount++;
+                    outputSlots[outputIndex] = slot;
+                    outputSlotsByPortId[nodeType.Outputs[outputIndex].Id] = slot;
+                }
+            }
+
+            compiledNodes[evaluationIndex] = CreateCompiledNode(settings, node, nodeType, outputSlots, evaluationIndex);
+        }
+
+        outputBuffer = new RuntimeValue[slotCount];
+        var outputNodeList = new List<CompiledOutputNode>();
+        var targetSegmentSet = new HashSet<Segment>();
+
+        for (var evaluationIndex = 0; evaluationIndex < evaluationOrder.Count; evaluationIndex++)
+        {
+            var sourceNode = evaluationOrder[evaluationIndex];
+            var compiledNode = compiledNodes[evaluationIndex];
+
+            if (!nodeTypesByNodeId.TryGetValue(sourceNode.Id, out var nodeType))
+            {
+                continue;
+            }
+
+            compiledNode.InputSlots = new int[nodeType.Inputs.Count];
+            compiledNode.InputDefaults = new RuntimeValue[nodeType.Inputs.Count];
+            Array.Fill(compiledNode.InputSlots, -1);
+
+            for (var inputIndex = 0; inputIndex < nodeType.Inputs.Count; inputIndex++)
+            {
+                var inputPort = nodeType.Inputs[inputIndex];
+                compiledNode.InputDefaults[inputIndex] = ReadInputDefault(sourceNode.Properties, nodeType, inputPort);
+
+                if (!inputConnectionsByNodeId.TryGetValue(sourceNode.Id, out var inputSources)
+                    || !inputSources.TryGetValue(inputPort.Id, out var source)
+                    || !outputSlotsByNodeId.TryGetValue(source.SourceNodeId, out var sourceOutputSlots)
+                    || !sourceOutputSlots.TryGetValue(source.SourcePortId, out var sourceSlot))
+                {
+                    continue;
+                }
+
+                compiledNode.InputSlots[inputIndex] = sourceSlot;
+            }
+
+            if (compiledNode.Op == NodeOp.OutputSegmentColor)
+            {
+                outputNodeList.Add(new CompiledOutputNode(compiledNode));
+
+                foreach (var segment in compiledNode.TargetSegments)
+                {
+                    targetSegmentSet.Add(segment);
+                }
+            }
+        }
+
+        outputNodeList.Sort(static (a, b) =>
+        {
+            var priorityComparison = a.Node.Priority.CompareTo(b.Node.Priority);
+            return priorityComparison != 0
+                ? priorityComparison
+                : a.Node.EvaluationIndex.CompareTo(b.Node.EvaluationIndex);
+        });
+
+        outputNodes = outputNodeList.ToArray();
+        targetSegments = new Segment[targetSegmentSet.Count];
+        targetSegmentSet.CopyTo(targetSegments);
+
+        var expectedSlotCount = 0;
+        for (var i = 0; i < compiledNodes.Length; i++)
+        {
+            expectedSlotCount += compiledNodes[i].OutputSlots.Length;
+        }
+
+        Debug.Assert(slotCount == expectedSlotCount);
+        return compiledNodes;
+    }
+
+    private static CompiledNode CreateCompiledNode(
+        Settings? settings,
+        NodeInstance node,
+        NodeTypeDefinition nodeType,
+        int[] outputSlots,
+        int evaluationIndex)
+    {
+        var compiledNode = new CompiledNode
+        {
+            Op = ParseNodeOp(node.TypeId),
+            OutputSlots = outputSlots,
+            EvaluationIndex = evaluationIndex
+        };
+
+        var properties = node.Properties;
+        switch (compiledNode.Op)
+        {
+            case NodeOp.ConstantColor:
+                compiledNode.PropColorA = ReadColor(properties);
+                break;
+
+            case NodeOp.ConstantFloat:
+                compiledNode.PropFloatA = ReadFloat(properties, "value");
+                break;
+
+            case NodeOp.ConstantBool:
+                compiledNode.PropBoolA = ReadBool(properties, "value");
+                break;
+
+            case NodeOp.InputBool:
+                compiledNode.InputKeys = ReadStringArray(properties, "key");
+                compiledNode.MergeOp = ParseBoolMergeOp(ReadString(properties, "mergeMode", "any"));
+                break;
+
+            case NodeOp.InputFloat:
+                compiledNode.InputKeys = ReadStringArray(properties, "key");
+                compiledNode.MergeOp = ParseFloatMergeOp(ReadString(properties, "mergeMode", "max"));
+                break;
+
+            case NodeOp.InputColor:
+                compiledNode.InputKeys = ReadStringArray(properties, "key");
+                compiledNode.MergeOp = ParseColorMergeOp(ReadString(properties, "mergeMode", "average"));
+                break;
+
+            case NodeOp.LogicCompare:
+                compiledNode.CompareOp = ParseCompareOp(ReadString(properties, "mode", "greater"));
+                break;
+
+            case NodeOp.LogicMixColor:
+                compiledNode.BlendOp = ParseBlendOp(ReadString(properties, "mode", "mix"));
+                break;
+
+            case NodeOp.MathRemap:
+                compiledNode.PropFloatA = ReadFloat(properties, "inMin", 0f);
+                compiledNode.PropFloatB = ReadFloat(properties, "inMax", 1f);
+                compiledNode.PropFloatC = ReadFloat(properties, "outMin", 0f);
+                compiledNode.PropFloatD = ReadFloat(properties, "outMax", 1f);
+                break;
+
+            case NodeOp.MathSmoothStep:
+                compiledNode.PropFloatA = ReadFloat(properties, "edge0", 0f);
+                compiledNode.PropFloatB = ReadFloat(properties, "edge1", 1f);
+                break;
+
+            case NodeOp.ColorGradient:
+                compiledNode.GradientStops = GradientStop.Parse(ReadString(properties, "stops", string.Empty));
+                compiledNode.InterpolationOp = ParseInterpolationOp(ReadString(properties, "interpolation", "linear"));
+                break;
+
+            case NodeOp.TimeOscillator:
+                compiledNode.WaveformOp = ParseWaveformOp(ReadString(properties, "waveform", "sine"));
+                break;
+
+            case NodeOp.TimePulse:
+                compiledNode.EdgeOp = ParseEdgeOp(ReadString(properties, "edge", "rising"));
+                compiledNode.PulseState = new PulseState();
+                break;
+
+            case NodeOp.TimeEnvelope:
+                compiledNode.EnvelopeState = new EnvelopeState();
+                break;
+
+            case NodeOp.OutputSegmentColor:
+            {
+                var segmentIds = ReadStringArray(properties, "segmentIds");
+                compiledNode.Priority = ReadFloat(properties, "priority", 0f);
+                compiledNode.BlendOp = ParseOutputBlendOp(ReadString(properties, "blendMode", "override"));
+                compiledNode.IsActiveStatic = ReadBool(properties, "active", true);
+                compiledNode.SegmentIds = segmentIds;
+                compiledNode.TargetSegments = ResolveTargetSegments(settings, segmentIds);
+
+#if DEBUG
+                Debug.Assert(!HasInputPort(nodeType, "blendMode"));
+                Debug.Assert(!HasInputPort(nodeType, "priority"));
+                Debug.Assert(!HasInputPort(nodeType, "segmentIds"));
+#endif
+                break;
+            }
+        }
+
+        return compiledNode;
+    }
+
+    private static RuntimeValue ReadInputDefault(
+        JsonObject properties,
+        NodeTypeDefinition nodeType,
+        NodePortDefinition port)
+    {
+        return port.ValueType switch
+        {
+            NodeValueType.Bool => RuntimeValue.FromBool(
+                ReadBool(properties, port.Id, ReadDefaultBool(nodeType, port.Id, false))),
+            NodeValueType.Float => RuntimeValue.FromFloat(
+                ReadFloat(properties, port.Id, ReadDefaultFloat(nodeType, port.Id, 0f))),
+            NodeValueType.Color => RuntimeValue.FromColor(
+                ReadColor(properties, port.Id, ReadDefaultColor(nodeType, port.Id, Color.Black))),
+            _ => default
+        };
+    }
+
+    private static RuntimeValue ReadInputValue(
+        PreparedGraph preparedEffect,
+        CompiledNode node,
+        int inputIndex)
+    {
+        var slot = node.InputSlots[inputIndex];
+        return slot >= 0
+            ? preparedEffect.OutputBuffer[slot]
+            : node.InputDefaults[inputIndex];
     }
 
     private static bool GetInputBool(
         PreparedGraph preparedEffect,
-        Dictionary<string, RuntimeValue> outputs,
-        string nodeId,
-        string portId,
-        bool defaultValue = false)
+        CompiledNode node,
+        int inputIndex)
     {
-        return TryGetInputValue(preparedEffect, outputs, nodeId, portId, out var value)
-            && value.Type == NodeValueType.Bool
+        var value = ReadInputValue(preparedEffect, node, inputIndex);
+        return value.Type == NodeValueType.Bool
             ? value.BoolValue
-            : defaultValue;
+            : node.InputDefaults[inputIndex].BoolValue;
     }
 
     private static Color GetInputColor(
         PreparedGraph preparedEffect,
-        Dictionary<string, RuntimeValue> outputs,
-        string nodeId,
-        string portId,
-        Color? defaultValue = null)
+        CompiledNode node,
+        int inputIndex)
     {
-        return TryGetInputValue(preparedEffect, outputs, nodeId, portId, out var value)
-            && value.Type == NodeValueType.Color
+        var value = ReadInputValue(preparedEffect, node, inputIndex);
+        return value.Type == NodeValueType.Color
             ? value.ColorValue
-            : defaultValue ?? Color.Black;
+            : node.InputDefaults[inputIndex].ColorValue;
     }
 
     private static float GetInputFloat(
         PreparedGraph preparedEffect,
-        Dictionary<string, RuntimeValue> outputs,
-        string nodeId,
-        string portId,
-        float defaultValue = 0f)
+        CompiledNode node,
+        int inputIndex)
     {
-        return TryGetInputValue(preparedEffect, outputs, nodeId, portId, out var value)
-            && value.Type == NodeValueType.Float
+        var value = ReadInputValue(preparedEffect, node, inputIndex);
+        return value.Type == NodeValueType.Float
             ? value.FloatValue
-            : defaultValue;
+            : node.InputDefaults[inputIndex].FloatValue;
     }
 
-    private static bool TryGetInputValue(
+    private static void WriteOutput(
         PreparedGraph preparedEffect,
-        Dictionary<string, RuntimeValue> outputs,
-        string nodeId,
-        string portId,
-        out RuntimeValue value)
+        CompiledNode node,
+        int outputIndex,
+        RuntimeValue value)
     {
-        value = default;
-
-        if (!preparedEffect.TryGetInputSource(nodeId, portId, out var source))
-        {
-            return false;
-        }
-
-        return outputs.TryGetValue(BuildOutputKey(source.SourceNodeId, source.SourcePortId), out value);
+        preparedEffect.OutputBuffer[node.OutputSlots[outputIndex]] = value;
     }
 
-    private static string BuildOutputKey(string nodeId, string portId)
+    private void ApplySegmentColorOutputs(PreparedGraph preparedEffect)
     {
-        return $"{nodeId}:{portId}";
-    }
-
-    private void ApplySegmentColorOutputs(
-        Settings settings,
-        List<PendingSegmentColorOutput> pendingOutputs)
-    {
-        if (pendingOutputs.Count == 0)
+        var outputNodes = preparedEffect.OutputNodes;
+        if (outputNodes.Length == 0)
         {
             return;
         }
-
-        pendingOutputs.Sort(static (a, b) =>
-        {
-            var priorityComparison = a.Priority.CompareTo(b.Priority);
-            return priorityComparison != 0
-                ? priorityComparison
-                : a.EvaluationIndex.CompareTo(b.EvaluationIndex);
-        });
 
         if (_currentPixel is { } px && _currentSegment is not null)
         {
@@ -583,141 +699,198 @@ public sealed class GraphRuntimeEvaluator
 
             var currentColor = _currentSegment.Leds[px.Index];
 
-            foreach (var pendingOutput in pendingOutputs)
+            for (var i = 0; i < outputNodes.Length; i++)
             {
-                if (!IsSegmentTargeted(_currentSegment, pendingOutput.SegmentIds))
+                var outputNode = outputNodes[i].Node;
+                if (!TargetsSegment(outputNode.TargetSegments, _currentSegment)
+                    || !IsOutputActive(preparedEffect, outputNode))
                 {
                     continue;
                 }
 
-                currentColor = BlendOutputColor(currentColor, pendingOutput.Color, pendingOutput.BlendMode);
+                currentColor = BlendOutputColor(
+                    currentColor,
+                    GetInputColor(preparedEffect, outputNode, 0),
+                    outputNode.BlendOp);
             }
 
             _currentSegment.Leds[px.Index] = currentColor;
-
             return;
         }
 
-        foreach (var device in settings.Devices)
+        for (var outputIndex = 0; outputIndex < outputNodes.Length; outputIndex++)
         {
-            foreach (var segment in device.Segments)
-            {
-                ApplySegmentColor(segment, pendingOutputs);
-            }
-        }
-    }
-
-    private static void ApplySegmentColor(
-        Segment segment,
-        IReadOnlyList<PendingSegmentColorOutput> pendingOutputs)
-    {
-        foreach (var pendingOutput in pendingOutputs)
-        {
-            if (!IsSegmentTargeted(segment, pendingOutput.SegmentIds))
+            var outputNode = outputNodes[outputIndex].Node;
+            if (!IsOutputActive(preparedEffect, outputNode))
             {
                 continue;
             }
 
-            for (var i = 0; i < segment.Leds.Length; i++)
+            var color = GetInputColor(preparedEffect, outputNode, 0);
+            for (var segmentIndex = 0; segmentIndex < outputNode.TargetSegments.Length; segmentIndex++)
             {
-                segment.Leds[i] = BlendOutputColor(segment.Leds[i], pendingOutput.Color, pendingOutput.BlendMode);
+                ApplySegmentColor(outputNode.TargetSegments[segmentIndex], color, outputNode.BlendOp);
             }
         }
     }
 
-    private static Color BlendOutputColor(Color baseColor, Color outputColor, string blendMode)
+    private static bool IsOutputActive(
+        PreparedGraph preparedEffect,
+        CompiledNode outputNode)
     {
-        var normalizedMode = string.IsNullOrWhiteSpace(blendMode)
-            ? "override"
-            : blendMode.Trim().ToLowerInvariant();
-
-        if (normalizedMode is "override" or "replace" or "mix")
+        var activeSlot = outputNode.InputSlots[1];
+        if (activeSlot < 0)
         {
-            return outputColor;
+            return outputNode.IsActiveStatic;
         }
 
-        var graphBlendMode = normalizedMode switch
-        {
-            "max" => "lighten",
-            "min" => "darken",
-            _ => normalizedMode
-        };
-
-        return DenormalizeColor(BlendColors(
-            NormalizeColor(baseColor),
-            NormalizeColor(outputColor),
-            graphBlendMode));
+        var value = preparedEffect.OutputBuffer[activeSlot];
+        return value.Type == NodeValueType.Bool
+            ? value.BoolValue
+            : outputNode.IsActiveStatic;
     }
 
-    private static bool IsSegmentTargeted(Segment segment, IReadOnlySet<string> segmentIds)
-    {
-        return segmentIds.Count == 0 || segmentIds.Contains(segment.Id);
-    }
-
-    private static void FillSegment(Segment segment, Color color)
+    private static void ApplySegmentColor(
+        Segment segment,
+        Color color,
+        BlendOp blendMode)
     {
         for (var i = 0; i < segment.Leds.Length; i++)
         {
-            segment.Leds[i] = color;
+            segment.Leds[i] = BlendOutputColor(segment.Leds[i], color, blendMode);
         }
     }
 
-    private static bool ReadMergedBool(InputSnapshot snapshot, JsonObject properties)
+    private static bool TargetsSegment(Segment[] targets, Segment segment)
     {
-        var keys = ReadStringList(properties, "key");
-        if (keys.Count == 0)
+        for (var i = 0; i < targets.Length; i++)
+        {
+            if (ReferenceEquals(targets[i], segment))
+            {
+                return true;
+            }
+        }
+
+        return false;
+    }
+
+    private static Segment[] ResolveTargetSegments(Settings? settings, string[] segmentIds)
+    {
+        if (settings is null)
+        {
+            return [];
+        }
+
+        var segments = new List<Segment>();
+        foreach (var device in settings.Devices)
+        {
+            foreach (var segment in device.Segments)
+            {
+                if (IsSegmentTargeted(segment, segmentIds))
+                {
+                    segments.Add(segment);
+                }
+            }
+        }
+
+        return segments.ToArray();
+    }
+
+    private static bool IsSegmentTargeted(Segment segment, string[] segmentIds)
+    {
+        if (segmentIds.Length == 0)
+        {
+            return true;
+        }
+
+        for (var i = 0; i < segmentIds.Length; i++)
+        {
+            if (string.Equals(segmentIds[i], segment.Id, StringComparison.OrdinalIgnoreCase))
+            {
+                return true;
+            }
+        }
+
+        return false;
+    }
+
+    private static bool ReadMergedBool(InputSnapshot snapshot, string[] keys, MergeOp mergeMode)
+    {
+        if (keys.Length == 0)
         {
             return false;
         }
 
-        var values = keys.Select(key => snapshot.GetBool(key)).ToArray();
-        var mergeMode = ReadString(properties, "mergeMode", "any");
-
-        return mergeMode switch
+        if (mergeMode == MergeOp.All)
         {
-            "all" => values.All(static value => value),
-            _ => values.Any(static value => value)
-        };
+            for (var i = 0; i < keys.Length; i++)
+            {
+                if (!snapshot.GetBool(keys[i]))
+                {
+                    return false;
+                }
+            }
+
+            return true;
+        }
+
+        for (var i = 0; i < keys.Length; i++)
+        {
+            if (snapshot.GetBool(keys[i]))
+            {
+                return true;
+            }
+        }
+
+        return false;
     }
 
-    private static float ReadMergedFloat(InputSnapshot snapshot, JsonObject properties)
+    private static float ReadMergedFloat(InputSnapshot snapshot, string[] keys, MergeOp mergeMode)
     {
-        var keys = ReadStringList(properties, "key");
-        if (keys.Count == 0)
+        if (keys.Length == 0)
         {
             return 0f;
         }
 
-        var values = keys.Select(key => snapshot.GetFloat(key)).ToArray();
-        var mergeMode = ReadString(properties, "mergeMode", "max");
-
-        return mergeMode switch
+        var result = snapshot.GetFloat(keys[0]);
+        if (mergeMode == MergeOp.Average)
         {
-            "min" => values.Min(),
-            "average" => values.Average(),
-            _ => values.Max()
-        };
+            double total = result;
+            for (var i = 1; i < keys.Length; i++)
+            {
+                total += snapshot.GetFloat(keys[i]);
+            }
+
+            return (float)(total / keys.Length);
+        }
+
+        for (var i = 1; i < keys.Length; i++)
+        {
+            var value = snapshot.GetFloat(keys[i]);
+            result = mergeMode == MergeOp.Min
+                ? MathF.Min(result, value)
+                : MathF.Max(result, value);
+        }
+
+        return result;
     }
 
-    private static Color ReadMergedColor(InputSnapshot snapshot, JsonObject properties)
+    private static Color ReadMergedColor(InputSnapshot snapshot, string[] keys, MergeOp mergeMode)
     {
-        var keys = ReadStringList(properties, "key");
-        if (keys.Count == 0)
+        if (keys.Length == 0)
         {
             return Color.Black;
         }
 
-        var colors = keys.Select(key => snapshot.GetColor(key, Color.Black)).ToArray();
-        var mergeMode = ReadString(properties, "mergeMode", "average");
-
-        if (mergeMode == "additive")
+        if (mergeMode == MergeOp.Additive)
         {
             var totalRed = 0;
             var totalGreen = 0;
             var totalBlue = 0;
 
-            foreach (var color in colors)
+            for (var i = 0; i < keys.Length; i++)
             {
+                var color = snapshot.GetColor(keys[i], Color.Black);
                 totalRed += color.R;
                 totalGreen += color.G;
                 totalBlue += color.B;
@@ -729,14 +902,39 @@ public sealed class GraphRuntimeEvaluator
                 (byte)Math.Clamp(totalBlue, byte.MinValue, byte.MaxValue));
         }
 
-        var averageRed = (int)Math.Round(colors.Average(color => color.R));
-        var averageGreen = (int)Math.Round(colors.Average(color => color.G));
-        var averageBlue = (int)Math.Round(colors.Average(color => color.B));
+        double totalRedAverage = 0;
+        double totalGreenAverage = 0;
+        double totalBlueAverage = 0;
+
+        for (var i = 0; i < keys.Length; i++)
+        {
+            var color = snapshot.GetColor(keys[i], Color.Black);
+            totalRedAverage += color.R;
+            totalGreenAverage += color.G;
+            totalBlueAverage += color.B;
+        }
+
+        var averageRed = (int)Math.Round(totalRedAverage / keys.Length);
+        var averageGreen = (int)Math.Round(totalGreenAverage / keys.Length);
+        var averageBlue = (int)Math.Round(totalBlueAverage / keys.Length);
 
         return Color.FromRgb(
             (byte)Math.Clamp(averageRed, byte.MinValue, byte.MaxValue),
             (byte)Math.Clamp(averageGreen, byte.MinValue, byte.MaxValue),
             (byte)Math.Clamp(averageBlue, byte.MinValue, byte.MaxValue));
+    }
+
+    private static Color BlendOutputColor(Color baseColor, Color outputColor, BlendOp blendMode)
+    {
+        if (blendMode == BlendOp.Override)
+        {
+            return outputColor;
+        }
+
+        return DenormalizeColor(BlendColors(
+            NormalizeColor(baseColor),
+            NormalizeColor(outputColor),
+            blendMode));
     }
 
     private static Color ReadColor(JsonObject properties)
@@ -843,7 +1041,7 @@ public sealed class GraphRuntimeEvaluator
         return wrapped <= amplitude ? wrapped : cycle - wrapped;
     }
 
-    private static Color SampleGradient(GradientStop[] stops, float factor, string interpolation)
+    private static Color SampleGradient(GradientStop[] stops, float factor, InterpolationOp interpolation)
     {
         if (stops.Length == 0)
         {
@@ -879,7 +1077,7 @@ public sealed class GraphRuntimeEvaluator
                 continue;
             }
 
-            if (interpolation == "constant")
+            if (interpolation == InterpolationOp.Constant)
             {
                 return Color.FromRgb(a.R, a.G, a.B);
             }
@@ -953,19 +1151,19 @@ public sealed class GraphRuntimeEvaluator
         return new HsvColor(hue, saturation, max);
     }
 
-    private static float EvaluateWaveform(string waveform, float phase)
+    private static float EvaluateWaveform(WaveformOp waveform, float phase)
     {
         var t = phase - MathF.Floor(phase);
         return waveform switch
         {
-            "square" => t < 0.5f ? 1f : 0f,
-            "triangle" => t < 0.5f ? t * 2f : 2f - (t * 2f),
-            "sawtooth" => t,
-            _ => (MathF.Sin(t * MathF.PI * 2f) + 1f) * 0.5f // sine
+            WaveformOp.Square => t < 0.5f ? 1f : 0f,
+            WaveformOp.Triangle => t < 0.5f ? t * 2f : 2f - (t * 2f),
+            WaveformOp.Sawtooth => t,
+            _ => (MathF.Sin(t * MathF.PI * 2f) + 1f) * 0.5f
         };
     }
 
-    private static Color MixColors(Color a, Color b, float factor, string mode = "mix")
+    private static Color MixColors(Color a, Color b, float factor, BlendOp mode)
     {
         var clamped = Math.Clamp(factor, 0f, 1f);
         var baseColor = NormalizeColor(a);
@@ -977,64 +1175,85 @@ public sealed class GraphRuntimeEvaluator
     private static NormalizedColor BlendColors(
         NormalizedColor baseColor,
         NormalizedColor blendColor,
-        string mode)
+        BlendOp mode)
     {
-        var normalizedMode = string.IsNullOrWhiteSpace(mode)
-            ? "mix"
-            : mode.Trim().ToLowerInvariant();
-
-        return normalizedMode switch
+        return mode switch
         {
-            "darken" => new(
+            BlendOp.Darken => new(
                 MathF.Min(baseColor.R, blendColor.R),
                 MathF.Min(baseColor.G, blendColor.G),
                 MathF.Min(baseColor.B, blendColor.B)),
-            "multiply" => BlendPerChannel(baseColor, blendColor, static (a, b) => a * b),
-            "color-burn" => BlendPerChannel(baseColor, blendColor, ColorBurnChannel),
-            "lighten" => new(
+            BlendOp.Multiply => new(
+                baseColor.R * blendColor.R,
+                baseColor.G * blendColor.G,
+                baseColor.B * blendColor.B),
+            BlendOp.ColorBurn => new(
+                ColorBurnChannel(baseColor.R, blendColor.R),
+                ColorBurnChannel(baseColor.G, blendColor.G),
+                ColorBurnChannel(baseColor.B, blendColor.B)),
+            BlendOp.Lighten => new(
                 MathF.Max(baseColor.R, blendColor.R),
                 MathF.Max(baseColor.G, blendColor.G),
                 MathF.Max(baseColor.B, blendColor.B)),
-            "screen" => BlendPerChannel(baseColor, blendColor, static (a, b) => 1f - ((1f - a) * (1f - b))),
-            "color-dodge" => BlendPerChannel(baseColor, blendColor, ColorDodgeChannel),
-            "add" => BlendPerChannel(baseColor, blendColor, static (a, b) => MathF.Min(1f, a + b)),
-            "overlay" => BlendPerChannel(baseColor, blendColor, OverlayChannel),
-            "soft-light" => BlendPerChannel(baseColor, blendColor, SoftLightChannel),
-            "linear-light" => BlendPerChannel(baseColor, blendColor, static (a, b) => Math.Clamp(a + (2f * b) - 1f, 0f, 1f)),
-            "difference" => BlendPerChannel(baseColor, blendColor, static (a, b) => MathF.Abs(a - b)),
-            "exclusion" => BlendPerChannel(baseColor, blendColor, static (a, b) => a + b - (2f * a * b)),
-            "subtract" => BlendPerChannel(baseColor, blendColor, static (a, b) => MathF.Max(0f, a - b)),
-            "divide" => BlendPerChannel(baseColor, blendColor, DivideChannel),
-            "hue" or "saturation" or "color" or "value" => BlendHsv(baseColor, blendColor, normalizedMode),
+            BlendOp.Screen => new(
+                1f - ((1f - baseColor.R) * (1f - blendColor.R)),
+                1f - ((1f - baseColor.G) * (1f - blendColor.G)),
+                1f - ((1f - baseColor.B) * (1f - blendColor.B))),
+            BlendOp.ColorDodge => new(
+                ColorDodgeChannel(baseColor.R, blendColor.R),
+                ColorDodgeChannel(baseColor.G, blendColor.G),
+                ColorDodgeChannel(baseColor.B, blendColor.B)),
+            BlendOp.Add => new(
+                MathF.Min(1f, baseColor.R + blendColor.R),
+                MathF.Min(1f, baseColor.G + blendColor.G),
+                MathF.Min(1f, baseColor.B + blendColor.B)),
+            BlendOp.Overlay => new(
+                OverlayChannel(baseColor.R, blendColor.R),
+                OverlayChannel(baseColor.G, blendColor.G),
+                OverlayChannel(baseColor.B, blendColor.B)),
+            BlendOp.SoftLight => new(
+                SoftLightChannel(baseColor.R, blendColor.R),
+                SoftLightChannel(baseColor.G, blendColor.G),
+                SoftLightChannel(baseColor.B, blendColor.B)),
+            BlendOp.LinearLight => new(
+                Math.Clamp(baseColor.R + (2f * blendColor.R) - 1f, 0f, 1f),
+                Math.Clamp(baseColor.G + (2f * blendColor.G) - 1f, 0f, 1f),
+                Math.Clamp(baseColor.B + (2f * blendColor.B) - 1f, 0f, 1f)),
+            BlendOp.Difference => new(
+                MathF.Abs(baseColor.R - blendColor.R),
+                MathF.Abs(baseColor.G - blendColor.G),
+                MathF.Abs(baseColor.B - blendColor.B)),
+            BlendOp.Exclusion => new(
+                baseColor.R + blendColor.R - (2f * baseColor.R * blendColor.R),
+                baseColor.G + blendColor.G - (2f * baseColor.G * blendColor.G),
+                baseColor.B + blendColor.B - (2f * baseColor.B * blendColor.B)),
+            BlendOp.Subtract => new(
+                MathF.Max(0f, baseColor.R - blendColor.R),
+                MathF.Max(0f, baseColor.G - blendColor.G),
+                MathF.Max(0f, baseColor.B - blendColor.B)),
+            BlendOp.Divide => new(
+                DivideChannel(baseColor.R, blendColor.R),
+                DivideChannel(baseColor.G, blendColor.G),
+                DivideChannel(baseColor.B, blendColor.B)),
+            BlendOp.Hue or BlendOp.Saturation or BlendOp.Color or BlendOp.Value => BlendHsv(baseColor, blendColor, mode),
             _ => blendColor
         };
-    }
-
-    private static NormalizedColor BlendPerChannel(
-        NormalizedColor baseColor,
-        NormalizedColor blendColor,
-        Func<float, float, float> blendChannel)
-    {
-        return new NormalizedColor(
-            blendChannel(baseColor.R, blendColor.R),
-            blendChannel(baseColor.G, blendColor.G),
-            blendChannel(baseColor.B, blendColor.B));
     }
 
     private static NormalizedColor BlendHsv(
         NormalizedColor baseColor,
         NormalizedColor blendColor,
-        string mode)
+        BlendOp mode)
     {
         var baseHsv = ColorToHsv(baseColor);
         var blendHsv = ColorToHsv(blendColor);
 
         return mode switch
         {
-            "hue" => HsvToNormalizedColor(blendHsv.Hue, baseHsv.Saturation, baseHsv.Value),
-            "saturation" => HsvToNormalizedColor(baseHsv.Hue, blendHsv.Saturation, baseHsv.Value),
-            "color" => HsvToNormalizedColor(blendHsv.Hue, blendHsv.Saturation, baseHsv.Value),
-            "value" => HsvToNormalizedColor(baseHsv.Hue, baseHsv.Saturation, blendHsv.Value),
+            BlendOp.Hue => HsvToNormalizedColor(blendHsv.Hue, baseHsv.Saturation, baseHsv.Value),
+            BlendOp.Saturation => HsvToNormalizedColor(baseHsv.Hue, blendHsv.Saturation, baseHsv.Value),
+            BlendOp.Color => HsvToNormalizedColor(blendHsv.Hue, blendHsv.Saturation, baseHsv.Value),
+            BlendOp.Value => HsvToNormalizedColor(baseHsv.Hue, baseHsv.Saturation, blendHsv.Value),
             _ => blendColor
         };
     }
@@ -1119,14 +1338,6 @@ public sealed class GraphRuntimeEvaluator
             from.B + ((to.B - from.B) * factor));
     }
 
-    private static List<string> ReadStringList(JsonObject properties, string key)
-    {
-        return ReadString(properties, key, string.Empty)
-            .Split(',', StringSplitOptions.TrimEntries | StringSplitOptions.RemoveEmptyEntries)
-            .Distinct(StringComparer.OrdinalIgnoreCase)
-            .ToList();
-    }
-
     private static byte ReadByte(JsonObject properties, string key, byte defaultValue)
     {
         var raw = ReadFloat(properties, key, defaultValue);
@@ -1140,36 +1351,7 @@ public sealed class GraphRuntimeEvaluator
             return defaultValue;
         }
 
-        if (node is JsonValue valueNode)
-        {
-            if (valueNode.TryGetValue<float>(out var floatValue))
-            {
-                return floatValue;
-            }
-
-            if (valueNode.TryGetValue<double>(out var doubleValue))
-            {
-                return (float)doubleValue;
-            }
-
-            if (valueNode.TryGetValue<int>(out var intValue))
-            {
-                return intValue;
-            }
-
-            if (valueNode.TryGetValue<long>(out var longValue))
-            {
-                return longValue;
-            }
-
-            if (valueNode.TryGetValue<string>(out var stringValue)
-                && float.TryParse(stringValue, out var parsed))
-            {
-                return parsed;
-            }
-        }
-
-        return defaultValue;
+        return TryReadFloat(node, out var value) ? value : defaultValue;
     }
 
     private static bool ReadBool(JsonObject properties, string key, bool defaultValue = false)
@@ -1179,21 +1361,7 @@ public sealed class GraphRuntimeEvaluator
             return defaultValue;
         }
 
-        if (node is JsonValue valueNode)
-        {
-            if (valueNode.TryGetValue<bool>(out var boolValue))
-            {
-                return boolValue;
-            }
-
-            if (valueNode.TryGetValue<string>(out var stringValue)
-                && bool.TryParse(stringValue, out var parsed))
-            {
-                return parsed;
-            }
-        }
-
-        return defaultValue;
+        return TryReadBool(node, out var value) ? value : defaultValue;
     }
 
     private static string ReadString(JsonObject properties, string key, string defaultValue = "")
@@ -1211,31 +1379,418 @@ public sealed class GraphRuntimeEvaluator
         return defaultValue;
     }
 
-    private static HashSet<string> ParseStringSet(string value)
+    private static string[] ReadStringArray(JsonObject properties, string key)
+    {
+        return ParseStringArray(ReadString(properties, key, string.Empty));
+    }
+
+    private static string[] ParseStringArray(string value)
     {
         if (string.IsNullOrWhiteSpace(value))
         {
             return [];
         }
 
-        return value
-            .Split(',', StringSplitOptions.TrimEntries | StringSplitOptions.RemoveEmptyEntries)
-            .ToHashSet(StringComparer.OrdinalIgnoreCase);
+        var values = value.Split(',', StringSplitOptions.TrimEntries | StringSplitOptions.RemoveEmptyEntries);
+        if (values.Length < 2)
+        {
+            return values;
+        }
+
+        var seen = new HashSet<string>(StringComparer.OrdinalIgnoreCase);
+        var distinctValues = new List<string>(values.Length);
+        for (var i = 0; i < values.Length; i++)
+        {
+            if (seen.Add(values[i]))
+            {
+                distinctValues.Add(values[i]);
+            }
+        }
+
+        return distinctValues.ToArray();
+    }
+
+    private static bool TryReadFloat(JsonNode node, out float value)
+    {
+        value = default;
+        if (node is not JsonValue valueNode)
+        {
+            return false;
+        }
+
+        if (valueNode.TryGetValue<float>(out var floatValue))
+        {
+            value = floatValue;
+            return true;
+        }
+
+        if (valueNode.TryGetValue<double>(out var doubleValue))
+        {
+            value = (float)doubleValue;
+            return true;
+        }
+
+        if (valueNode.TryGetValue<int>(out var intValue))
+        {
+            value = intValue;
+            return true;
+        }
+
+        if (valueNode.TryGetValue<long>(out var longValue))
+        {
+            value = longValue;
+            return true;
+        }
+
+        if (valueNode.TryGetValue<string>(out var stringValue)
+            && float.TryParse(stringValue, out var parsed))
+        {
+            value = parsed;
+            return true;
+        }
+
+        return false;
+    }
+
+    private static bool TryReadBool(JsonNode node, out bool value)
+    {
+        value = default;
+        if (node is not JsonValue valueNode)
+        {
+            return false;
+        }
+
+        if (valueNode.TryGetValue<bool>(out var boolValue))
+        {
+            value = boolValue;
+            return true;
+        }
+
+        if (valueNode.TryGetValue<string>(out var stringValue)
+            && bool.TryParse(stringValue, out var parsed))
+        {
+            value = parsed;
+            return true;
+        }
+
+        return false;
+    }
+
+    private static float ReadDefaultFloat(NodeTypeDefinition nodeType, string key, float fallback)
+    {
+        var defaultValue = FindPropertyDefault(nodeType, key);
+        return defaultValue is not null && TryReadFloat(defaultValue, out var value)
+            ? value
+            : fallback;
+    }
+
+    private static bool ReadDefaultBool(NodeTypeDefinition nodeType, string key, bool fallback)
+    {
+        var defaultValue = FindPropertyDefault(nodeType, key);
+        return defaultValue is not null && TryReadBool(defaultValue, out var value)
+            ? value
+            : fallback;
+    }
+
+    private static Color ReadDefaultColor(NodeTypeDefinition nodeType, string key, Color fallback)
+    {
+        var defaultValue = FindPropertyDefault(nodeType, key);
+        if (defaultValue is JsonObject obj)
+        {
+            return Color.FromRgb(
+                ReadByte(obj, "r", fallback.R),
+                ReadByte(obj, "g", fallback.G),
+                ReadByte(obj, "b", fallback.B));
+        }
+
+        if (defaultValue is JsonValue stringNode
+            && stringNode.TryGetValue<string>(out var hex)
+            && TryParseHexColor(hex, out var parsed))
+        {
+            return parsed;
+        }
+
+        return fallback;
+    }
+
+    private static JsonNode? FindPropertyDefault(NodeTypeDefinition nodeType, string key)
+    {
+        for (var i = 0; i < nodeType.Properties.Count; i++)
+        {
+            var property = nodeType.Properties[i];
+            if (string.Equals(property.Key, key, StringComparison.OrdinalIgnoreCase))
+            {
+                return property.DefaultValue;
+            }
+        }
+
+        return null;
+    }
+
+    private static bool HasInputPort(NodeTypeDefinition nodeType, string portId)
+    {
+        for (var i = 0; i < nodeType.Inputs.Count; i++)
+        {
+            if (string.Equals(nodeType.Inputs[i].Id, portId, StringComparison.OrdinalIgnoreCase))
+            {
+                return true;
+            }
+        }
+
+        return false;
+    }
+
+    private static NodeOp ParseNodeOp(string typeId)
+    {
+        return typeId.Trim().ToLowerInvariant() switch
+        {
+            "annotation.comment" => NodeOp.AnnotationComment,
+            "reroute.bool" => NodeOp.RerouteBool,
+            "reroute.float" => NodeOp.RerouteFloat,
+            "reroute.color" => NodeOp.RerouteColor,
+            "constant.color" => NodeOp.ConstantColor,
+            "constant.float" => NodeOp.ConstantFloat,
+            "constant.bool" => NodeOp.ConstantBool,
+            "input.bool" => NodeOp.InputBool,
+            "input.float" => NodeOp.InputFloat,
+            "input.color" => NodeOp.InputColor,
+            "pixel.info" => NodeOp.PixelInfo,
+            "logic.select-color" => NodeOp.LogicSelectColor,
+            "logic.select-float" => NodeOp.LogicSelectFloat,
+            "logic.not" => NodeOp.LogicNot,
+            "logic.and" => NodeOp.LogicAnd,
+            "logic.or" => NodeOp.LogicOr,
+            "logic.compare" => NodeOp.LogicCompare,
+            "logic.mix-color" => NodeOp.LogicMixColor,
+            "math.add" => NodeOp.MathAdd,
+            "math.multiply" => NodeOp.MathMultiply,
+            "math.clamp" => NodeOp.MathClamp,
+            "math.remap" => NodeOp.MathRemap,
+            "math.wrap" => NodeOp.MathWrap,
+            "math.ping-pong" => NodeOp.MathPingPong,
+            "math.modulo" => NodeOp.MathModulo,
+            "math.abs" => NodeOp.MathAbs,
+            "math.step" => NodeOp.MathStep,
+            "math.smooth-step" => NodeOp.MathSmoothStep,
+            "math.sin" => NodeOp.MathSin,
+            "math.cos" => NodeOp.MathCos,
+            "math.tan" => NodeOp.MathTan,
+            "color.brightness" => NodeOp.ColorBrightness,
+            "color.hsv" => NodeOp.ColorHsv,
+            "color.gradient" => NodeOp.ColorGradient,
+            "time.elapsed" => NodeOp.TimeElapsed,
+            "time.oscillator" => NodeOp.TimeOscillator,
+            "time.pulse" => NodeOp.TimePulse,
+            "time.envelope" => NodeOp.TimeEnvelope,
+            "output.segment-color" => NodeOp.OutputSegmentColor,
+            _ => NodeOp.Unknown
+        };
+    }
+
+    private static MergeOp ParseBoolMergeOp(string mode)
+    {
+        return NormalizeMode(mode) == "all" ? MergeOp.All : MergeOp.Any;
+    }
+
+    private static MergeOp ParseFloatMergeOp(string mode)
+    {
+        return NormalizeMode(mode) switch
+        {
+            "min" => MergeOp.Min,
+            "average" => MergeOp.Average,
+            _ => MergeOp.Max
+        };
+    }
+
+    private static MergeOp ParseColorMergeOp(string mode)
+    {
+        return NormalizeMode(mode) == "additive" ? MergeOp.Additive : MergeOp.Average;
+    }
+
+    private static CompareOp ParseCompareOp(string mode)
+    {
+        return NormalizeMode(mode) switch
+        {
+            "less" => CompareOp.Less,
+            "equal" => CompareOp.Equal,
+            _ => CompareOp.Greater
+        };
+    }
+
+    private static BlendOp ParseOutputBlendOp(string mode)
+    {
+        return NormalizeMode(mode) switch
+        {
+            "override" or "replace" or "mix" => BlendOp.Override,
+            "max" => BlendOp.Lighten,
+            "min" => BlendOp.Darken,
+            var normalized => ParseBlendOp(normalized)
+        };
+    }
+
+    private static BlendOp ParseBlendOp(string mode)
+    {
+        return NormalizeMode(mode) switch
+        {
+            "darken" => BlendOp.Darken,
+            "multiply" => BlendOp.Multiply,
+            "color-burn" => BlendOp.ColorBurn,
+            "lighten" => BlendOp.Lighten,
+            "screen" => BlendOp.Screen,
+            "color-dodge" => BlendOp.ColorDodge,
+            "add" => BlendOp.Add,
+            "overlay" => BlendOp.Overlay,
+            "soft-light" => BlendOp.SoftLight,
+            "linear-light" => BlendOp.LinearLight,
+            "difference" => BlendOp.Difference,
+            "exclusion" => BlendOp.Exclusion,
+            "subtract" => BlendOp.Subtract,
+            "divide" => BlendOp.Divide,
+            "hue" => BlendOp.Hue,
+            "saturation" => BlendOp.Saturation,
+            "color" => BlendOp.Color,
+            "value" => BlendOp.Value,
+            _ => BlendOp.Mix
+        };
+    }
+
+    private static WaveformOp ParseWaveformOp(string waveform)
+    {
+        return NormalizeMode(waveform) switch
+        {
+            "square" => WaveformOp.Square,
+            "triangle" => WaveformOp.Triangle,
+            "sawtooth" => WaveformOp.Sawtooth,
+            _ => WaveformOp.Sine
+        };
+    }
+
+    private static EdgeOp ParseEdgeOp(string edge)
+    {
+        return NormalizeMode(edge) == "falling" ? EdgeOp.Falling : EdgeOp.Rising;
+    }
+
+    private static InterpolationOp ParseInterpolationOp(string interpolation)
+    {
+        return NormalizeMode(interpolation) == "constant" ? InterpolationOp.Constant : InterpolationOp.Linear;
+    }
+
+    private static string NormalizeMode(string value)
+    {
+        return string.IsNullOrWhiteSpace(value)
+            ? string.Empty
+            : value.Trim().ToLowerInvariant();
     }
 }
-public sealed record PreparedGraph(
-    CompiledNodeGraph CompiledGraph,
-    IReadOnlyDictionary<string, NodeTypeDefinition> NodeTypesByNodeId,
-    IReadOnlyDictionary<string, Dictionary<string, RuntimeConnectionSource>> InputConnectionsByNodeId)
+
+public sealed class PreparedGraph
 {
-    private readonly Dictionary<string, PulseState> _pulseStates = new(StringComparer.OrdinalIgnoreCase);
-    private readonly Dictionary<string, EnvelopeState> _envelopeStates = new(StringComparer.OrdinalIgnoreCase);
-    private readonly Dictionary<string, GradientStop[]> _gradientStopsCache = new(StringComparer.OrdinalIgnoreCase);
+    internal PreparedGraph(
+        CompiledNodeGraph compiledGraph,
+        IReadOnlyDictionary<string, NodeTypeDefinition> nodeTypesByNodeId,
+        IReadOnlyDictionary<string, Dictionary<string, RuntimeConnectionSource>> inputConnectionsByNodeId,
+        CompiledNode[] compiledNodes,
+        RuntimeValue[] outputBuffer,
+        CompiledOutputNode[] outputNodes,
+        Segment[] targetSegments,
+        bool targetsResolved)
+    {
+        CompiledGraph = compiledGraph;
+        NodeTypesByNodeId = nodeTypesByNodeId;
+        InputConnectionsByNodeId = inputConnectionsByNodeId;
+        CompiledNodes = compiledNodes;
+        OutputBuffer = outputBuffer;
+        OutputNodes = outputNodes;
+        TargetSegments = targetSegments;
+        TargetsResolved = targetsResolved;
+        HasPixelInfoNodes = ComputeHasPixelInfoNodes(compiledNodes);
+    }
 
-    public bool CanRender => CompiledGraph.Validation.IsValid && CompiledGraph.EvaluationOrder.Count > 0;
+    public CompiledNodeGraph CompiledGraph { get; }
 
-    public bool HasPixelInfoNodes { get; } = CompiledGraph.EvaluationOrder
-        .Any(node => node.TypeId == "pixel.info");
+    public IReadOnlyDictionary<string, NodeTypeDefinition> NodeTypesByNodeId { get; }
+
+    public IReadOnlyDictionary<string, Dictionary<string, RuntimeConnectionSource>> InputConnectionsByNodeId { get; }
+
+    internal CompiledNode[] CompiledNodes { get; }
+
+    internal RuntimeValue[] OutputBuffer { get; }
+
+    internal CompiledOutputNode[] OutputNodes { get; }
+
+    internal Segment[] TargetSegments { get; private set; }
+
+    internal bool TargetsResolved { get; private set; }
+
+    public bool CanRender => CompiledGraph.Validation.IsValid && CompiledNodes.Length > 0;
+
+    public bool HasPixelInfoNodes { get; }
+
+    internal void ResolveTargets(Settings settings)
+    {
+        var targetSegmentSet = new HashSet<Segment>();
+        for (var i = 0; i < OutputNodes.Length; i++)
+        {
+            var node = OutputNodes[i].Node;
+            node.TargetSegments = ResolveTargetSegments(settings, node.SegmentIds);
+            for (var segmentIndex = 0; segmentIndex < node.TargetSegments.Length; segmentIndex++)
+            {
+                targetSegmentSet.Add(node.TargetSegments[segmentIndex]);
+            }
+        }
+
+        TargetSegments = new Segment[targetSegmentSet.Count];
+        targetSegmentSet.CopyTo(TargetSegments);
+        TargetsResolved = true;
+    }
+
+    private static bool ComputeHasPixelInfoNodes(CompiledNode[] compiledNodes)
+    {
+        for (var i = 0; i < compiledNodes.Length; i++)
+        {
+            if (compiledNodes[i].Op == NodeOp.PixelInfo)
+            {
+                return true;
+            }
+        }
+
+        return false;
+    }
+
+    private static Segment[] ResolveTargetSegments(Settings settings, string[] segmentIds)
+    {
+        var segments = new List<Segment>();
+        foreach (var device in settings.Devices)
+        {
+            foreach (var segment in device.Segments)
+            {
+                if (IsSegmentTargeted(segment, segmentIds))
+                {
+                    segments.Add(segment);
+                }
+            }
+        }
+
+        return segments.ToArray();
+    }
+
+    private static bool IsSegmentTargeted(Segment segment, string[] segmentIds)
+    {
+        if (segmentIds.Length == 0)
+        {
+            return true;
+        }
+
+        for (var i = 0; i < segmentIds.Length; i++)
+        {
+            if (string.Equals(segmentIds[i], segment.Id, StringComparison.OrdinalIgnoreCase))
+            {
+                return true;
+            }
+        }
+
+        return false;
+    }
 
     public bool TryGetInputSource(string nodeId, string portId, out RuntimeConnectionSource source)
     {
@@ -1244,40 +1799,146 @@ public sealed record PreparedGraph(
         return InputConnectionsByNodeId.TryGetValue(nodeId, out var inputs)
             && inputs.TryGetValue(portId, out source);
     }
+}
 
-    public PulseState GetOrCreatePulseState(string nodeId)
-    {
-        if (!_pulseStates.TryGetValue(nodeId, out var state))
-        {
-            state = new PulseState();
-            _pulseStates[nodeId] = state;
-        }
+internal sealed class CompiledNode
+{
+    public NodeOp Op;
+    public int EvaluationIndex;
+    public int[] InputSlots = [];
+    public int[] OutputSlots = [];
+    public RuntimeValue[] InputDefaults = [];
 
-        return state;
-    }
+    public float PropFloatA;
+    public float PropFloatB;
+    public float PropFloatC;
+    public float PropFloatD;
+    public bool PropBoolA;
+    public Color PropColorA;
 
-    public EnvelopeState GetOrCreateEnvelopeState(string nodeId)
-    {
-        if (!_envelopeStates.TryGetValue(nodeId, out var state))
-        {
-            state = new EnvelopeState();
-            _envelopeStates[nodeId] = state;
-        }
+    public BlendOp BlendOp;
+    public MergeOp MergeOp;
+    public WaveformOp WaveformOp;
+    public EdgeOp EdgeOp;
+    public InterpolationOp InterpolationOp;
+    public CompareOp CompareOp;
 
-        return state;
-    }
+    public string[] InputKeys = [];
+    public string[] SegmentIds = [];
+    public Segment[] TargetSegments = [];
+    public GradientStop[] GradientStops = [];
+    public PulseState? PulseState;
+    public EnvelopeState? EnvelopeState;
 
-    public GradientStop[] GetOrCreateGradientStops(string nodeId, string stopsJson)
-    {
-        if (_gradientStopsCache.TryGetValue(nodeId, out var cached))
-        {
-            return cached;
-        }
+    public float Priority;
+    public bool IsActiveStatic;
+}
 
-        var stops = GradientStop.Parse(stopsJson);
-        _gradientStopsCache[nodeId] = stops;
-        return stops;
-    }
+internal readonly record struct CompiledOutputNode(CompiledNode Node);
+
+internal enum NodeOp
+{
+    Unknown,
+    AnnotationComment,
+    RerouteBool,
+    RerouteFloat,
+    RerouteColor,
+    ConstantColor,
+    ConstantFloat,
+    ConstantBool,
+    InputBool,
+    InputFloat,
+    InputColor,
+    PixelInfo,
+    LogicSelectColor,
+    LogicSelectFloat,
+    LogicNot,
+    LogicAnd,
+    LogicOr,
+    LogicCompare,
+    LogicMixColor,
+    MathAdd,
+    MathMultiply,
+    MathClamp,
+    MathRemap,
+    MathWrap,
+    MathPingPong,
+    MathModulo,
+    MathAbs,
+    MathStep,
+    MathSmoothStep,
+    MathSin,
+    MathCos,
+    MathTan,
+    ColorBrightness,
+    ColorHsv,
+    ColorGradient,
+    TimeElapsed,
+    TimeOscillator,
+    TimePulse,
+    TimeEnvelope,
+    OutputSegmentColor
+}
+
+internal enum BlendOp
+{
+    Mix,
+    Override,
+    Darken,
+    Multiply,
+    ColorBurn,
+    Lighten,
+    Screen,
+    ColorDodge,
+    Add,
+    Overlay,
+    SoftLight,
+    LinearLight,
+    Difference,
+    Exclusion,
+    Subtract,
+    Divide,
+    Hue,
+    Saturation,
+    Color,
+    Value
+}
+
+internal enum MergeOp
+{
+    Any,
+    All,
+    Max,
+    Min,
+    Average,
+    Additive
+}
+
+internal enum WaveformOp
+{
+    Sine,
+    Square,
+    Triangle,
+    Sawtooth
+}
+
+internal enum EdgeOp
+{
+    Rising,
+    Falling
+}
+
+internal enum InterpolationOp
+{
+    Linear,
+    Constant
+}
+
+internal enum CompareOp
+{
+    Greater,
+    Less,
+    Equal
 }
 
 public readonly record struct GradientStop(float Position, byte R, byte G, byte B)
@@ -1297,7 +1958,7 @@ public readonly record struct GradientStop(float Position, byte R, byte G, byte 
 
         try
         {
-            var array = System.Text.Json.Nodes.JsonNode.Parse(json)?.AsArray();
+            var array = JsonNode.Parse(json)?.AsArray();
             if (array is null || array.Count == 0)
             {
                 return DefaultStops;
@@ -1306,7 +1967,7 @@ public readonly record struct GradientStop(float Position, byte R, byte G, byte 
             var stops = new List<GradientStop>(array.Count);
             foreach (var item in array)
             {
-                if (item is not System.Text.Json.Nodes.JsonObject obj)
+                if (item is not JsonObject obj)
                 {
                     continue;
                 }
@@ -1332,10 +1993,10 @@ public readonly record struct GradientStop(float Position, byte R, byte G, byte 
         }
     }
 
-    private static float GetFloat(System.Text.Json.Nodes.JsonObject obj, string key, float fallback)
+    private static float GetFloat(JsonObject obj, string key, float fallback)
     {
         var node = obj[key];
-        if (node is System.Text.Json.Nodes.JsonValue val)
+        if (node is JsonValue val)
         {
             if (val.TryGetValue<float>(out var f)) return f;
             if (val.TryGetValue<int>(out var i)) return i;

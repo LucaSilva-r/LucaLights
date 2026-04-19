@@ -16,7 +16,7 @@ public sealed class NodeGraphLightingRenderer : ILightingRenderer
     public void Prepare(Settings settings)
     {
         ArgumentNullException.ThrowIfNull(settings);
-        _preparedGraph = _runtimeEvaluator.Prepare(settings.Graph);
+        _preparedGraph = _runtimeEvaluator.Prepare(settings);
     }
 
     public void Render(Settings settings, LightingFrameContext frameContext)
