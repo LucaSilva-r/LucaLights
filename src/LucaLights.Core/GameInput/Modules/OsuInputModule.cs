@@ -9,6 +9,7 @@ public sealed partial class OsuInputModule : IGameInputModule, IDisposable
     public const int    MaxManiaColumns = 18;
 
     private static readonly Lazy<InputDefinition> DefinitionLazy = new(BuildDefinition);
+    private static readonly TimeSpan ProcessPollInterval = TimeSpan.FromSeconds(1);
 
     // Config
     internal readonly string          _tosuUrl;
@@ -21,6 +22,7 @@ public sealed partial class OsuInputModule : IGameInputModule, IDisposable
     private          Task?                _backgroundTask = null;
     private          bool                 _disposed       = false;
     private          long                 _sequence       = 0;
+    private          volatile bool        _osuProcessRunning = false;
 
     // Snapshot dispatch channel — WebSocket/note-engine threads write here instead of invoking
     // SnapshotUpdated directly, so they can never be blocked by a slow event handler.
@@ -148,6 +150,7 @@ public sealed partial class OsuInputModule : IGameInputModule, IDisposable
     {
         if (_disposed) return;
         StopAsync(CancellationToken.None).GetAwaiter().GetResult();
+        _tosuStartupLock.Dispose();
         _disposed = true;
     }
 
@@ -155,9 +158,6 @@ public sealed partial class OsuInputModule : IGameInputModule, IDisposable
     {
         try
         {
-            if (_autoManageProcess)
-                await EnsureTosuRunningAsync(ct);
-
             await Task.WhenAll(
                 RunV2LoopAsync(ct),
                 RunPreciseLoopAsync(ct),
@@ -407,7 +407,7 @@ public sealed partial class OsuInputModule : IGameInputModule, IDisposable
         var def = new InputDefinition { ModuleId = ModuleIdValue, DisplayName = "osu!" };
 
         // System
-        def.Channels.Add(Bool("raw.osu.connected",  "Connected", "System", "Raw / System", "True while tosu WebSocket is connected."));
+        def.Channels.Add(Bool("raw.osu.connected",  "Connected", "System", "Raw / System", "True while osu! is running and tosu v2 data is flowing."));
         def.Channels.Add(Bool("raw.osu.playing",    "Playing",   "System", "Raw / System", "True while actively in gameplay (state = playing)."));
         def.Channels.Add(Bool("raw.osu.paused",     "Paused",    "System", "Raw / System", "True while the game is paused."));
         def.Channels.Add(Bool("raw.osu.failed",     "Failed",    "System", "Raw / System", "True after the player fails."));
@@ -498,4 +498,3 @@ public sealed partial class OsuInputModule : IGameInputModule, IDisposable
         => new() { Key = key, Label = label, Group = group, ValueType = InputValueType.Float, Category = category,
                    Description = desc, DefaultFloatValue = def, MinFloatValue = min, MaxFloatValue = max };
 }
-

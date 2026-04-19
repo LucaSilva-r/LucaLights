@@ -31,6 +31,18 @@ public sealed partial class OsuInputModule
 
         while (!ct.IsCancellationRequested)
         {
+            if (!await WaitForOsuProcessAsync(ct).ConfigureAwait(false))
+            {
+                break;
+            }
+
+            if (!await EnsureTosuReadyAsync(ct).ConfigureAwait(false))
+            {
+                try { await Task.Delay(ProcessPollInterval, ct).ConfigureAwait(false); }
+                catch (OperationCanceledException) { break; }
+                continue;
+            }
+
             using var ws = new ClientWebSocket();
             // `idleDisconnected` tracks whether we've already fired the idle-disconnect
             // side effects for this socket, so we do it exactly once per osu! close and
@@ -41,9 +53,6 @@ public sealed partial class OsuInputModule
             try
             {
                 await ws.ConnectAsync(url, ct).ConfigureAwait(false);
-
-                lock (_syncRoot) { _v2Connected = true; }
-                PublishCurrentSnapshot();
 
                 var                              lastMsgTicks = Environment.TickCount64;
                 Task<WebSocketReceiveResult>?    receiveTask  = null;
@@ -61,6 +70,12 @@ public sealed partial class OsuInputModule
 
                         if (completed != receiveTask)
                         {
+                            if (ct.IsCancellationRequested || !RefreshOsuProcessPresence())
+                            {
+                                closed = true;
+                                break;
+                            }
+
                             // Timer fired before a frame arrived.
                             if (!idleDisconnected &&
                                 Environment.TickCount64 - lastMsgTicks >= (long)V2IdleTimeout.TotalMilliseconds)
@@ -84,16 +99,28 @@ public sealed partial class OsuInputModule
                     if (closed) break;
                     if (sb.Length == 0) continue;
 
+                    if (!RefreshOsuProcessPresence())
+                    {
+                        break;
+                    }
+
                     var data = TryDeserialize<TosuV2Data>(sb.ToString());
                     if (data is null) continue;
 
-                    if (idleDisconnected)
+                    var wasDisconnected = idleDisconnected;
+                    lock (_syncRoot)
                     {
-                        lock (_syncRoot) { _v2Connected = true; }
+                        wasDisconnected |= !_v2Connected;
+                        _v2Connected = true;
+                        _latestV2 = data;
                         idleDisconnected = false;
                     }
 
-                    lock (_syncRoot) { _latestV2 = data; }
+                    if (wasDisconnected)
+                    {
+                        _log?.Invoke("osu: v2 data connected.");
+                    }
+
                     OnV2DataReceived(data);
                     PublishCurrentSnapshot();
                 }
@@ -144,6 +171,18 @@ public sealed partial class OsuInputModule
 
         while (!ct.IsCancellationRequested)
         {
+            if (!await WaitForOsuProcessAsync(ct).ConfigureAwait(false))
+            {
+                break;
+            }
+
+            if (!await EnsureTosuReadyAsync(ct).ConfigureAwait(false))
+            {
+                try { await Task.Delay(ProcessPollInterval, ct).ConfigureAwait(false); }
+                catch (OperationCanceledException) { break; }
+                continue;
+            }
+
             using var ws = new ClientWebSocket();
             try
             {
@@ -157,11 +196,27 @@ public sealed partial class OsuInputModule
                 {
                     sb.Clear();
                     bool closed = false;
-                    WebSocketReceiveResult msg;
+                    WebSocketReceiveResult msg = default!;
+                    Task<WebSocketReceiveResult>? receiveTask = null;
 
                     do
                     {
-                        msg = await ws.ReceiveAsync(new ArraySegment<byte>(buf), ct).ConfigureAwait(false);
+                        receiveTask ??= ws.ReceiveAsync(new ArraySegment<byte>(buf), ct);
+                        var completed = await Task.WhenAny(receiveTask, Task.Delay(ProcessPollInterval, ct)).ConfigureAwait(false);
+
+                        if (completed != receiveTask)
+                        {
+                            if (ct.IsCancellationRequested || !RefreshOsuProcessPresence())
+                            {
+                                closed = true;
+                                break;
+                            }
+
+                            continue;
+                        }
+
+                        msg = await receiveTask.ConfigureAwait(false);
+                        receiveTask = null;
                         if (msg.MessageType == WebSocketMessageType.Close) { closed = true; break; }
                         if (msg.MessageType == WebSocketMessageType.Text)
                             sb.Append(Encoding.UTF8.GetString(buf, 0, msg.Count));
@@ -170,6 +225,7 @@ public sealed partial class OsuInputModule
 
                     if (closed) break;
                     if (sb.Length == 0) continue;
+                    if (!RefreshOsuProcessPresence()) break;
 
                     var data = TryDeserialize<TosuPreciseData>(sb.ToString());
                     if (data is null) continue;
