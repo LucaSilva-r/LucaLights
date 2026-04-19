@@ -1,3 +1,4 @@
+using System.Diagnostics;
 using System.IO.Pipes;
 using System.Runtime.InteropServices;
 using System.Text.Json.Nodes;
@@ -9,9 +10,12 @@ public sealed class ITGManiaInputModule : IGameInputModule, IDisposable
 {
     public const string ModuleIdValue = "itgmania";
     private const int FullSextetCount = 33;
-    // ITGMania has no "closing" signal — it just stops writing to the pipe. If we see no
-    // bytes for this long we declare the connection dead and tear the stream down.
-    private static readonly TimeSpan IdleTimeout = TimeSpan.FromMilliseconds(500);
+    // ITGMania has no "closing" signal and only writes to the pipe when lighting changes,
+    // so long silent intros would look like a disconnect to a byte-based watchdog. Instead
+    // we treat the presence of the ITGMania process itself as the source of truth.
+    private static readonly TimeSpan ProcessPollInterval = TimeSpan.FromSeconds(1);
+    private static readonly string[] WindowsProcessNames = ["ITGmania", "itgmania"];
+    private static readonly string[] UnixProcessNames = ["itgmania", "ITGmania"];
 
     private static readonly Lazy<InputDefinition> Definition = new(BuildDefinition);
 
@@ -80,10 +84,12 @@ public sealed class ITGManiaInputModule : IGameInputModule, IDisposable
 
     private CancellationTokenSource? _run;
     private Task? _backgroundTask;
+    private Task? _processWatcherTask;
     private Stream? _activeStream;
     private InputSnapshot _latestSnapshot = InputSnapshot.Empty;
     private long _sequence;
     private bool _disposed;
+    private volatile bool _processRunning;
 
     public ITGManiaInputModule(string pipeName, Action<string>? log = null)
     {
@@ -136,6 +142,7 @@ public sealed class ITGManiaInputModule : IGameInputModule, IDisposable
 
             _run = CancellationTokenSource.CreateLinkedTokenSource(cancellationToken);
             _backgroundTask = Task.Run(() => RunLoop(_run.Token), CancellationToken.None);
+            _processWatcherTask = Task.Run(() => RunProcessWatcher(_run.Token), CancellationToken.None);
         }
 
         return Task.CompletedTask;
@@ -146,13 +153,16 @@ public sealed class ITGManiaInputModule : IGameInputModule, IDisposable
         ThrowIfDisposed();
 
         Task? backgroundTask;
+        Task? watcherTask;
         CancellationTokenSource? run;
 
         lock (_syncRoot)
         {
             backgroundTask = _backgroundTask;
+            watcherTask = _processWatcherTask;
             run = _run;
             _backgroundTask = null;
+            _processWatcherTask = null;
             _run = null;
         }
 
@@ -166,7 +176,12 @@ public sealed class ITGManiaInputModule : IGameInputModule, IDisposable
 
         try
         {
-            await backgroundTask.WaitAsync(TimeSpan.FromSeconds(2), cancellationToken);
+            var pending = new List<Task> { backgroundTask.WaitAsync(TimeSpan.FromSeconds(2), cancellationToken) };
+            if (watcherTask is not null)
+            {
+                pending.Add(watcherTask.WaitAsync(TimeSpan.FromSeconds(2), cancellationToken));
+            }
+            await Task.WhenAll(pending);
         }
         catch (OperationCanceledException) when (cancellationToken.IsCancellationRequested)
         {
@@ -296,77 +311,121 @@ public sealed class ITGManiaInputModule : IGameInputModule, IDisposable
     private void ReadStream(Stream stream, CancellationToken cancellationToken)
     {
         var counter = 0;
-        var lastByteTicks = Environment.TickCount64;
-        var idleFired = 0;
 
-        using var watchdogCts = CancellationTokenSource.CreateLinkedTokenSource(cancellationToken);
-        var watchdog = Task.Run(async () =>
+        while (!cancellationToken.IsCancellationRequested)
         {
+            int currentData;
             try
             {
-                while (!watchdogCts.IsCancellationRequested)
+                currentData = stream.ReadByte();
+            }
+            catch (ObjectDisposedException) when (cancellationToken.IsCancellationRequested)
+            {
+                return;
+            }
+            catch
+            {
+                break;
+            }
+
+            if (currentData == -1)
+            {
+                break;
+            }
+
+            if (currentData == (byte)'\n')
+            {
+                counter = _buffer.Length;
+            }
+            else if (counter < _buffer.Length)
+            {
+                _buffer[counter] = (byte)currentData;
+                counter++;
+            }
+
+            if (counter == _buffer.Length)
+            {
+                PublishSnapshot(ParsePacket(_buffer));
+                counter = 0;
+            }
+        }
+    }
+
+    private async Task RunProcessWatcher(CancellationToken cancellationToken)
+    {
+        while (!cancellationToken.IsCancellationRequested)
+        {
+            bool running;
+            try
+            {
+                running = IsITGManiaProcessRunning();
+            }
+            catch (Exception ex)
+            {
+                _log?.Invoke($"ITGMania process watcher error: {ex.Message}");
+                running = _processRunning;
+            }
+
+            if (running != _processRunning)
+            {
+                _processRunning = running;
+                if (running)
                 {
-                    await Task.Delay(200, watchdogCts.Token).ConfigureAwait(false);
-                    var idleMs = Environment.TickCount64 - Interlocked.Read(ref lastByteTicks);
-                    if (idleMs >= (long)IdleTimeout.TotalMilliseconds &&
-                        Interlocked.Exchange(ref idleFired, 1) == 0)
+                    _log?.Invoke("ITGMania process detected.");
+                    PublishConnectedSnapshot();
+                }
+                else
+                {
+                    _log?.Invoke("ITGMania process no longer running; tearing down pipe.");
+                    CloseActiveStream();
+                    PublishDisconnectedSnapshot();
+                }
+            }
+
+            try
+            {
+                await Task.Delay(ProcessPollInterval, cancellationToken).ConfigureAwait(false);
+            }
+            catch (OperationCanceledException)
+            {
+                return;
+            }
+        }
+    }
+
+    private static bool IsITGManiaProcessRunning()
+    {
+        var names = RuntimeInformation.IsOSPlatform(OSPlatform.Windows)
+            ? WindowsProcessNames
+            : UnixProcessNames;
+
+        foreach (var name in names)
+        {
+            Process[]? procs = null;
+            try
+            {
+                procs = Process.GetProcessesByName(name);
+                if (procs.Length > 0)
+                {
+                    return true;
+                }
+            }
+            catch
+            {
+            }
+            finally
+            {
+                if (procs is not null)
+                {
+                    foreach (var p in procs)
                     {
-                        _log?.Invoke($"ITGMania pipe idle for {idleMs} ms; publishing disconnected.");
-                        PublishDisconnectedSnapshot();
+                        p.Dispose();
                     }
                 }
             }
-            catch (OperationCanceledException) { }
-        }, watchdogCts.Token);
-
-        try
-        {
-            while (!cancellationToken.IsCancellationRequested)
-            {
-                int currentData;
-                try
-                {
-                    currentData = stream.ReadByte();
-                }
-                catch (ObjectDisposedException) when (cancellationToken.IsCancellationRequested)
-                {
-                    return;
-                }
-                catch
-                {
-                    break;
-                }
-
-                if (currentData == -1)
-                {
-                    break;
-                }
-
-                Interlocked.Exchange(ref lastByteTicks, Environment.TickCount64);
-                Interlocked.Exchange(ref idleFired, 0);
-
-                if (currentData == (byte)'\n')
-                {
-                    counter = _buffer.Length;
-                }
-                else if (counter < _buffer.Length)
-                {
-                    _buffer[counter] = (byte)currentData;
-                    counter++;
-                }
-
-                if (counter == _buffer.Length)
-                {
-                    PublishSnapshot(ParsePacket(_buffer));
-                    counter = 0;
-                }
-            }
         }
-        finally
-        {
-            watchdogCts.Cancel();
-            try { watchdog.Wait(TimeSpan.FromSeconds(1)); } catch { }
-        }
+
+        return false;
     }
 
     private InputSnapshot ParsePacket(byte[] data)
@@ -477,6 +536,47 @@ public sealed class ITGManiaInputModule : IGameInputModule, IDisposable
             },
             Metadata = new Dictionary<string, string>(StringComparer.OrdinalIgnoreCase)
             {
+                ["raw.itgmania.pipe_name"] = _pipeName
+            }
+        });
+    }
+
+    private void PublishConnectedSnapshot()
+    {
+        var boolValues = new Dictionary<string, bool>(StringComparer.OrdinalIgnoreCase)
+        {
+            ["raw.itgmania.connected"] = true
+        };
+
+        foreach (var channel in CabinetChannels)
+        {
+            boolValues[channel.Key] = false;
+        }
+
+        foreach (var channel in ButtonChannels)
+        {
+            boolValues[channel.Key] = false;
+        }
+
+        foreach (var channel in LightsModeChannels)
+        {
+            boolValues[channel.Key] = false;
+        }
+
+        PublishSnapshot(new InputSnapshot
+        {
+            TimestampUtc = DateTimeOffset.UtcNow,
+            Sequence = Interlocked.Increment(ref _sequence),
+            IsConnected = true,
+            IsActive = false,
+            BoolValues = boolValues,
+            FloatValues = new Dictionary<string, float>(StringComparer.OrdinalIgnoreCase)
+            {
+                ["raw.itgmania.lights_mode_index"] = -1f
+            },
+            Metadata = new Dictionary<string, string>(StringComparer.OrdinalIgnoreCase)
+            {
+                ["raw.itgmania.lights_mode_name"] = "(waiting for pipe data)",
                 ["raw.itgmania.pipe_name"] = _pipeName
             }
         });

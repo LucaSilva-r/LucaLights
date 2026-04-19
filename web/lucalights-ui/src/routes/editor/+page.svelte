@@ -23,6 +23,7 @@
 		TriangleAlert,
 		Workflow
 	} from '@lucide/svelte';
+	import NodeSearchDialog from '$lib/components/editor/NodeSearchDialog.svelte';
 	import { theme } from '$lib/theme.svelte';
 	import GraphNode from '$lib/components/editor/GraphNode.svelte';
 	import type {
@@ -85,6 +86,8 @@
 	let inputDefinitions = $state<InputDefinition[]>([]);
 	let devices = $state<Device[]>([]);
 	let activeInputModuleId = $state<string | null>(null);
+
+	let searchDialogOpen = $state(false);
 
 	let nodes = $state<EditorFlowNode[]>([]);
 	let edges = $state<Edge[]>([]);
@@ -1157,13 +1160,14 @@
 	}
 
 	function handleKeydown(event: KeyboardEvent) {
-		if (!(event.ctrlKey || event.metaKey) || isEditableTarget(event.target)) {
+		if (isEditableTarget(event.target)) {
 			return;
 		}
 
 		const key = event.key.toLowerCase();
+		const isCommand = event.ctrlKey || event.metaKey;
 
-		if (key === 's') {
+		if (isCommand && key === 's') {
 			event.preventDefault();
 			if (!saving && dirty) {
 				void saveGraph();
@@ -1171,24 +1175,30 @@
 			return;
 		}
 
-		if (key === 'c') {
+		if (isCommand && key === 'c') {
 			if (copySelectionToClipboard()) {
 				event.preventDefault();
 			}
 			return;
 		}
 
-		if (key === 'd') {
+		if (isCommand && key === 'd') {
 			if (duplicateSelection()) {
 				event.preventDefault();
 			}
 			return;
 		}
 
-		if (key === 'v') {
+		if (isCommand && key === 'v') {
 			if (pasteClipboardSelection()) {
 				event.preventDefault();
 			}
+			return;
+		}
+
+		if (event.shiftKey && key === 'a') {
+			event.preventDefault();
+			searchDialogOpen = true;
 			return;
 		}
 	}
@@ -1262,6 +1272,13 @@
 			</Button>
 		</div>
 	</div>
+
+	<NodeSearchDialog
+		bind:open={searchDialogOpen}
+		{nodeTypes}
+		onSelect={(typeId: string) => addNodeFromType(typeId)}
+		onClose={() => (searchDialogOpen = false)}
+	/>
 
 	{#if errorMessage}
 		<div class="border-b border-destructive/30 bg-destructive/10 px-4 py-2 text-sm text-destructive">
