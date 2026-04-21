@@ -660,12 +660,20 @@ public sealed class DefaultNodeTypeCatalog : INodeTypeCatalog
             "pixel.info",
             "Pixel Info",
             "Segment",
-            "Outputs the current pixel index, segment length, and normalized position (0-1) when evaluated per-pixel.",
+            "Outputs current pixel layout coordinates when evaluated per-pixel.",
             [],
             [
-                Output("index", "Index", NodeValueType.Float, "Zero-based pixel index within the segment."),
-                Output("length", "Length", NodeValueType.Float, "Total number of LEDs in the segment."),
-                Output("normalized", "Normalized", NodeValueType.Float, "Pixel position normalized to 0-1 range.")
+                Output("index", "Segment Pixel", NodeValueType.Float, "Zero-based pixel index within the segment."),
+                Output("length", "Segment Count", NodeValueType.Float, "Total number of LEDs in the segment."),
+                Output("normalized", "Segment Position", NodeValueType.Float, "Pixel position normalized within the segment."),
+                Output("deviceIndex", "Device #", NodeValueType.Float, "Zero-based index of the device containing the current pixel."),
+                Output("segmentIndex", "Segment #", NodeValueType.Float, "Zero-based index of the segment within its device."),
+                Output("devicePixelIndex", "Device Pixel", NodeValueType.Float, "Zero-based pixel index within the device, spanning its segments."),
+                Output("deviceLength", "Device Count", NodeValueType.Float, "Total number of LEDs in the current device."),
+                Output("deviceNormalized", "Device Position", NodeValueType.Float, "Pixel position normalized across the current device."),
+                Output("globalIndex", "Global Pixel", NodeValueType.Float, "Zero-based pixel index across all rendered target segments."),
+                Output("globalLength", "Global Count", NodeValueType.Float, "Total number of LEDs across all rendered target segments."),
+                Output("globalNormalized", "Global Position", NodeValueType.Float, "Pixel position normalized across all rendered target segments.")
             ],
             []);
     }

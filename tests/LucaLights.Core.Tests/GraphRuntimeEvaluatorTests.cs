@@ -101,6 +101,81 @@ public sealed class GraphRuntimeEvaluatorTests
     }
 
     [Fact]
+    public void PixelInfoGlobalIndexSpansRenderedSegmentsInDeviceOrder()
+    {
+        var settings = CreateDeviceSettings([2, 1], [2]);
+        settings.Graph = new NodeGraph
+        {
+            Nodes =
+            [
+                Node("pixel", "pixel.info"),
+                Node("remap", "math.remap", new JsonObject
+                {
+                    ["inMin"] = 0,
+                    ["inMax"] = 4,
+                    ["outMin"] = 0,
+                    ["outMax"] = 1
+                }),
+                Node("brightness", "color.brightness", new JsonObject
+                {
+                    ["color"] = new JsonObject
+                    {
+                        ["r"] = 255,
+                        ["g"] = 0,
+                        ["b"] = 0
+                    }
+                }),
+                Node("out", "output.segment-color")
+            ],
+            Connections =
+            [
+                Link("pixel", "globalIndex", "remap", "value"),
+                Link("remap", "value", "brightness", "factor"),
+                Link("brightness", "color", "out", "color")
+            ]
+        };
+
+        Render(settings, TimeSpan.Zero, InputSnapshot.Empty);
+
+        AssertLeds(settings.Devices[0].Segments[0], 0, 0, 0, 64, 0, 0);
+        AssertLeds(settings.Devices[0].Segments[1], 128, 0, 0);
+        AssertLeds(settings.Devices[1].Segments[0], 191, 0, 0, 255, 0, 0);
+    }
+
+    [Fact]
+    public void PixelInfoDeviceIndexCanDistinguishDevices()
+    {
+        var settings = CreateDeviceSettings([2], [2]);
+        settings.Graph = new NodeGraph
+        {
+            Nodes =
+            [
+                Node("pixel", "pixel.info"),
+                Node("brightness", "color.brightness", new JsonObject
+                {
+                    ["color"] = new JsonObject
+                    {
+                        ["r"] = 100,
+                        ["g"] = 0,
+                        ["b"] = 0
+                    }
+                }),
+                Node("out", "output.segment-color")
+            ],
+            Connections =
+            [
+                Link("pixel", "deviceIndex", "brightness", "factor"),
+                Link("brightness", "color", "out", "color")
+            ]
+        };
+
+        Render(settings, TimeSpan.Zero, InputSnapshot.Empty);
+
+        AssertLeds(settings.Devices[0].Segments[0], 0, 0, 0, 0, 0, 0);
+        AssertLeds(settings.Devices[1].Segments[0], 100, 0, 0, 100, 0, 0);
+    }
+
+    [Fact]
     public void SegmentOutputsApplyInPriorityOrderWithBlendMode()
     {
         var settings = CreateSettings(2);
@@ -301,25 +376,31 @@ public sealed class GraphRuntimeEvaluatorTests
 
     private static Settings CreateSettings(params int[] segmentLengths)
     {
-        var segments = segmentLengths
-            .Select((length, index) => new Segment($"Segment {index}", length)
+        return CreateDeviceSettings(segmentLengths);
+    }
+
+    private static Settings CreateDeviceSettings(params int[][] deviceSegmentLengths)
+    {
+        var devices = deviceSegmentLengths
+            .Select((segments, deviceIndex) => new Device
             {
-                Id = $"segment-{index}"
+                Id = $"device-{deviceIndex}",
+                Name = $"Device {deviceIndex}",
+                Ip = "127.0.0.1",
+                Segments = segments
+                    .Select((length, segmentIndex) => new Segment($"Segment {segmentIndex}", length)
+                    {
+                        Id = deviceIndex == 0
+                            ? $"segment-{segmentIndex}"
+                            : $"device-{deviceIndex}-segment-{segmentIndex}"
+                    })
+                    .ToList()
             })
             .ToList();
 
         return new Settings
         {
-            Devices =
-            [
-                new Device
-                {
-                    Id = "device",
-                    Name = "Device",
-                    Ip = "127.0.0.1",
-                    Segments = segments
-                }
-            ]
+            Devices = devices
         };
     }
 

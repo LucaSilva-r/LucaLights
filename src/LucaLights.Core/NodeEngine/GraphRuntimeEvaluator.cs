@@ -12,7 +12,18 @@ public sealed class GraphRuntimeEvaluator
 
     private readonly record struct HsvColor(float Hue, float Saturation, float Value);
 
-    public readonly record struct PixelContext(int Index, int Length, float Normalized);
+    public readonly record struct PixelContext(
+        int Index,
+        int Length,
+        float Normalized,
+        int DeviceIndex,
+        int SegmentIndex,
+        int DevicePixelIndex,
+        int DeviceLength,
+        float DeviceNormalized,
+        int GlobalIndex,
+        int GlobalLength,
+        float GlobalNormalized);
 
     private readonly NodeGraphCompiler _nodeGraphCompiler;
     private readonly INodeTypeCatalog _nodeTypeCatalog;
@@ -78,7 +89,8 @@ public sealed class GraphRuntimeEvaluator
             inputConnectionsByNodeId,
             out var outputBuffer,
             out var outputNodes,
-            out var targetSegments);
+            out var targetSegments,
+            out var pixelTargets);
 
         return new PreparedGraph(
             compiled,
@@ -88,6 +100,7 @@ public sealed class GraphRuntimeEvaluator
             outputBuffer,
             outputNodes,
             targetSegments,
+            pixelTargets,
             settings is not null);
     }
 
@@ -124,8 +137,9 @@ public sealed class GraphRuntimeEvaluator
     {
         try
         {
-            foreach (var segment in preparedEffect.TargetSegments)
+            foreach (var target in preparedEffect.PixelTargets)
             {
+                var segment = target.Segment;
                 var length = segment.Leds.Length;
                 if (length == 0)
                 {
@@ -135,7 +149,27 @@ public sealed class GraphRuntimeEvaluator
                 for (var i = 0; i < length; i++)
                 {
                     var normalized = length > 1 ? (float)i / (length - 1) : 0f;
-                    _currentPixel = new PixelContext(i, length, normalized);
+                    var devicePixelIndex = target.DeviceStartIndex + i;
+                    var deviceNormalized = target.DeviceLength > 1
+                        ? (float)devicePixelIndex / (target.DeviceLength - 1)
+                        : 0f;
+                    var globalIndex = target.GlobalStartIndex + i;
+                    var globalNormalized = target.GlobalLength > 1
+                        ? (float)globalIndex / (target.GlobalLength - 1)
+                        : 0f;
+
+                    _currentPixel = new PixelContext(
+                        i,
+                        length,
+                        normalized,
+                        target.DeviceIndex,
+                        target.SegmentIndex,
+                        devicePixelIndex,
+                        target.DeviceLength,
+                        deviceNormalized,
+                        globalIndex,
+                        target.GlobalLength,
+                        globalNormalized);
                     _currentSegment = segment;
 
                     EvaluateGraph(preparedEffect, frameContext);
@@ -201,10 +235,18 @@ public sealed class GraphRuntimeEvaluator
 
                 case NodeOp.PixelInfo:
                 {
-                    var px = _currentPixel ?? new PixelContext(0, 1, 0f);
+                    var px = _currentPixel ?? new PixelContext(0, 1, 0f, 0, 0, 0, 1, 0f, 0, 1, 0f);
                     WriteOutput(preparedEffect, node, 0, RuntimeValue.FromFloat(px.Index));
                     WriteOutput(preparedEffect, node, 1, RuntimeValue.FromFloat(px.Length));
                     WriteOutput(preparedEffect, node, 2, RuntimeValue.FromFloat(px.Normalized));
+                    WriteOutput(preparedEffect, node, 3, RuntimeValue.FromFloat(px.DeviceIndex));
+                    WriteOutput(preparedEffect, node, 4, RuntimeValue.FromFloat(px.SegmentIndex));
+                    WriteOutput(preparedEffect, node, 5, RuntimeValue.FromFloat(px.DevicePixelIndex));
+                    WriteOutput(preparedEffect, node, 6, RuntimeValue.FromFloat(px.DeviceLength));
+                    WriteOutput(preparedEffect, node, 7, RuntimeValue.FromFloat(px.DeviceNormalized));
+                    WriteOutput(preparedEffect, node, 8, RuntimeValue.FromFloat(px.GlobalIndex));
+                    WriteOutput(preparedEffect, node, 9, RuntimeValue.FromFloat(px.GlobalLength));
+                    WriteOutput(preparedEffect, node, 10, RuntimeValue.FromFloat(px.GlobalNormalized));
                     break;
                 }
 
@@ -410,7 +452,8 @@ public sealed class GraphRuntimeEvaluator
         IReadOnlyDictionary<string, Dictionary<string, RuntimeConnectionSource>> inputConnectionsByNodeId,
         out RuntimeValue[] outputBuffer,
         out CompiledOutputNode[] outputNodes,
-        out Segment[] targetSegments)
+        out Segment[] targetSegments,
+        out PixelTarget[] pixelTargets)
     {
         var evaluationOrder = compiled.EvaluationOrder;
         var compiledNodes = new CompiledNode[evaluationOrder.Count];
@@ -496,8 +539,21 @@ public sealed class GraphRuntimeEvaluator
         });
 
         outputNodes = outputNodeList.ToArray();
-        targetSegments = new Segment[targetSegmentSet.Count];
-        targetSegmentSet.CopyTo(targetSegments);
+        if (settings is null)
+        {
+            targetSegments = new Segment[targetSegmentSet.Count];
+            targetSegmentSet.CopyTo(targetSegments);
+            pixelTargets = [];
+        }
+        else
+        {
+            pixelTargets = PixelTargetLayout.Build(settings, targetSegmentSet);
+            targetSegments = new Segment[pixelTargets.Length];
+            for (var i = 0; i < pixelTargets.Length; i++)
+            {
+                targetSegments[i] = pixelTargets[i].Segment;
+            }
+        }
 
         var expectedSlotCount = 0;
         for (var i = 0; i < compiledNodes.Length; i++)
@@ -1683,6 +1739,67 @@ public sealed class GraphRuntimeEvaluator
     }
 }
 
+internal readonly record struct PixelTarget(
+    Segment Segment,
+    int DeviceIndex,
+    int SegmentIndex,
+    int DeviceStartIndex,
+    int DeviceLength,
+    int GlobalStartIndex,
+    int GlobalLength);
+
+internal static class PixelTargetLayout
+{
+    public static PixelTarget[] Build(Settings settings, HashSet<Segment> targetSegmentSet)
+    {
+        if (targetSegmentSet.Count == 0)
+        {
+            return [];
+        }
+
+        var globalLength = 0;
+        foreach (var segment in targetSegmentSet)
+        {
+            globalLength += segment.Leds.Length;
+        }
+
+        var targets = new List<PixelTarget>(targetSegmentSet.Count);
+        var globalStartIndex = 0;
+
+        for (var deviceIndex = 0; deviceIndex < settings.Devices.Count; deviceIndex++)
+        {
+            var device = settings.Devices[deviceIndex];
+            var deviceLength = 0;
+            for (var segmentIndex = 0; segmentIndex < device.Segments.Count; segmentIndex++)
+            {
+                deviceLength += device.Segments[segmentIndex].Leds.Length;
+            }
+
+            var deviceStartIndex = 0;
+            for (var segmentIndex = 0; segmentIndex < device.Segments.Count; segmentIndex++)
+            {
+                var segment = device.Segments[segmentIndex];
+                if (targetSegmentSet.Contains(segment))
+                {
+                    targets.Add(new PixelTarget(
+                        segment,
+                        deviceIndex,
+                        segmentIndex,
+                        deviceStartIndex,
+                        deviceLength,
+                        globalStartIndex,
+                        globalLength));
+                    globalStartIndex += segment.Leds.Length;
+                }
+
+                deviceStartIndex += segment.Leds.Length;
+            }
+        }
+
+        return targets.ToArray();
+    }
+}
+
 public sealed class PreparedGraph
 {
     internal PreparedGraph(
@@ -1693,6 +1810,7 @@ public sealed class PreparedGraph
         RuntimeValue[] outputBuffer,
         CompiledOutputNode[] outputNodes,
         Segment[] targetSegments,
+        PixelTarget[] pixelTargets,
         bool targetsResolved)
     {
         CompiledGraph = compiledGraph;
@@ -1702,6 +1820,7 @@ public sealed class PreparedGraph
         OutputBuffer = outputBuffer;
         OutputNodes = outputNodes;
         TargetSegments = targetSegments;
+        PixelTargets = pixelTargets;
         TargetsResolved = targetsResolved;
         HasPixelInfoNodes = ComputeHasPixelInfoNodes(compiledNodes);
     }
@@ -1719,6 +1838,8 @@ public sealed class PreparedGraph
     internal CompiledOutputNode[] OutputNodes { get; }
 
     internal Segment[] TargetSegments { get; private set; }
+
+    internal PixelTarget[] PixelTargets { get; private set; }
 
     internal bool TargetsResolved { get; private set; }
 
@@ -1739,8 +1860,13 @@ public sealed class PreparedGraph
             }
         }
 
-        TargetSegments = new Segment[targetSegmentSet.Count];
-        targetSegmentSet.CopyTo(TargetSegments);
+        PixelTargets = PixelTargetLayout.Build(settings, targetSegmentSet);
+        TargetSegments = new Segment[PixelTargets.Length];
+        for (var i = 0; i < PixelTargets.Length; i++)
+        {
+            TargetSegments[i] = PixelTargets[i].Segment;
+        }
+
         TargetsResolved = true;
     }
 
