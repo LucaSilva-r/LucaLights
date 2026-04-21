@@ -1,7 +1,5 @@
-using System.Diagnostics;
 using System.IO.Pipes;
 using System.Runtime.InteropServices;
-using System.Text.Json.Nodes;
 using LucaLights.Core.Models;
 
 namespace LucaLights.Core.GameInput.Modules;
@@ -84,17 +82,37 @@ public sealed class ITGManiaInputModule : IGameInputModule, IDisposable
 
     private CancellationTokenSource? _run;
     private Task? _backgroundTask;
-    private Task? _processWatcherTask;
     private Stream? _activeStream;
+    private readonly GameProcessWatcher _processWatcher;
     private InputSnapshot _latestSnapshot = InputSnapshot.Empty;
     private long _sequence;
     private bool _disposed;
-    private volatile bool _processRunning;
 
     public ITGManiaInputModule(string pipeName, Action<string>? log = null)
     {
         _pipeName = ExpandPipeName(pipeName);
         _log = log;
+
+        _processWatcher = new GameProcessWatcher(
+            windowsNames: WindowsProcessNames,
+            unixNames:    UnixProcessNames,
+            pollInterval: ProcessPollInterval,
+            log:          _log,
+            logPrefix:    "ITGMania:");
+        _processWatcher.Acquired += OnProcessAcquired;
+        _processWatcher.Exited   += OnProcessExited;
+    }
+
+    private void OnProcessAcquired()
+    {
+        PublishConnectedSnapshot();
+    }
+
+    private void OnProcessExited()
+    {
+        _log?.Invoke("ITGMania: tearing down pipe.");
+        CloseActiveStream();
+        PublishDisconnectedSnapshot();
     }
 
     public string ModuleId => ModuleIdValue;
@@ -142,7 +160,7 @@ public sealed class ITGManiaInputModule : IGameInputModule, IDisposable
 
             _run = CancellationTokenSource.CreateLinkedTokenSource(cancellationToken);
             _backgroundTask = Task.Run(() => RunLoop(_run.Token), CancellationToken.None);
-            _processWatcherTask = Task.Run(() => RunProcessWatcher(_run.Token), CancellationToken.None);
+            _processWatcher.Start(_run.Token);
         }
 
         return Task.CompletedTask;
@@ -153,16 +171,13 @@ public sealed class ITGManiaInputModule : IGameInputModule, IDisposable
         ThrowIfDisposed();
 
         Task? backgroundTask;
-        Task? watcherTask;
         CancellationTokenSource? run;
 
         lock (_syncRoot)
         {
             backgroundTask = _backgroundTask;
-            watcherTask = _processWatcherTask;
             run = _run;
             _backgroundTask = null;
-            _processWatcherTask = null;
             _run = null;
         }
 
@@ -172,16 +187,12 @@ public sealed class ITGManiaInputModule : IGameInputModule, IDisposable
         }
 
         run?.Cancel();
+        await _processWatcher.StopAsync().ConfigureAwait(false);
         CloseActiveStream();
 
         try
         {
-            var pending = new List<Task> { backgroundTask.WaitAsync(TimeSpan.FromSeconds(2), cancellationToken) };
-            if (watcherTask is not null)
-            {
-                pending.Add(watcherTask.WaitAsync(TimeSpan.FromSeconds(2), cancellationToken));
-            }
-            await Task.WhenAll(pending);
+            await backgroundTask.WaitAsync(TimeSpan.FromSeconds(2), cancellationToken);
         }
         catch (OperationCanceledException) when (cancellationToken.IsCancellationRequested)
         {
@@ -210,6 +221,7 @@ public sealed class ITGManiaInputModule : IGameInputModule, IDisposable
         }
 
         StopAsync(CancellationToken.None).GetAwaiter().GetResult();
+        _processWatcher.Dispose();
         _disposed = true;
     }
 
@@ -349,83 +361,6 @@ public sealed class ITGManiaInputModule : IGameInputModule, IDisposable
                 counter = 0;
             }
         }
-    }
-
-    private async Task RunProcessWatcher(CancellationToken cancellationToken)
-    {
-        while (!cancellationToken.IsCancellationRequested)
-        {
-            bool running;
-            try
-            {
-                running = IsITGManiaProcessRunning();
-            }
-            catch (Exception ex)
-            {
-                _log?.Invoke($"ITGMania process watcher error: {ex.Message}");
-                running = _processRunning;
-            }
-
-            if (running != _processRunning)
-            {
-                _processRunning = running;
-                if (running)
-                {
-                    _log?.Invoke("ITGMania process detected.");
-                    PublishConnectedSnapshot();
-                }
-                else
-                {
-                    _log?.Invoke("ITGMania process no longer running; tearing down pipe.");
-                    CloseActiveStream();
-                    PublishDisconnectedSnapshot();
-                }
-            }
-
-            try
-            {
-                await Task.Delay(ProcessPollInterval, cancellationToken).ConfigureAwait(false);
-            }
-            catch (OperationCanceledException)
-            {
-                return;
-            }
-        }
-    }
-
-    private static bool IsITGManiaProcessRunning()
-    {
-        var names = RuntimeInformation.IsOSPlatform(OSPlatform.Windows)
-            ? WindowsProcessNames
-            : UnixProcessNames;
-
-        foreach (var name in names)
-        {
-            Process[]? procs = null;
-            try
-            {
-                procs = Process.GetProcessesByName(name);
-                if (procs.Length > 0)
-                {
-                    return true;
-                }
-            }
-            catch
-            {
-            }
-            finally
-            {
-                if (procs is not null)
-                {
-                    foreach (var p in procs)
-                    {
-                        p.Dispose();
-                    }
-                }
-            }
-        }
-
-        return false;
     }
 
     private InputSnapshot ParsePacket(byte[] data)

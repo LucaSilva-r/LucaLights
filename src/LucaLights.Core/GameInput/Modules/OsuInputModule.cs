@@ -22,7 +22,7 @@ public sealed partial class OsuInputModule : IGameInputModule, IDisposable
     private          Task?                _backgroundTask = null;
     private          bool                 _disposed       = false;
     private          long                 _sequence       = 0;
-    private          volatile bool        _osuProcessRunning = false;
+    private readonly GameProcessWatcher   _osuProcessWatcher;
 
     // Snapshot dispatch channel — WebSocket/note-engine threads write here instead of invoking
     // SnapshotUpdated directly, so they can never be blocked by a slow event handler.
@@ -72,6 +72,14 @@ public sealed partial class OsuInputModule : IGameInputModule, IDisposable
         _autoManageProcess = autoManageProcess;
         _log               = log;
 
+        _osuProcessWatcher = new GameProcessWatcher(
+            windowsNames: ["osu!", "osu", "osu-lazer"],
+            unixNames:    ["osu!", "osu", "osu-lazer"],
+            pollInterval: ProcessPollInterval,
+            log:          _log,
+            logPrefix:    "osu: osu!");
+        _osuProcessWatcher.Exited += OnOsuProcessExited;
+
         if (_autoManageProcess)
         {
             AppDomain.CurrentDomain.ProcessExit += (_, _) => StopTosuProcess();
@@ -107,6 +115,7 @@ public sealed partial class OsuInputModule : IGameInputModule, IDisposable
         {
             if (_backgroundTask is not null) return Task.CompletedTask;
             _run            = CancellationTokenSource.CreateLinkedTokenSource(cancellationToken);
+            _osuProcessWatcher.Start(_run.Token);
             _backgroundTask = Task.Run(() => RunAll(_run.Token), CancellationToken.None);
         }
         return Task.CompletedTask;
@@ -129,6 +138,7 @@ public sealed partial class OsuInputModule : IGameInputModule, IDisposable
         if (task is null) return;
 
         run?.Cancel();
+        await _osuProcessWatcher.StopAsync().ConfigureAwait(false);
         StopNoteEngine();
         StopTosuProcess();
 
@@ -150,6 +160,7 @@ public sealed partial class OsuInputModule : IGameInputModule, IDisposable
     {
         if (_disposed) return;
         StopAsync(CancellationToken.None).GetAwaiter().GetResult();
+        _osuProcessWatcher.Dispose();
         _tosuStartupLock.Dispose();
         _disposed = true;
     }

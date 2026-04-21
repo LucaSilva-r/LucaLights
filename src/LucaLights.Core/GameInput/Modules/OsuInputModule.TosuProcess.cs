@@ -11,10 +11,6 @@ public sealed partial class OsuInputModule
     private readonly object _processLock = new();
     private readonly SemaphoreSlim _tosuStartupLock = new(1, 1);
     private Process? _tosuProcess;
-    private bool _reportedWaitingForOsuProcess;
-
-    private static readonly string[] WindowsOsuProcessNames = ["osu!", "osu", "osu-lazer"];
-    private static readonly string[] UnixOsuProcessNames = ["osu!", "osu", "osu-lazer"];
 
     private static string TosuDirectory =>
         Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.ApplicationData), "tosu");
@@ -24,112 +20,14 @@ public sealed partial class OsuInputModule
 
     private static string TosuVersionFile => Path.Combine(TosuDirectory, "lucalights-version.txt");
 
-    private async Task<bool> WaitForOsuProcessAsync(CancellationToken ct)
+    private void OnOsuProcessExited()
     {
-        while (!ct.IsCancellationRequested)
+        _log?.Invoke("osu: pausing tosu connection.");
+        ResetOsuState();
+        if (_autoManageProcess)
         {
-            if (RefreshOsuProcessPresence())
-            {
-                return true;
-            }
-
-            try
-            {
-                await Task.Delay(ProcessPollInterval, ct).ConfigureAwait(false);
-            }
-            catch (OperationCanceledException)
-            {
-                return false;
-            }
+            StopTosuProcess();
         }
-
-        return false;
-    }
-
-    private bool RefreshOsuProcessPresence()
-    {
-        bool running;
-        try
-        {
-            running = IsOsuProcessRunning();
-        }
-        catch (Exception ex)
-        {
-            _log?.Invoke($"osu: process watcher error: {ex.Message}");
-            running = _osuProcessRunning;
-        }
-
-        var becameUnavailable = false;
-
-        lock (_processLock)
-        {
-            if (running != _osuProcessRunning)
-            {
-                _osuProcessRunning = running;
-                _reportedWaitingForOsuProcess = !running;
-
-                if (running)
-                {
-                    _log?.Invoke("osu: osu! process detected.");
-                }
-                else
-                {
-                    _log?.Invoke("osu: osu! process no longer running; pausing tosu connection.");
-                    becameUnavailable = true;
-                }
-            }
-            else if (!running && !_reportedWaitingForOsuProcess)
-            {
-                _reportedWaitingForOsuProcess = true;
-                _log?.Invoke("osu: waiting for osu! process before connecting to tosu.");
-            }
-        }
-
-        if (becameUnavailable)
-        {
-            ResetOsuState();
-            if (_autoManageProcess)
-            {
-                StopTosuProcess();
-            }
-        }
-
-        return running;
-    }
-
-    private static bool IsOsuProcessRunning()
-    {
-        var names = RuntimeInformation.IsOSPlatform(OSPlatform.Windows)
-            ? WindowsOsuProcessNames
-            : UnixOsuProcessNames;
-
-        foreach (var name in names)
-        {
-            Process[]? procs = null;
-            try
-            {
-                procs = Process.GetProcessesByName(name);
-                if (procs.Length > 0)
-                {
-                    return true;
-                }
-            }
-            catch
-            {
-            }
-            finally
-            {
-                if (procs is not null)
-                {
-                    foreach (var p in procs)
-                    {
-                        p.Dispose();
-                    }
-                }
-            }
-        }
-
-        return false;
     }
 
     private async Task<bool> EnsureTosuReadyAsync(CancellationToken ct)
@@ -142,13 +40,13 @@ public sealed partial class OsuInputModule
         await _tosuStartupLock.WaitAsync(ct).ConfigureAwait(false);
         try
         {
-            if (!RefreshOsuProcessPresence())
+            if (!_osuProcessWatcher.IsRunning)
             {
                 return false;
             }
 
             await EnsureTosuRunningAsync(ct).ConfigureAwait(false);
-            return RefreshOsuProcessPresence();
+            return _osuProcessWatcher.IsRunning;
         }
         finally
         {
@@ -158,7 +56,7 @@ public sealed partial class OsuInputModule
 
     private async Task EnsureTosuRunningAsync(CancellationToken ct)
     {
-        if (!RefreshOsuProcessPresence())
+        if (!_osuProcessWatcher.IsRunning)
         {
             return;
         }
@@ -205,7 +103,7 @@ public sealed partial class OsuInputModule
             var deadline = DateTimeOffset.UtcNow.AddSeconds(15);
             while (DateTimeOffset.UtcNow < deadline && !ct.IsCancellationRequested)
             {
-                if (!RefreshOsuProcessPresence())
+                if (!_osuProcessWatcher.IsRunning)
                 {
                     _log?.Invoke("osu: osu! exited before tosu was ready.");
                     StopTosuProcess();

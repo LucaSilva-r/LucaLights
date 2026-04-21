@@ -31,7 +31,7 @@ public sealed partial class OsuInputModule
 
         while (!ct.IsCancellationRequested)
         {
-            if (!await WaitForOsuProcessAsync(ct).ConfigureAwait(false))
+            if (!await _osuProcessWatcher.WaitForAcquiredAsync(ct).ConfigureAwait(false))
             {
                 break;
             }
@@ -70,7 +70,7 @@ public sealed partial class OsuInputModule
 
                         if (completed != receiveTask)
                         {
-                            if (ct.IsCancellationRequested || !RefreshOsuProcessPresence())
+                            if (ct.IsCancellationRequested || !_osuProcessWatcher.IsRunning)
                             {
                                 closed = true;
                                 break;
@@ -99,7 +99,7 @@ public sealed partial class OsuInputModule
                     if (closed) break;
                     if (sb.Length == 0) continue;
 
-                    if (!RefreshOsuProcessPresence())
+                    if (!_osuProcessWatcher.IsRunning)
                     {
                         break;
                     }
@@ -171,7 +171,7 @@ public sealed partial class OsuInputModule
 
         while (!ct.IsCancellationRequested)
         {
-            if (!await WaitForOsuProcessAsync(ct).ConfigureAwait(false))
+            if (!await _osuProcessWatcher.WaitForAcquiredAsync(ct).ConfigureAwait(false))
             {
                 break;
             }
@@ -206,7 +206,7 @@ public sealed partial class OsuInputModule
 
                         if (completed != receiveTask)
                         {
-                            if (ct.IsCancellationRequested || !RefreshOsuProcessPresence())
+                            if (ct.IsCancellationRequested || !_osuProcessWatcher.IsRunning)
                             {
                                 closed = true;
                                 break;
@@ -225,7 +225,7 @@ public sealed partial class OsuInputModule
 
                     if (closed) break;
                     if (sb.Length == 0) continue;
-                    if (!RefreshOsuProcessPresence()) break;
+                    if (!_osuProcessWatcher.IsRunning) break;
 
                     var data = TryDeserialize<TosuPreciseData>(sb.ToString());
                     if (data is null) continue;
