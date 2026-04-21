@@ -47,7 +47,7 @@
 	--editor-canvas: linear-gradient(180deg, #f7f4ef 0%, #f1ece3 100%);
 	--surface-glass: rgba(255, 255, 255, 0.9);
 	--surface-glass-hover: rgba(255, 255, 255, 1);
-	--surface-node: rgba(255, 255, 255, 0.95);
+	--surface-node: var(--card);
 	--surface-subtle-hover: rgba(0, 0, 0, 0.03);
 	--node-handle-border: white;
 }
@@ -93,7 +93,7 @@
 	--editor-canvas: linear-gradient(180deg, #161412 0%, #121110 100%);
 	--surface-glass: rgba(255, 255, 255, 0.08);
 	--surface-glass-hover: rgba(255, 255, 255, 0.12);
-	--surface-node: rgba(30, 28, 26, 0.95);
+	--surface-node: var(--card);
 	--surface-subtle-hover: rgba(255, 255, 255, 0.04);
 	--node-handle-border: oklch(0.214 0.009 43.1);
 }

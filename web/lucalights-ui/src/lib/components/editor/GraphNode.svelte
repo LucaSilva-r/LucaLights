@@ -11,7 +11,7 @@
 	let { id, data, selected = false }: NodeProps<EditorFlowNode> = $props();
 
 	const inlineInputClass =
-		'nodrag nopan h-7 min-w-0 flex-1 rounded-md border border-border/70 bg-background/90 px-2 text-[11px] text-right shadow-sm outline-none transition focus:border-ring focus:ring-4 focus:ring-ring/20';
+		'nodrag nopan h-7 min-w-0 flex-1 rounded-md border border-border/70 bg-background px-2 text-[11px] text-right shadow-sm outline-none transition focus:border-ring focus:ring-4 focus:ring-ring/20';
 	const outputTargetKeys = new Set(['segmentIds']);
 
 	let connectedInputIds = $derived.by(() => {
@@ -495,7 +495,7 @@
 {#snippet sliderField(property: NodePropertyDefinition, label: string)}
 	<!-- Blender-style slider: label left, value right, fill bar behind -->
 	<div
-		class="nodrag nopan relative flex h-7 cursor-ew-resize select-none items-center overflow-hidden rounded-md border border-border/70 bg-background/90 shadow-sm"
+		class="nodrag nopan relative flex h-7 cursor-ew-resize select-none items-center overflow-hidden rounded-md border border-border/70 bg-background shadow-sm"
 		role="slider"
 		aria-label={label}
 		aria-valuemin={property.minFloatValue ?? 0}
@@ -567,7 +567,7 @@
 {#if isRerouteNode(data.typeId)}
 	{@const rerouteValueType = data.outputs[0]?.valueType ?? data.inputs[0]?.valueType ?? 'Float'}
 	<div
-		class={`relative box-border flex h-5 w-5 items-center justify-center rounded-full border bg-background/95 shadow-lg ${
+		class={`relative box-border flex h-5 w-5 items-center justify-center rounded-full border bg-background shadow-lg ${
 			selected ? 'border-primary ring-2 ring-primary/25' : 'border-border/80'
 		}`}
 		title={nodeTooltip()}
@@ -590,9 +590,9 @@
 	</div>
 {:else}
 	<div
-		class={`overflow-visible rounded-[1.05rem] border text-left shadow-lg backdrop-blur ${
+		class={`overflow-visible rounded-[1.05rem] border text-left shadow-lg ${
 			isCommentNode(data.typeId)
-				? 'w-[19rem] bg-surface-card text-foreground'
+				? 'w-[19rem] bg-card text-foreground'
 				: 'w-[15.5rem] bg-surface-node'
 		} ${
 			selected
@@ -747,7 +747,7 @@
 							{commentProperty('title')?.label}
 						</span>
 						<input
-							class="nodrag nopan h-8 w-full rounded-md border border-amber-200/80 bg-background/90 px-2 text-[12px] font-medium shadow-sm outline-none transition focus:border-ring focus:ring-4 focus:ring-ring/20 dark:border-amber-500/25 dark:bg-input/30"
+							class="nodrag nopan h-8 w-full rounded-md border border-amber-200/80 bg-background px-2 text-[12px] font-medium shadow-sm outline-none transition focus:border-ring focus:ring-4 focus:ring-ring/20 dark:border-amber-500/25"
 							type="text"
 							value={stringValue(commentProperty('title')?.key ?? 'title', String(valueFor(commentProperty('title')!) ?? ''))}
 							oninput={(event) => setProperty(commentProperty('title')?.key ?? 'title', (event.currentTarget as HTMLInputElement).value)}
@@ -761,7 +761,7 @@
 							{commentProperty('body')?.label}
 						</span>
 						<textarea
-							class="nodrag nopan min-h-28 w-full rounded-lg border border-amber-200/80 bg-background/90 px-2.5 py-2 text-[12px] leading-5 shadow-sm outline-none transition focus:border-ring focus:ring-4 focus:ring-ring/20 dark:border-amber-500/25 dark:bg-input/30"
+							class="nodrag nopan min-h-28 w-full rounded-lg border border-amber-200/80 bg-background px-2.5 py-2 text-[12px] leading-5 shadow-sm outline-none transition focus:border-ring focus:ring-4 focus:ring-ring/20 dark:border-amber-500/25"
 							placeholder="Describe what this section does, leave a TODO, or explain why the graph is wired this way."
 							value={stringValue(commentProperty('body')?.key ?? 'body', String(valueFor(commentProperty('body')!) ?? ''))}
 							oninput={(event) => setProperty(commentProperty('body')?.key ?? 'body', (event.currentTarget as HTMLTextAreaElement).value)}
