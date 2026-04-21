@@ -13,19 +13,26 @@
 	} from '@xyflow/svelte';
 	import '@xyflow/svelte/dist/style.css';
 	import {
-		ArrowLeft,
-		Check,
-		Layers3,
+		ChevronDown,
+		ChevronLeft,
+		ChevronRight,
+		Keyboard,
 		Loader2,
 		Plus,
-		Save,
 		Search,
-		TriangleAlert,
 		Workflow
 	} from '@lucide/svelte';
 	import NodeSearchDialog from '$lib/components/editor/NodeSearchDialog.svelte';
+	import { headerActions } from '$lib/header-actions.svelte';
 	import { theme } from '$lib/theme.svelte';
 	import GraphNode from '$lib/components/editor/GraphNode.svelte';
+	import {
+		Dialog,
+		DialogContent,
+		DialogDescription,
+		DialogHeader,
+		DialogTitle
+	} from '$lib/components/ui/dialog';
 	import type {
 		EditorDeviceOption,
 		EditorFlowNode,
@@ -33,7 +40,6 @@
 		EditorSegmentOption
 	} from '$lib/components/editor/types';
 	import { Badge } from '$lib/components/ui/badge';
-	import { Button } from '$lib/components/ui/button';
 	import {
 		Card,
 		CardContent,
@@ -53,13 +59,14 @@
 		type InputDefinition,
 		type NodeTypeDefinition,
 		type NodeTypesResponse,
-		type SvelteFlowGraphDocument,
-		type SystemStatus
+		type SvelteFlowGraphDocument
 	} from '$lib/lucalights';
 
 	const defaultViewport: Viewport = { x: 0, y: 0, zoom: 1 };
 	const pasteOffset = { x: 42, y: 42 };
 	const editorSnapGrid: SnapGrid = [20, 20];
+	const editorSaveHeaderActionId = 'editor-save';
+	const editorShortcutsHeaderActionId = 'editor-shortcuts';
 
 	type GraphClipboardNode = {
 		id: string;
@@ -85,9 +92,9 @@
 	let nodeTypes = $state<NodeTypeDefinition[]>([]);
 	let inputDefinitions = $state<InputDefinition[]>([]);
 	let devices = $state<Device[]>([]);
-	let activeInputModuleId = $state<string | null>(null);
 
 	let searchDialogOpen = $state(false);
+	let shortcutDialogOpen = $state(false);
 
 	let nodes = $state<EditorFlowNode[]>([]);
 	let edges = $state<Edge[]>([]);
@@ -95,6 +102,8 @@
 
 	let canvasHost = $state<HTMLDivElement | null>(null);
 	let paletteFilter = $state('');
+	let paletteCollapsed = $state(false);
+	let collapsedPaletteCategories = $state<string[]>([]);
 	let loading = $state(true);
 	let saving = $state(false);
 	let dirty = $state(false);
@@ -106,9 +115,6 @@
 	let clipboardPasteCount = $state(0);
 
 	let nodeTypeMap = $derived(new Map(nodeTypes.map((nodeType) => [nodeType.typeId, nodeType])));
-	let activeInputDefinition = $derived(
-		inputDefinitions.find((definition) => definition.moduleId === activeInputModuleId) ?? null
-	);
 	let flowNodeTypes = $derived.by(
 		() =>
 			Object.fromEntries(
@@ -475,6 +481,46 @@
 			dirty = true;
 			lastSaveResult = null;
 		}
+	}
+
+	function saveActionTitle() {
+		if (saving) {
+			return 'Saving graph...';
+		}
+
+		if (dirty) {
+			return 'Save graph';
+		}
+
+		if (lastSaveResult === 'success') {
+			return 'Graph saved';
+		}
+
+		if (lastSaveResult === 'error') {
+			return 'Save failed';
+		}
+
+		return 'No changes to save';
+	}
+
+	function handleHeaderSaveClick() {
+		if (!saving && dirty) {
+			void saveGraph();
+		}
+	}
+
+	function isPaletteCategoryOpen(category: string) {
+		return paletteFilter.trim().length > 0 || !collapsedPaletteCategories.includes(category);
+	}
+
+	function togglePaletteCategory(category: string) {
+		if (paletteFilter.trim().length > 0) {
+			return;
+		}
+
+		collapsedPaletteCategories = collapsedPaletteCategories.includes(category)
+			? collapsedPaletteCategories.filter((value) => value !== category)
+			: [...collapsedPaletteCategories, category];
 	}
 
 	function updateNodeProperty(nodeId: string, key: string, value: unknown) {
@@ -851,19 +897,17 @@
 		errorMessage = '';
 
 		try {
-			const [graphData, nodeTypesData, moduleDefinitions, deviceList, systemStatus] =
+			const [graphData, nodeTypesData, moduleDefinitions, deviceList] =
 				await Promise.all([
 					apiGet<GraphResponse>('/api/graph'),
 					apiGet<NodeTypesResponse>('/api/node-types'),
 					apiGet<InputDefinition[]>('/api/input-modules'),
-					apiGet<Device[]>('/api/devices'),
-					apiGet<SystemStatus>('/api/system/status')
+					apiGet<Device[]>('/api/devices')
 				]);
 
 			nodeTypes = nodeTypesData.nodeTypes;
 			inputDefinitions = moduleDefinitions;
 			devices = deviceList;
-			activeInputModuleId = systemStatus.input.activeModuleId;
 
 			const typeMap = new Map(nodeTypesData.nodeTypes.map((nodeType) => [nodeType.typeId, nodeType]));
 			const flow = graphDocumentToFlow(graphData.graph, typeMap);
@@ -1215,6 +1259,32 @@
 			refreshConnectedInputs(edgeSnapshot);
 		});
 	});
+
+	$effect(() => {
+		headerActions.setPrimary({
+			id: editorSaveHeaderActionId,
+			label: 'Save',
+			title: saveActionTitle(),
+			disabled: saving || !dirty,
+			busy: saving,
+			onClick: handleHeaderSaveClick
+		});
+
+		return () => headerActions.clearPrimary(editorSaveHeaderActionId);
+	});
+
+	$effect(() => {
+		headerActions.setHelp({
+			id: editorShortcutsHeaderActionId,
+			label: 'Keyboard shortcuts',
+			title: 'Show graph editor shortcuts',
+			onClick: () => {
+				shortcutDialogOpen = true;
+			}
+		});
+
+		return () => headerActions.clearHelp(editorShortcutsHeaderActionId);
+	});
 </script>
 
 <svelte:head>
@@ -1224,55 +1294,6 @@
 <svelte:window onkeydown={handleKeydown} />
 
 <div class="flex h-[calc(100vh-3.5rem)] flex-col">
-	<div class="flex items-center justify-between border-b border-border/60 bg-background/80 px-4 py-2 backdrop-blur-lg">
-		<div class="flex items-center gap-3">
-			<Button variant="ghost" size="sm" href="/">
-				<ArrowLeft class="size-4" />
-				Dashboard
-			</Button>
-
-			<span class="text-sm font-semibold">Graph Editor</span>
-
-			<Badge variant="outline">
-				<Layers3 class="size-3" />
-				{nodes.length} nodes / {edges.length} edges
-			</Badge>
-
-			{#if activeInputDefinition}
-				<Badge variant="outline">{activeInputDefinition.displayName}</Badge>
-			{/if}
-
-			{#if dirty}
-				<Badge variant="secondary">Unsaved changes</Badge>
-			{/if}
-
-			{#if lastSaveResult === 'success'}
-				<Badge variant="default">
-					<Check class="size-3" />
-					Saved
-				</Badge>
-			{/if}
-		</div>
-
-		<div class="flex items-center gap-2">
-			{#if validationErrors.length > 0}
-				<Badge variant="destructive">
-					<TriangleAlert class="size-3" />
-					{validationErrors.length} error{validationErrors.length !== 1 ? 's' : ''}
-				</Badge>
-			{/if}
-
-			<Button size="sm" onclick={saveGraph} disabled={saving || !dirty}>
-				{#if saving}
-					<Loader2 class="size-4 animate-spin" />
-				{:else}
-					<Save class="size-4" />
-				{/if}
-				Save
-			</Button>
-		</div>
-	</div>
-
 	<NodeSearchDialog
 		bind:open={searchDialogOpen}
 		{nodeTypes}
@@ -1280,79 +1301,174 @@
 		onClose={() => (searchDialogOpen = false)}
 	/>
 
+	<Dialog bind:open={shortcutDialogOpen}>
+		<DialogContent class="w-[min(28rem,calc(100vw-1rem))] border-surface-card-border bg-background p-0 sm:max-w-[28rem]">
+			<div class="p-5">
+				<DialogHeader class="gap-2">
+					<DialogTitle class="flex items-center gap-2 text-base">
+						<Keyboard class="size-5 text-muted-foreground" />
+						Keyboard Shortcuts
+					</DialogTitle>
+					<DialogDescription>
+						Quick graph editor controls for editing nodes and opening search.
+					</DialogDescription>
+				</DialogHeader>
+
+				<div class="mt-5 space-y-2">
+					<div class="flex items-center justify-between gap-4 rounded-xl border border-border/60 bg-card px-3 py-2.5">
+						<div class="flex min-w-0 flex-wrap items-center gap-1.5">
+							<kbd class="rounded-md border border-border/70 bg-background px-2 py-1 font-mono text-[11px] text-muted-foreground">Ctrl</kbd>
+							<kbd class="rounded-md border border-border/70 bg-background px-2 py-1 font-mono text-[11px] text-muted-foreground">C</kbd>
+						</div>
+						<p class="min-w-0 flex-1 text-right text-sm font-medium">Copy selected nodes</p>
+					</div>
+
+					<div class="flex items-center justify-between gap-4 rounded-xl border border-border/60 bg-card px-3 py-2.5">
+						<div class="flex min-w-0 flex-wrap items-center gap-1.5">
+							<kbd class="rounded-md border border-border/70 bg-background px-2 py-1 font-mono text-[11px] text-muted-foreground">Ctrl</kbd>
+							<kbd class="rounded-md border border-border/70 bg-background px-2 py-1 font-mono text-[11px] text-muted-foreground">V</kbd>
+						</div>
+						<p class="min-w-0 flex-1 text-right text-sm font-medium">Paste copied nodes</p>
+					</div>
+
+					<div class="flex items-center justify-between gap-4 rounded-xl border border-border/60 bg-card px-3 py-2.5">
+						<div class="flex min-w-0 flex-wrap items-center gap-1.5">
+							<kbd class="rounded-md border border-border/70 bg-background px-2 py-1 font-mono text-[11px] text-muted-foreground">Ctrl</kbd>
+							<kbd class="rounded-md border border-border/70 bg-background px-2 py-1 font-mono text-[11px] text-muted-foreground">D</kbd>
+						</div>
+						<p class="min-w-0 flex-1 text-right text-sm font-medium">Duplicate selected nodes</p>
+					</div>
+
+					<div class="flex items-center justify-between gap-4 rounded-xl border border-border/60 bg-card px-3 py-2.5">
+						<div class="flex min-w-0 flex-wrap items-center gap-1.5">
+							<kbd class="rounded-md border border-border/70 bg-background px-2 py-1 font-mono text-[11px] text-muted-foreground">Shift</kbd>
+						</div>
+						<p class="min-w-0 flex-1 text-right text-sm font-medium">Hold to select multiple nodes</p>
+					</div>
+
+					<div class="flex items-center justify-between gap-4 rounded-xl border border-primary/30 bg-primary/10 px-3 py-2.5">
+						<div class="flex min-w-0 flex-wrap items-center gap-1.5">
+							<kbd class="rounded-md border border-primary/30 bg-background px-2 py-1 font-mono text-[11px] text-primary">Shift</kbd>
+							<kbd class="rounded-md border border-primary/30 bg-background px-2 py-1 font-mono text-[11px] text-primary">A</kbd>
+						</div>
+						<p class="min-w-0 flex-1 text-right text-sm font-medium text-primary">
+							Open node search
+						</p>
+					</div>
+				</div>
+			</div>
+		</DialogContent>
+	</Dialog>
+
 	{#if errorMessage}
 		<div class="border-b border-destructive/30 bg-destructive/10 px-4 py-2 text-sm text-destructive">
 			{errorMessage}
 		</div>
 	{/if}
 
-	<div class="grid min-h-0 flex-1 xl:grid-cols-[20rem_minmax(0,1fr)]">
-		<aside class="overflow-auto border-r border-border/60 bg-(image:--editor-sidebar)">
-			<div class="space-y-5 p-4">
-				<div class="space-y-2">
-					<h2 class="text-sm font-semibold tracking-tight">Node Palette</h2>
-					<p class="text-sm leading-5 text-muted-foreground">
-						Drag a node onto the canvas to place it exactly where you want it.
-					</p>
-				</div>
+	<div
+		class="grid min-h-0 flex-1 xl:grid-cols-[20rem_minmax(0,1fr)]"
+		style:grid-template-columns={paletteCollapsed ? 'minmax(0, 1fr)' : undefined}
+	>
+		{#if !paletteCollapsed}
+			<aside
+				id="node-palette"
+				class="relative border-r border-border/60 bg-(image:--editor-sidebar)"
+			>
+				<button
+					type="button"
+					class="absolute right-3 top-3 z-20 flex size-8 items-center justify-center rounded-full border border-border/70 bg-background/95 text-muted-foreground shadow-lg outline-none transition hover:border-primary/40 hover:text-foreground focus:border-ring focus:ring-4 focus:ring-ring/20"
+					aria-label="Hide node palette"
+					aria-controls="node-palette"
+					aria-expanded="true"
+					title="Hide node palette"
+					onclick={() => (paletteCollapsed = true)}
+				>
+					<ChevronLeft class="size-4" />
+				</button>
 
-				<label class="relative block">
-					<Search class="pointer-events-none absolute left-3 top-1/2 size-4 -translate-y-1/2 text-muted-foreground" />
-					<input
-						class="h-10 w-full rounded-xl border border-border/70 bg-surface-glass pl-9 pr-3 text-sm shadow-sm outline-none transition focus:border-ring focus:ring-4 focus:ring-ring/20"
-						bind:value={paletteFilter}
-						placeholder="Search nodes"
-					/>
-				</label>
+				<div class="h-full overflow-auto">
+					<div class="space-y-5 p-4">
+						<div class="space-y-2 pr-10">
+							<h2 class="text-sm font-semibold tracking-tight">Node Palette</h2>
+							<p class="text-sm leading-5 text-muted-foreground">
+								Drag a node onto the canvas to place it exactly where you want it.
+							</p>
+						</div>
 
-				<div class="grid gap-3">
-					{#each paletteGroups as group}
-						<div class="space-y-2">
-							<div class="flex items-center justify-between gap-3">
-								<h3 class="text-[11px] font-semibold uppercase tracking-[0.2em] text-muted-foreground">
-									{group.category}
-								</h3>
-								<Badge variant="outline">{group.items.length}</Badge>
-							</div>
+						<label class="relative block">
+							<Search class="pointer-events-none absolute left-3 top-1/2 size-4 -translate-y-1/2 text-muted-foreground" />
+							<input
+								class="h-10 w-full rounded-xl border border-border/70 bg-surface-glass pl-9 pr-3 text-sm shadow-sm outline-none transition focus:border-ring focus:ring-4 focus:ring-ring/20"
+								bind:value={paletteFilter}
+								placeholder="Search nodes"
+							/>
+						</label>
 
-							<div class="space-y-2">
-								{#each group.items as nodeType}
+						<div class="grid gap-3">
+							{#each paletteGroups as group (group.category)}
+								<section class="space-y-2">
 									<button
 										type="button"
-										draggable="true"
-										class="w-full cursor-grab rounded-2xl border border-border/70 bg-surface-glass p-3 text-left shadow-sm transition hover:border-primary/40 hover:bg-surface-glass-hover active:cursor-grabbing"
-										ondragstart={(event) => handlePaletteDragStart(event, nodeType.typeId)}
+										class="flex w-full items-center justify-between gap-3 rounded-lg px-1 py-1.5 text-left transition hover:bg-background/35"
+										aria-expanded={isPaletteCategoryOpen(group.category)}
+										onclick={() => togglePaletteCategory(group.category)}
 									>
-										<div class="flex items-start justify-between gap-3">
-											<div class="space-y-1">
-												<p class="text-sm font-semibold">{nodeType.displayName}</p>
-												<p class="text-xs leading-5 text-muted-foreground">
-													{nodeType.description}
-												</p>
-											</div>
-											<Plus class="size-4 text-muted-foreground" />
+										<h3 class="min-w-0 truncate text-[11px] font-semibold uppercase tracking-[0.2em] text-muted-foreground">
+											{group.category}
+										</h3>
+										<div class="flex shrink-0 items-center gap-2">
+											<Badge variant="outline">{group.items.length}</Badge>
+											<ChevronDown
+												class={`size-4 text-muted-foreground transition ${
+													isPaletteCategoryOpen(group.category) ? 'rotate-180' : ''
+												}`}
+											/>
 										</div>
 									</button>
-								{/each}
-							</div>
+
+									{#if isPaletteCategoryOpen(group.category)}
+										<div class="space-y-2">
+											{#each group.items as nodeType (nodeType.typeId)}
+												<button
+													type="button"
+													draggable="true"
+													class="w-full cursor-grab rounded-2xl border border-border/70 bg-surface-glass p-3 text-left shadow-sm transition hover:border-primary/40 hover:bg-surface-glass-hover active:cursor-grabbing"
+													ondragstart={(event) => handlePaletteDragStart(event, nodeType.typeId)}
+												>
+													<div class="flex items-start justify-between gap-3">
+														<div class="space-y-1">
+															<p class="text-sm font-semibold">{nodeType.displayName}</p>
+															<p class="text-xs leading-5 text-muted-foreground">
+																{nodeType.description}
+															</p>
+														</div>
+														<Plus class="size-4 text-muted-foreground" />
+													</div>
+												</button>
+											{/each}
+										</div>
+									{/if}
+								</section>
+							{/each}
+
+							{#if paletteGroups.length === 0}
+								<div class="rounded-2xl border border-dashed border-border/80 bg-surface-card px-4 py-8 text-center text-sm text-muted-foreground">
+									No nodes match the current filter.
+								</div>
+							{/if}
 						</div>
-					{/each}
 
-					{#if paletteGroups.length === 0}
-						<div class="rounded-2xl border border-dashed border-border/80 bg-surface-card px-4 py-8 text-center text-sm text-muted-foreground">
-							No nodes match the current filter.
+						<Separator />
+
+						<div class="space-y-2 text-sm text-muted-foreground">
+							<p>{buildInputChannelOptions().length} input channels available for graph input nodes.</p>
+							<p>{devices.length} devices and {devices.reduce((total, device) => total + device.segments.length, 0)} segments available for output targeting.</p>
 						</div>
-					{/if}
+					</div>
 				</div>
-
-				<Separator />
-
-				<div class="space-y-2 text-sm text-muted-foreground">
-					<p>{buildInputChannelOptions().length} input channels available for graph input nodes.</p>
-					<p>{devices.length} devices and {devices.reduce((total, device) => total + device.segments.length, 0)} segments available for output targeting.</p>
-				</div>
-			</div>
-		</aside>
+			</aside>
+		{/if}
 
 		<div
 			bind:this={canvasHost}
@@ -1363,6 +1479,20 @@
 			ondragover={handleCanvasDragOver}
 			ondrop={handleCanvasDrop}
 		>
+			{#if paletteCollapsed}
+				<button
+					type="button"
+					class="absolute left-3 top-3 z-20 flex size-9 items-center justify-center rounded-full border border-border/70 bg-background/95 text-muted-foreground shadow-lg outline-none transition hover:border-primary/40 hover:text-foreground focus:border-ring focus:ring-4 focus:ring-ring/20"
+					aria-label="Show node palette"
+					aria-controls="node-palette"
+					aria-expanded="false"
+					title="Show node palette"
+					onclick={() => (paletteCollapsed = false)}
+				>
+					<ChevronRight class="size-4" />
+				</button>
+			{/if}
+
 			{#if loading}
 				<div class="flex h-full items-center justify-center">
 					<div class="flex flex-col items-center gap-3 text-muted-foreground">

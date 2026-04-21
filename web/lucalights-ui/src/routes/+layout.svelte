@@ -2,9 +2,10 @@
 	import './layout.css';
 	import favicon from '$lib/assets/favicon.ico';
 	import { page } from '$app/state';
+	import { headerActions } from '$lib/header-actions.svelte';
 	import { Button } from '$lib/components/ui/button';
 	import { Separator } from '$lib/components/ui/separator';
-	import { Cable, LayoutDashboard, Moon, Settings, Sun, Workflow } from '@lucide/svelte';
+	import { Cable, Info, LayoutDashboard, Loader2, Moon, Save, Settings, Sun, Workflow } from '@lucide/svelte';
 	import { theme } from '$lib/theme.svelte';
 
 	let { children } = $props();
@@ -47,7 +48,36 @@
 				{/each}
 			</nav>
 
-			<div class="ml-auto">
+			<div class="ml-auto flex items-center gap-2">
+				{#if headerActions.help}
+					<Button
+						variant="ghost"
+						size="icon-sm"
+						aria-label={headerActions.help.label}
+						onclick={headerActions.help.onClick}
+						disabled={headerActions.help.disabled}
+						title={headerActions.help.title}
+					>
+						<Info class="size-4" />
+					</Button>
+				{/if}
+
+				{#if headerActions.primary}
+					<Button
+						size="sm"
+						onclick={headerActions.primary.onClick}
+						disabled={headerActions.primary.disabled}
+						title={headerActions.primary.title}
+					>
+						{#if headerActions.primary.busy}
+							<Loader2 class="size-4 animate-spin" />
+						{:else}
+							<Save class="size-4" />
+						{/if}
+						{headerActions.primary.label}
+					</Button>
+				{/if}
+
 				<Button variant="ghost" size="sm" onclick={() => theme.toggle()}>
 					{#if theme.resolved === 'dark'}
 						<Sun class="size-4" />
