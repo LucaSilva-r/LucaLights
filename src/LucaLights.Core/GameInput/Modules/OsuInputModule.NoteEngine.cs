@@ -8,6 +8,9 @@ public sealed partial class OsuInputModule
     // Timing state (updated by v2 and precise WebSocket handlers)
     internal double _lastPreciseTimeMs = 0;
     private  double _lastV2TimeMs      = 0;
+    private  bool   _hasV2TimeSample   = false;
+    private  string _lastV2TimeChecksum = string.Empty;
+    private  bool   _musicPlaying      = false;
     private readonly Stopwatch _interpolationTimer = new();
 
     // Note engine state
@@ -24,24 +27,33 @@ public sealed partial class OsuInputModule
     // Called by v2 WebSocket after updating _latestV2
     private void OnV2DataReceived(TosuV2Data data)
     {
-        // Sync timing
-        lock (_syncRoot)
-        {
-            _lastV2TimeMs = data.Beatmap.Time.Live;
-            _interpolationTimer.Restart();
-        }
-
-        // Only a full gameplay session pauses via tosu's Game.Paused; in menus/song-select
-        // the audio preview keeps advancing, so we want the engine active there too.
-        _noteEnginePaused = data.State.Number == TosuStateNumber.Playing && data.Game.Paused;
-
         // tosu keeps reporting the last beatmap after osu! quits (state = Exit); treat that
         // as "no beatmap" so the note engine stops instead of looping on stale data.
+        var checksum    = data.Beatmap.Checksum ?? string.Empty;
+        var liveTimeMs  = data.Beatmap.Time.Live;
         var gameRunning = data.State.Number != TosuStateNumber.Exit;
-        var hasBeatmap  = gameRunning && !string.IsNullOrEmpty(data.Beatmap.Checksum);
+        var hasBeatmap  = gameRunning && !string.IsNullOrEmpty(checksum);
 
         if (hasBeatmap)
         {
+            lock (_syncRoot)
+            {
+                var canCompareTime = _hasV2TimeSample
+                                     && string.Equals(_lastV2TimeChecksum, checksum, StringComparison.Ordinal);
+                var beatmapTimeChanged = canCompareTime && liveTimeMs != _lastV2TimeMs;
+
+                _musicPlaying       = beatmapTimeChanged;
+                _noteEnginePaused   = !beatmapTimeChanged;
+                _lastV2TimeMs       = liveTimeMs;
+                _lastV2TimeChecksum = checksum;
+                _hasV2TimeSample    = true;
+
+                if (beatmapTimeChanged)
+                    _interpolationTimer.Restart();
+                else
+                    _interpolationTimer.Reset();
+            }
+
             if (data.Beatmap.Checksum != _currentChecksum)
                 LoadBeatmap(data);
 
@@ -65,8 +77,20 @@ public sealed partial class OsuInputModule
                 _catchFruit     = false;
                 _currentMode    = -1;
                 _currentChecksum = string.Empty;
+                ResetV2TimingStateUnsafe();
             }
         }
+    }
+
+    // Must be called under _syncRoot.
+    private void ResetV2TimingStateUnsafe()
+    {
+        _lastV2TimeMs       = 0;
+        _hasV2TimeSample    = false;
+        _lastV2TimeChecksum = string.Empty;
+        _musicPlaying       = false;
+        _noteEnginePaused   = true;
+        _interpolationTimer.Reset();
     }
 
     private void LoadBeatmap(TosuV2Data data)

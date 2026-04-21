@@ -155,6 +155,7 @@ public sealed partial class OsuInputModule
             _catchFruit      = false;
             _currentMode     = -1;
             _currentChecksum = string.Empty;
+            ResetV2TimingStateUnsafe();
         }
         PublishCurrentSnapshot();
     }

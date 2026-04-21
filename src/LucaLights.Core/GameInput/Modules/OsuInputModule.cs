@@ -248,6 +248,7 @@ public sealed partial class OsuInputModule : IGameInputModule, IDisposable
         InputSnapshot snap;
         lock (_syncRoot)
         {
+            ResetV2TimingStateUnsafe();
             snap = new InputSnapshot
             {
                 TimestampUtc = DateTimeOffset.UtcNow,
@@ -256,7 +257,8 @@ public sealed partial class OsuInputModule : IGameInputModule, IDisposable
                 IsActive     = false,
                 BoolValues   = new Dictionary<string, bool>(StringComparer.OrdinalIgnoreCase)
                 {
-                    ["raw.osu.connected"] = false
+                    ["raw.osu.connected"] = false,
+                    ["raw.osu.music_playing"] = false
                 },
                 FloatValues  = new Dictionary<string, float>(StringComparer.OrdinalIgnoreCase),
                 Metadata     = new Dictionary<string, string>(StringComparer.OrdinalIgnoreCase)
@@ -289,6 +291,7 @@ public sealed partial class OsuInputModule : IGameInputModule, IDisposable
         {
             ["raw.osu.connected"]        = connected,
             ["raw.osu.playing"]          = playing,
+            ["raw.osu.music_playing"]    = _musicPlaying,
             ["raw.osu.state.menu"]       = inMenu,
             ["raw.osu.state.song_select"]= inSelect,
             ["raw.osu.state.results"]    = inResults,
@@ -420,6 +423,7 @@ public sealed partial class OsuInputModule : IGameInputModule, IDisposable
         // System
         def.Channels.Add(Bool("raw.osu.connected",  "Connected", "System", "Raw / System", "True while osu! is running and tosu v2 data is flowing."));
         def.Channels.Add(Bool("raw.osu.playing",    "Playing",   "System", "Raw / System", "True while actively in gameplay (state = playing)."));
+        def.Channels.Add(Bool("raw.osu.music_playing", "Music Playing", "System", "Raw / System", "True while consecutive tosu beatmap timestamps are moving."));
         def.Channels.Add(Bool("raw.osu.paused",     "Paused",    "System", "Raw / System", "True while the game is paused."));
         def.Channels.Add(Bool("raw.osu.failed",     "Failed",    "System", "Raw / System", "True after the player fails."));
         def.Channels.Add(Bool("raw.osu.state.menu",        "Main Menu",   "System", "Raw / System", "True while in the osu! main menu."));
