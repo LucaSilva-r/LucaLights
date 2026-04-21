@@ -10,6 +10,7 @@
 		Workflow
 	} from "@lucide/svelte";
 	import { onMount } from "svelte";
+	import LiveInputPreview from "$lib/components/LiveInputPreview.svelte";
 	import PreviewStrip from "$lib/components/PreviewStrip.svelte";
 	import { Badge } from "$lib/components/ui/badge";
 	import { Button } from "$lib/components/ui/button";
@@ -21,23 +22,11 @@
 		CardHeader,
 		CardTitle
 	} from "$lib/components/ui/card";
-	import { Separator } from "$lib/components/ui/separator";
-	import {
-		Table,
-		TableBody,
-		TableCell,
-		TableHead,
-		TableHeader,
-		TableRow
-	} from "$lib/components/ui/table";
 	import {
 		apiGet,
 		apiPost,
 		createSocket,
-		entriesOf,
-		formatAge,
 		protocolLabel,
-		rgb,
 		toMessage,
 		type Device,
 		type InputDefinition,
@@ -61,28 +50,12 @@
 	let restarting = $state(false);
 	let errorMessage = $state("");
 
-	let boolEntries = $derived.by(() =>
-		entriesOf(inputSnapshot?.boolValues).sort(
-			(left, right) => Number(right[1]) - Number(left[1]) || left[0].localeCompare(right[0])
-		)
-	);
-	let activeBoolEntries = $derived(boolEntries.filter(([, value]) => value));
-	let floatEntries = $derived.by(() =>
-		entriesOf(inputSnapshot?.floatValues).sort(
-			(left, right) => Math.abs(right[1]) - Math.abs(left[1]) || left[0].localeCompare(right[0])
-		)
-	);
-	let colorEntries = $derived(entriesOf(inputSnapshot?.colorValues));
-	let metadataEntries = $derived(entriesOf(inputSnapshot?.metadata));
 	let previewDevices = $derived(previewPayload?.devices ?? []);
 	let previewDeviceCount = $derived(previewDevices.length);
 	let activeModuleDefinition = $derived(
 		inputModules.find((moduleDefinition) => moduleDefinition.moduleId === systemStatus?.input.activeModuleId)
 	);
-	let visibleActiveBoolEntries = $derived(activeBoolEntries.slice(0, 24));
-	let hiddenActiveBoolCount = $derived(
-		Math.max(0, activeBoolEntries.length - visibleActiveBoolEntries.length)
-	);
+	let inputConnected = $derived(inputSnapshot?.isConnected ?? systemStatus?.input.connected ?? false);
 
 	async function refreshDashboard() {
 		refreshing = true;
@@ -214,14 +187,6 @@
 
 	function moduleCategoryCount(moduleDefinition: InputDefinition) {
 		return new Set(moduleDefinition.channels.map((channel) => channel.category)).size;
-	}
-
-	function formatTimestamp(timestampUtc: string | null | undefined) {
-		if (!timestampUtc) {
-			return "Waiting for data";
-		}
-
-		return new Date(timestampUtc).toLocaleTimeString();
 	}
 
 	onMount(() => {
@@ -383,7 +348,7 @@
 			</div>
 		{/if}
 
-		<div class="grid gap-4 md:grid-cols-2 xl:grid-cols-4">
+		<div class="grid gap-4 md:grid-cols-3">
 			<Card class="border-surface-card-border bg-surface-card shadow-sm backdrop-blur">
 				<CardHeader>
 					<CardDescription class="flex items-center gap-2">
@@ -402,22 +367,6 @@
 				<CardContent class="space-y-2 text-sm text-muted-foreground">
 					<p>Graph: {systemStatus?.settings.graphNodes ?? 0} nodes / {systemStatus?.settings.graphConnections ?? 0} connections</p>
 					<p>Latest event: {latestRuntimeEvent?.type ?? "Waiting for runtime stream"}</p>
-				</CardContent>
-			</Card>
-
-			<Card class="border-surface-card-border bg-surface-card shadow-sm backdrop-blur">
-				<CardHeader>
-					<CardDescription class="flex items-center gap-2">
-						<Gamepad2 class="size-4" />
-						Input stream
-					</CardDescription>
-					<CardTitle class="text-2xl">{moduleLabel(systemStatus?.input.activeModuleId)}</CardTitle>
-				</CardHeader>
-				<CardContent class="space-y-2 text-sm text-muted-foreground">
-					<p>
-						Sequence {systemStatus?.input.sequence ?? 0} · {formatAge(systemStatus?.input.timestampUtc)}
-					</p>
-					<p>{systemStatus?.input.active ? "Gameplay activity detected" : "No active input right now"}</p>
 				</CardContent>
 			</Card>
 
@@ -452,189 +401,14 @@
 			</Card>
 		</div>
 
-		<div class="grid gap-6 xl:grid-cols-[minmax(0,1.15fr)_minmax(22rem,0.85fr)]">
-			<div class="space-y-6">
-				<Card class="border-surface-card-border bg-surface-card-alt shadow-sm backdrop-blur">
-					<CardHeader class="space-y-3">
-						<div class="flex flex-col gap-3 sm:flex-row sm:items-start sm:justify-between">
-							<div class="space-y-1">
-								<CardTitle>Live input snapshot</CardTitle>
-								<CardDescription>
-									{activeModuleDefinition?.channels.length ?? 0} channels published by{" "}
-									{moduleLabel(systemStatus?.input.activeModuleId)}
-								</CardDescription>
-							</div>
-							<div class="flex flex-wrap gap-2">
-								<Badge variant={inputSnapshot?.isConnected ? "default" : "outline"}>
-									{inputSnapshot?.isConnected ? "Connected" : "Disconnected"}
-								</Badge>
-								<Badge variant={inputSnapshot?.isActive ? "default" : "secondary"}>
-									{inputSnapshot?.isActive ? "Gameplay active" : "Idle"}
-								</Badge>
-							</div>
-						</div>
-						<div class="flex flex-wrap gap-x-4 gap-y-1 text-xs uppercase tracking-[0.2em] text-muted-foreground">
-							<span>Updated {formatTimestamp(inputSnapshot?.timestampUtc)}</span>
-							<span>{formatAge(inputSnapshot?.timestampUtc)}</span>
-							<span>Sequence {inputSnapshot?.sequence ?? 0}</span>
-						</div>
-					</CardHeader>
-					<CardContent class="space-y-5">
-						<div class="space-y-3">
-							<div class="flex items-center justify-between gap-3">
-								<h2 class="text-sm font-semibold tracking-wide">Active booleans</h2>
-								<Badge variant="outline">{activeBoolEntries.length} high</Badge>
-							</div>
-
-							{#if visibleActiveBoolEntries.length > 0}
-								<div class="flex flex-wrap gap-2">
-									{#each visibleActiveBoolEntries as [key]}
-										<Badge>{key}</Badge>
-									{/each}
-
-									{#if hiddenActiveBoolCount > 0}
-										<Badge variant="outline">+{hiddenActiveBoolCount} more</Badge>
-									{/if}
-								</div>
-							{:else}
-								<p class="text-sm text-muted-foreground">
-									No active boolean channels at the moment.
-								</p>
-							{/if}
-						</div>
-
-						<Separator />
-
-						<div class="grid gap-5 lg:grid-cols-2">
-							<div class="space-y-3">
-								<div class="flex items-center justify-between gap-3">
-									<h2 class="text-sm font-semibold tracking-wide">Boolean channels</h2>
-									<Badge variant="outline">{boolEntries.length}</Badge>
-								</div>
-								<div class="max-h-72 overflow-auto rounded-xl border border-border/70 bg-background/70">
-									<Table>
-										<TableHeader>
-											<TableRow>
-												<TableHead>Channel</TableHead>
-												<TableHead class="w-28 text-right">State</TableHead>
-											</TableRow>
-										</TableHeader>
-										<TableBody>
-											{#if boolEntries.length > 0}
-												{#each boolEntries as [key, value]}
-													<TableRow>
-														<TableCell class="font-mono text-xs">{key}</TableCell>
-														<TableCell class="text-right">
-															<Badge variant={value ? "default" : "secondary"}>
-																{value ? "On" : "Off"}
-															</Badge>
-														</TableCell>
-													</TableRow>
-												{/each}
-											{:else}
-												<TableRow>
-													<TableCell colspan={2} class="text-center text-muted-foreground">
-														No boolean values published yet.
-													</TableCell>
-												</TableRow>
-											{/if}
-										</TableBody>
-									</Table>
-								</div>
-							</div>
-
-							<div class="space-y-5">
-								<div class="space-y-3">
-									<div class="flex items-center justify-between gap-3">
-										<h2 class="text-sm font-semibold tracking-wide">Float channels</h2>
-										<Badge variant="outline">{floatEntries.length}</Badge>
-									</div>
-									<div class="max-h-52 overflow-auto rounded-xl border border-border/70 bg-background/70">
-										<Table>
-											<TableHeader>
-												<TableRow>
-													<TableHead>Channel</TableHead>
-													<TableHead class="w-28 text-right">Value</TableHead>
-												</TableRow>
-											</TableHeader>
-											<TableBody>
-												{#if floatEntries.length > 0}
-													{#each floatEntries as [key, value]}
-														<TableRow>
-															<TableCell class="font-mono text-xs">{key}</TableCell>
-															<TableCell class="text-right font-medium">
-																{value.toFixed(3)}
-															</TableCell>
-														</TableRow>
-													{/each}
-												{:else}
-													<TableRow>
-														<TableCell colspan={2} class="text-center text-muted-foreground">
-															No float values published yet.
-														</TableCell>
-													</TableRow>
-												{/if}
-											</TableBody>
-										</Table>
-									</div>
-								</div>
-
-								<div class="space-y-3">
-									<div class="flex items-center justify-between gap-3">
-										<h2 class="text-sm font-semibold tracking-wide">Metadata</h2>
-										<Badge variant="outline">{metadataEntries.length}</Badge>
-									</div>
-									<div class="max-h-52 overflow-auto rounded-xl border border-border/70 bg-background/70">
-										<Table>
-											<TableHeader>
-												<TableRow>
-													<TableHead>Key</TableHead>
-													<TableHead>Value</TableHead>
-												</TableRow>
-											</TableHeader>
-											<TableBody>
-												{#if metadataEntries.length > 0}
-													{#each metadataEntries as [key, value]}
-														<TableRow>
-															<TableCell class="font-mono text-xs">{key}</TableCell>
-															<TableCell>{value}</TableCell>
-														</TableRow>
-													{/each}
-												{:else}
-													<TableRow>
-														<TableCell colspan={2} class="text-center text-muted-foreground">
-															No metadata published yet.
-														</TableCell>
-													</TableRow>
-												{/if}
-											</TableBody>
-										</Table>
-									</div>
-								</div>
-							</div>
-						</div>
-
-						{#if colorEntries.length > 0}
-							<Separator />
-							<div class="space-y-3">
-								<div class="flex items-center justify-between gap-3">
-									<h2 class="text-sm font-semibold tracking-wide">Color channels</h2>
-									<Badge variant="outline">{colorEntries.length}</Badge>
-								</div>
-								<div class="grid gap-3 md:grid-cols-2 xl:grid-cols-3">
-									{#each colorEntries as [key, value]}
-										<div class="rounded-xl border border-border/70 bg-background/70 p-3">
-											<div class="flex items-center justify-between gap-3">
-												<span class="font-mono text-xs">{key}</span>
-												<span class="size-6 rounded-full border border-black/10" style={`background: ${rgb(value)}`}></span>
-											</div>
-										</div>
-									{/each}
-								</div>
-							</div>
-						{/if}
-					</CardContent>
-				</Card>
+			<div class="grid gap-6 xl:grid-cols-[minmax(0,1.15fr)_minmax(22rem,0.85fr)]">
+				<div class="space-y-6">
+					<LiveInputPreview
+						snapshot={inputSnapshot}
+						moduleDefinition={activeModuleDefinition}
+						moduleLabel={moduleLabel(systemStatus?.input.activeModuleId)}
+						connected={inputConnected}
+					/>
 
 				<Card class="border-surface-card-border bg-surface-card-alt shadow-sm backdrop-blur">
 					<CardHeader>
