@@ -31,7 +31,12 @@ export interface EditorNodeData {
 	inputChannelOptions: InputChannelDefinition[];
 	deviceOptions: EditorDeviceOption[];
 	segmentOptions: EditorSegmentOption[];
-	onPropertyChange?: (nodeId: string, key: string, value: unknown) => void;
 }
 
 export type EditorFlowNode = Node<EditorNodeData>;
+
+export interface EditorNodeActions {
+	updateNodeProperty: (nodeId: string, key: string, value: unknown) => void;
+}
+
+export const editorNodeActionsContext = Symbol('editor-node-actions');

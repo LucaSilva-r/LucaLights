@@ -41,7 +41,7 @@
 	<button
 		bind:this={swatchEl}
 		type="button"
-		class="h-6 w-8 shrink-0 cursor-pointer rounded-md border border-border/70 shadow-sm transition hover:border-primary/40"
+		class="h-6 w-8 shrink-0 cursor-pointer rounded-md border border-border"
 		style="background-color: {hex};"
 		title="Pick color"
 		onclick={togglePicker}
@@ -52,7 +52,7 @@
 	{#if isOpen}
 		<div
 			bind:this={popoverEl}
-			class="nodrag nopan absolute top-[calc(100%+0.5rem)] left-0 z-50 rounded-2xl border border-border/80 bg-popover/95 p-3 shadow-[0_24px_80px_rgba(0,0,0,0.45)] backdrop-blur-xl"
+			class="nodrag nopan absolute top-[calc(100%+0.5rem)] left-0 z-50 rounded-2xl border border-border bg-popover p-3"
 			data-node-color-picker
 		>
 			<ColorPickerPanel {hex} onchange={handleInput} />

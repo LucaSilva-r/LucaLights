@@ -267,7 +267,7 @@
 	<div class="w-full">
 		<button
 			type="button"
-			class="nodrag nopan flex h-7 w-full items-center gap-2 rounded-md border border-border/70 bg-background/90 px-2 text-left text-[11px] shadow-sm outline-none transition hover:border-primary/40 focus:border-ring focus:ring-4 focus:ring-ring/20"
+			class="nodrag nopan flex h-7 w-full items-center gap-2 rounded-md border border-border bg-background px-2 text-left text-[11px] outline-none focus:border-ring"
 			title={selectionTooltip()}
 			onclick={() => {
 				open = true;

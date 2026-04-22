@@ -278,7 +278,7 @@
 	<div class="flex items-center gap-1.5">
 		<button
 			type="button"
-			class="flex h-6 w-6 items-center justify-center rounded-md border border-border/70 bg-background/90 text-muted-foreground shadow-sm transition hover:bg-surface-subtle-hover hover:text-foreground"
+			class="flex h-6 w-6 items-center justify-center rounded-md border border-border bg-background text-muted-foreground"
 			onclick={addStop}
 			title="Add stop"
 		>
@@ -286,7 +286,7 @@
 		</button>
 		<button
 			type="button"
-			class="flex h-6 w-6 items-center justify-center rounded-md border border-border/70 bg-background/90 text-muted-foreground shadow-sm transition hover:bg-surface-subtle-hover hover:text-foreground disabled:opacity-40"
+			class="flex h-6 w-6 items-center justify-center rounded-md border border-border bg-background text-muted-foreground disabled:text-muted-foreground"
 			onclick={removeStop}
 			disabled={stops.length <= 2}
 			title="Remove selected stop"
@@ -295,7 +295,7 @@
 		</button>
 		<button
 			type="button"
-			class="flex h-6 items-center justify-center rounded-md border border-border/70 bg-background/90 px-2 text-[10px] font-medium text-muted-foreground shadow-sm transition hover:bg-surface-subtle-hover hover:text-foreground"
+			class="flex h-6 items-center justify-center rounded-md border border-border bg-background px-2 text-[10px] font-medium text-muted-foreground"
 			onclick={distributeStopsEvenly}
 			title="Distribute stops evenly"
 		>
@@ -306,7 +306,7 @@
 	<!-- Gradient bar (clipped) + stop handles below -->
 	<div class="relative">
 		<div
-			class="h-5 overflow-hidden shadow-sm"
+			class="h-5 overflow-hidden"
 			style="background-image: {gradientCss};"
 		></div>
 		<div class="relative h-3">
@@ -321,7 +321,7 @@
 					onclick={() => selectByOriginalIndex(originalIndex)}
 				>
 					<div
-						class="mx-auto h-full w-2.5 rounded-sm border-2 shadow-sm transition {isSelected ? 'border-white ring-1 ring-primary' : 'border-white/70'}"
+						class="mx-auto h-full w-2.5 rounded-sm border-2 {isSelected ? 'border-primary' : 'border-white'}"
 						style="background-color: {rgbToHex(stop)};"
 					></div>
 				</button>
@@ -350,7 +350,7 @@
 				<button
 					bind:this={swatchEl}
 					type="button"
-					class="h-6 w-8 shrink-0 cursor-pointer rounded-md border border-border/70 shadow-sm transition hover:border-primary/40"
+					class="h-6 w-8 shrink-0 cursor-pointer rounded-md border border-border"
 					style="background-color: {selectedHex};"
 					title="Pick stop color"
 					onclick={toggleColorPicker}
@@ -359,7 +359,7 @@
 				{#if colorPickerOpen}
 					<div
 						bind:this={popoverEl}
-						class="nodrag nopan absolute top-[calc(100%+0.5rem)] left-0 z-50 rounded-2xl border border-border/80 bg-popover/95 p-3 shadow-[0_24px_80px_rgba(0,0,0,0.45)] backdrop-blur-xl"
+						class="nodrag nopan absolute top-[calc(100%+0.5rem)] left-0 z-50 rounded-2xl border border-border bg-popover p-3"
 						data-gradient-color-picker
 					>
 						<ColorPickerPanel hex={selectedHex} onchange={handleColorInput} />

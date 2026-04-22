@@ -1,5 +1,5 @@
 <script lang="ts">
-	import { onMount, untrack } from 'svelte';
+	import { onMount, setContext, untrack } from 'svelte';
 	import {
 		Background,
 		Controls,
@@ -33,9 +33,11 @@
 		DialogHeader,
 		DialogTitle
 	} from '$lib/components/ui/dialog';
+	import { editorNodeActionsContext } from '$lib/components/editor/types';
 	import type {
 		EditorDeviceOption,
 		EditorFlowNode,
+		EditorNodeActions,
 		EditorNodeData,
 		EditorSegmentOption
 	} from '$lib/components/editor/types';
@@ -95,16 +97,21 @@
 
 	const centeredRerouteOrigin: [number, number] = [0.5, 0.5];
 
-	let nodeTypes = $state<NodeTypeDefinition[]>([]);
-	let inputDefinitions = $state<InputDefinition[]>([]);
-	let devices = $state<Device[]>([]);
+	setContext<EditorNodeActions>(editorNodeActionsContext, {
+		updateNodeProperty: (nodeId, key, value) => updateNodeProperty(nodeId, key, value)
+	});
+
+	let nodeTypes = $state.raw<NodeTypeDefinition[]>([]);
+	let inputDefinitions = $state.raw<InputDefinition[]>([]);
+	let devices = $state.raw<Device[]>([]);
 
 	let searchDialogOpen = $state(false);
 	let shortcutDialogOpen = $state(false);
 
-	let nodes = $state<EditorFlowNode[]>([]);
-	let edges = $state<Edge[]>([]);
+	let nodes = $state.raw<EditorFlowNode[]>([]);
+	let edges = $state.raw<Edge[]>([]);
 	let viewport = $state<Viewport>(defaultViewport);
+	let viewportMoving = $state(false);
 
 	let canvasHost = $state<HTMLDivElement | null>(null);
 	let paletteFilter = $state('');
@@ -373,8 +380,7 @@
 			connectedInputIds: connectedInputIdsFor(nodeId, edgeList),
 			inputChannelOptions: buildInputChannelOptions(),
 			deviceOptions: buildDeviceOptions(),
-			segmentOptions: buildSegmentOptions(),
-			onPropertyChange: updateNodeProperty
+			segmentOptions: buildSegmentOptions()
 		};
 	}
 
@@ -1088,7 +1094,12 @@
 		markDirty();
 	}
 
+	function handleMoveStart() {
+		viewportMoving = true;
+	}
+
 	function handleMoveEnd(_event: MouseEvent | TouchEvent | null, nextViewport: Viewport) {
+		viewportMoving = false;
 		viewport = nextViewport;
 		markDirty();
 	}
@@ -1588,16 +1599,17 @@
 					multiSelectionKey="Shift"
 					selectionKey="Shift"
 					zoomOnDoubleClick={false}
-						onbeforeconnect={handleBeforeConnect}
-						onbeforereconnect={handleBeforeReconnect}
-						onconnect={handleConnect}
-						ondelete={handleDelete}
-						onnodedrag={handleNodeDrag}
-						onnodedragstop={handleNodeDragStop}
-						onmoveend={handleMoveEnd}
+					onbeforeconnect={handleBeforeConnect}
+					onbeforereconnect={handleBeforeReconnect}
+					onconnect={handleConnect}
+					ondelete={handleDelete}
+					onnodedrag={handleNodeDrag}
+					onnodedragstop={handleNodeDragStop}
+					onmovestart={handleMoveStart}
+					onmoveend={handleMoveEnd}
 					onreconnect={handleReconnect}
 					isValidConnection={isValidConnection}
-					class="h-full bg-transparent"
+					class={`lucalights-flow h-full bg-transparent ${viewportMoving ? 'lucalights-flow--moving' : ''}`}
 				>
 					<Background />
 					<Controls />
@@ -1660,5 +1672,17 @@
 		.editor-shell-grid {
 			grid-template-columns: var(--editor-grid-columns);
 		}
+	}
+
+	:global(.lucalights-flow .svelte-flow__node),
+	:global(.lucalights-flow .svelte-flow__node *) {
+		box-shadow: none !important;
+		filter: none !important;
+		text-shadow: none !important;
+		transition: none !important;
+	}
+
+	:global(.lucalights-flow.lucalights-flow--moving .svelte-flow__node) {
+		pointer-events: none;
 	}
 </style>

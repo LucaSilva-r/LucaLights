@@ -1,4 +1,5 @@
 <script lang="ts">
+	import { getContext } from 'svelte';
 	import { Handle, Position, type NodeProps } from '@xyflow/svelte';
 	import type { ColorValue, NodePortDefinition, NodePropertyDefinition } from '$lib/lucalights';
 	import InputChannelPicker from './InputChannelPicker.svelte';
@@ -6,12 +7,17 @@
 	import NodeNumberInput from './NodeNumberInput.svelte';
 	import OutputTargetPicker from './OutputTargetPicker.svelte';
 	import GradientEditor, { type GradientStop } from './GradientEditor.svelte';
-	import type { EditorFlowNode } from './types';
+	import {
+		editorNodeActionsContext,
+		type EditorFlowNode,
+		type EditorNodeActions
+	} from './types';
 
 	let { id, data, selected = false }: NodeProps<EditorFlowNode> = $props();
+	const editorActions = getContext<EditorNodeActions | undefined>(editorNodeActionsContext);
 
 	const inlineInputClass =
-		'nodrag nopan h-7 min-w-0 flex-1 rounded-md border border-border/70 bg-background px-2 text-[11px] text-right shadow-sm outline-none transition focus:border-ring focus:ring-4 focus:ring-ring/20';
+		'nodrag nopan h-7 min-w-0 flex-1 rounded-md border border-border bg-background px-2 text-[11px] text-right outline-none focus:border-ring';
 	const outputTargetKeys = new Set(['segmentIds']);
 
 	let connectedInputIds = $derived.by(() => {
@@ -162,7 +168,7 @@
 	}
 
 	function setProperty(key: string, value: unknown) {
-		data.onPropertyChange?.(id, key, value);
+		editorActions?.updateNodeProperty(id, key, value);
 	}
 
 	function setColorFromHex(hex: string) {
@@ -251,7 +257,7 @@
 	function categoryHeaderTone(category: string) {
 		switch (category) {
 			case 'Annotations':
-				return 'bg-amber-200 text-amber-950 dark:bg-amber-500/25 dark:text-amber-100';
+				return 'bg-amber-200 text-amber-950 dark:bg-amber-700 dark:text-amber-100';
 			case 'Constants':
 				return 'bg-amber-500 text-white';
 			case 'Graph Inputs':
@@ -314,15 +320,15 @@
 	function rerouteCenterTone(valueType: string) {
 		switch (valueType) {
 			case 'Bool':
-				return 'border-amber-500 bg-amber-500/30';
+				return 'border-amber-500 bg-amber-500';
 			case 'Float':
-				return 'border-sky-500 bg-sky-500/30';
+				return 'border-sky-500 bg-sky-500';
 			case 'Color':
-				return 'border-rose-500 bg-rose-500/30';
+				return 'border-rose-500 bg-rose-500';
 			case 'String':
-				return 'border-emerald-500 bg-emerald-500/30';
+				return 'border-emerald-500 bg-emerald-500';
 			default:
-				return 'border-zinc-500 bg-zinc-500/30';
+				return 'border-zinc-500 bg-zinc-500';
 		}
 	}
 
@@ -495,7 +501,7 @@
 {#snippet sliderField(property: NodePropertyDefinition, label: string)}
 	<!-- Blender-style slider: label left, value right, fill bar behind -->
 	<div
-		class="nodrag nopan relative flex h-7 cursor-ew-resize select-none items-center overflow-hidden rounded-md border border-border/70 bg-background shadow-sm"
+		class="nodrag nopan relative flex h-7 cursor-ew-resize select-none items-center overflow-hidden rounded-md border border-border bg-background"
 		role="slider"
 		aria-label={label}
 		aria-valuemin={property.minFloatValue ?? 0}
@@ -506,7 +512,7 @@
 		onpointerdown={(event) => handleSliderPointer(event, property)}
 	>
 		<div
-			class="pointer-events-none absolute inset-y-0 left-0 bg-primary/25"
+			class="pointer-events-none absolute inset-y-0 left-0 bg-primary"
 			style="width: {sliderPercent(property)}%"
 		></div>
 		<span class="relative z-10 px-2 text-[12px] font-medium">{label}</span>
@@ -567,8 +573,8 @@
 {#if isRerouteNode(data.typeId)}
 	{@const rerouteValueType = data.outputs[0]?.valueType ?? data.inputs[0]?.valueType ?? 'Float'}
 	<div
-		class={`relative box-border flex h-5 w-5 items-center justify-center rounded-full border bg-background shadow-lg ${
-			selected ? 'border-primary ring-2 ring-primary/25' : 'border-border/80'
+		class={`relative box-border flex h-5 w-5 items-center justify-center rounded-full border bg-background ${
+			selected ? 'border-primary' : 'border-border'
 		}`}
 		title={nodeTooltip()}
 	>
@@ -577,7 +583,7 @@
 			id="value"
 			position={Position.Left}
 			style="left: 0; top: calc(50% + 1px); transform: translate(-50%, -50%);"
-			class={`${handleTone(rerouteValueType)} !h-3 !w-3 !border-0 !shadow-sm`}
+			class={`${handleTone(rerouteValueType)} !h-3 !w-3 !border-0`}
 		/>
 		<div class={`h-2.5 w-2.5 rounded-full border-2 ${rerouteCenterTone(rerouteValueType)}`}></div>
 		<Handle
@@ -585,35 +591,30 @@
 			id="value"
 			position={Position.Right}
 			style="right: 0; top: calc(50% + 1px); transform: translate(50%, -50%);"
-			class={`${handleTone(rerouteValueType)} !h-3 !w-3 !border-0 !shadow-sm`}
+			class={`${handleTone(rerouteValueType)} !h-3 !w-3 !border-0`}
 		/>
 	</div>
 {:else}
 	<div
-		class={`overflow-visible rounded-[1.05rem] border text-left shadow-lg ${
+		class={`overflow-visible rounded-[1.05rem] border text-left ${
 			isCommentNode(data.typeId)
 				? 'w-[19rem] bg-card text-foreground'
 				: 'w-[15.5rem] bg-surface-node'
 		} ${
 			selected
 				? isCommentNode(data.typeId)
-					? 'border-amber-300 ring-2 ring-amber-200/50 dark:border-amber-500/40 dark:ring-amber-500/20'
-					: 'border-primary ring-2 ring-primary/20'
+					? 'border-amber-300 dark:border-amber-500'
+					: 'border-primary'
 				: isCommentNode(data.typeId)
-					? 'border-amber-200/80 dark:border-amber-500/25'
-					: 'border-border/70'
+					? 'border-amber-200 dark:border-amber-500'
+					: 'border-border'
 		}`}
 	>
 		<!-- Header -->
-		<div class={`flex h-10 items-center justify-between gap-3 rounded-t-[1.05rem] border-b border-black/10 px-3 ${categoryHeaderTone(data.category)}`}>
+		<div class={`flex h-10 items-center justify-between gap-3 rounded-t-[1.05rem] border-b border-border px-3 ${categoryHeaderTone(data.category)}`}>
 			<h3 class="min-w-0 flex-1 truncate text-[13px] font-semibold tracking-tight" title={nodeTooltip()}>
 				{data.label}
 			</h3>
-			{#if !isCommentNode(data.typeId)}
-				<span class="rounded-full border border-white/15 bg-black/10 px-1.5 py-0.5 font-mono text-[10px] text-white/80">
-						{data.inputs.length}:{data.outputs.length}
-				</span>
-			{/if}
 		</div>
 
 		<!-- Outputs (top, right-aligned, inline editor when property exists) -->
@@ -623,7 +624,7 @@
 					{@const property = propertyMap.get(output.id)}
 					{@const editableOutputProperty = data.inputs.length === 0 ? property : undefined}
 					<div
-						class="relative flex h-10 items-center gap-2 px-3 pr-4 text-foreground/90 transition hover:bg-surface-subtle-hover"
+						class="relative flex h-10 items-center gap-2 px-3 pr-4 text-foreground"
 						title={portTooltip(output.label, output.valueType, output.description)}
 					>
 						{#if editableOutputProperty}
@@ -636,11 +637,11 @@
 							id={output.id}
 							position={Position.Right}
 							style="right: 0; top: 50%; transform: translate(50%, -50%);"
-							class={`${handleTone(output.valueType)} !h-2.5 !w-2.5 !border-0 !shadow-sm`}
+							class={`${handleTone(output.valueType)} !h-2.5 !w-2.5 !border-0`}
 						/>
 					</div>
 				{/each}
-				<div class="pointer-events-none absolute inset-x-0 bottom-0 h-px bg-border/60"></div>
+				<div class="pointer-events-none absolute inset-x-0 bottom-0 h-px bg-border"></div>
 			</div>
 		{/if}
 
@@ -655,7 +656,7 @@
 					{@const isPropertyColor = property?.valueType === 'Color'}
 
 					<div
-						class="relative text-foreground/90 transition hover:bg-surface-subtle-hover"
+						class="relative text-foreground"
 						title={portTooltip(input.label, input.valueType, input.description)}
 					>
 						{#if (showEditor && isPropertyColor) || isColor}
@@ -666,7 +667,7 @@
 									id={input.id}
 									position={Position.Left}
 									style="left: 0; top: 50%; transform: translate(-50%, -50%);"
-									class={`${handleTone(input.valueType)} !h-2.5 !w-2.5 !border-0 !shadow-sm`}
+									class={`${handleTone(input.valueType)} !h-2.5 !w-2.5 !border-0`}
 								/>
 								<div class="min-w-0 flex-1">
 									<NodeColorPicker
@@ -684,7 +685,7 @@
 									id={input.id}
 									position={Position.Left}
 									style="left: 0; top: 50%; transform: translate(-50%, -50%);"
-									class={`${handleTone(input.valueType)} !h-2.5 !w-2.5 !border-0 !shadow-sm`}
+									class={`${handleTone(input.valueType)} !h-2.5 !w-2.5 !border-0`}
 								/>
 								<div class="min-w-0 flex-1">
 									{@render sliderField(property, input.label)}
@@ -698,7 +699,7 @@
 									id={input.id}
 									position={Position.Left}
 									style="left: 0; top: 50%; transform: translate(-50%, -50%);"
-									class={`${handleTone(input.valueType)} !h-2.5 !w-2.5 !border-0 !shadow-sm`}
+									class={`${handleTone(input.valueType)} !h-2.5 !w-2.5 !border-0`}
 								/>
 								<span class="shrink-0 text-[13px] font-medium">{input.label}</span>
 								{@render inlineEditor(property, input.label)}
@@ -711,7 +712,7 @@
 									id={input.id}
 									position={Position.Left}
 									style="left: 0; top: 50%; transform: translate(-50%, -50%);"
-									class={`${handleTone(input.valueType)} !h-2.5 !w-2.5 !border-0 !shadow-sm`}
+									class={`${handleTone(input.valueType)} !h-2.5 !w-2.5 !border-0`}
 								/>
 								<p class="min-w-0 flex-1 truncate text-[13px] font-medium">{input.label}</p>
 							</div>
@@ -723,7 +724,7 @@
 		{/if}
 
 		{#if isOutputNode(data.typeId)}
-			<div class="border-t border-border/60 px-3 py-2">
+			<div class="border-t border-border px-3 py-2">
 				<div class="space-y-1.5">
 					<p class="text-[11px] font-semibold uppercase tracking-[0.18em] text-muted-foreground">
 						Targets
@@ -743,11 +744,11 @@
 			<div class="space-y-3 px-3 py-3">
 				{#if commentProperty('title')}
 					<label class="block space-y-1" title={propertyTooltip(commentProperty('title')!)}>
-						<span class="text-[11px] font-semibold uppercase tracking-[0.18em] text-amber-900/70 dark:text-amber-100/70">
+						<span class="text-[11px] font-semibold uppercase tracking-[0.18em] text-amber-900 dark:text-amber-100">
 							{commentProperty('title')?.label}
 						</span>
 						<input
-							class="nodrag nopan h-8 w-full rounded-md border border-amber-200/80 bg-background px-2 text-[12px] font-medium shadow-sm outline-none transition focus:border-ring focus:ring-4 focus:ring-ring/20 dark:border-amber-500/25"
+							class="nodrag nopan h-8 w-full rounded-md border border-amber-200 bg-background px-2 text-[12px] font-medium outline-none focus:border-ring dark:border-amber-500"
 							type="text"
 							value={stringValue(commentProperty('title')?.key ?? 'title', String(valueFor(commentProperty('title')!) ?? ''))}
 							oninput={(event) => setProperty(commentProperty('title')?.key ?? 'title', (event.currentTarget as HTMLInputElement).value)}
@@ -757,11 +758,11 @@
 
 				{#if commentProperty('body')}
 					<label class="block space-y-1" title={propertyTooltip(commentProperty('body')!)}>
-						<span class="text-[11px] font-semibold uppercase tracking-[0.18em] text-amber-900/70 dark:text-amber-100/70">
+						<span class="text-[11px] font-semibold uppercase tracking-[0.18em] text-amber-900 dark:text-amber-100">
 							{commentProperty('body')?.label}
 						</span>
 						<textarea
-							class="nodrag nopan min-h-28 w-full rounded-lg border border-amber-200/80 bg-background px-2.5 py-2 text-[12px] leading-5 shadow-sm outline-none transition focus:border-ring focus:ring-4 focus:ring-ring/20 dark:border-amber-500/25"
+							class="nodrag nopan min-h-28 w-full rounded-lg border border-amber-200 bg-background px-2.5 py-2 text-[12px] leading-5 outline-none focus:border-ring dark:border-amber-500"
 							placeholder="Describe what this section does, leave a TODO, or explain why the graph is wired this way."
 							value={stringValue(commentProperty('body')?.key ?? 'body', String(valueFor(commentProperty('body')!) ?? ''))}
 							oninput={(event) => setProperty(commentProperty('body')?.key ?? 'body', (event.currentTarget as HTMLTextAreaElement).value)}
@@ -770,7 +771,7 @@
 				{/if}
 			</div>
 		{:else if isConstantColorNode(data.typeId)}
-			<div class="border-t border-border/60 px-3 py-2">
+			<div class="border-t border-border px-3 py-2">
 				<NodeColorPicker
 					hex={colorHex}
 					label="Color"
@@ -778,7 +779,7 @@
 				/>
 			</div>
 		{:else if isGradientNode(data.typeId)}
-			<div class="space-y-2 border-t border-border/60 px-3 py-2">
+			<div class="space-y-2 border-t border-border px-3 py-2">
 				<GradientEditor
 					stops={parseGradientStops(stringValue('stops', '[]'))}
 					interpolation={stringValue('interpolation', 'linear')}
@@ -798,7 +799,7 @@
 				{/each}
 			</div>
 		{:else if standaloneProperties.length > 0}
-			<div class="space-y-1 border-t border-border/60 px-3 py-2">
+			<div class="space-y-1 border-t border-border px-3 py-2">
 				{#each standaloneProperties as property}
 					<div class="space-y-1" title={propertyTooltip(property)}>
 						{#if property.valueType === 'Float' && hasRange(property)}

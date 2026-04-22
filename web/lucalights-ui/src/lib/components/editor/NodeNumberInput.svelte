@@ -98,12 +98,12 @@
 </script>
 
 <div
-	class={`nodrag nopan group relative flex h-7 min-w-0 items-center overflow-hidden rounded-md border border-border/70 bg-background/90 shadow-sm transition focus-within:border-ring focus-within:ring-4 focus-within:ring-ring/20 ${className}`}
+	class={`nodrag nopan relative flex h-7 min-w-0 items-center overflow-hidden rounded-md border border-border bg-background focus-within:border-ring ${className}`}
 >
 	<button
 		type="button"
 		tabindex="-1"
-		class="absolute inset-y-0 left-0 z-10 flex w-6 items-center justify-center text-muted-foreground/80 opacity-0 transition group-hover:opacity-100 group-focus-within:opacity-100 hover:text-foreground"
+		class="absolute inset-y-0 left-0 z-10 flex w-6 items-center justify-center text-muted-foreground"
 		onclick={() => nudge(-1)}
 		aria-label={label ? `Decrease ${label}` : 'Decrease value'}
 	>
@@ -129,7 +129,7 @@
 	<button
 		type="button"
 		tabindex="-1"
-		class="absolute inset-y-0 right-0 z-10 flex w-6 items-center justify-center text-muted-foreground/80 opacity-0 transition group-hover:opacity-100 group-focus-within:opacity-100 hover:text-foreground"
+		class="absolute inset-y-0 right-0 z-10 flex w-6 items-center justify-center text-muted-foreground"
 		onclick={() => nudge(1)}
 		aria-label={label ? `Increase ${label}` : 'Increase value'}
 	>
