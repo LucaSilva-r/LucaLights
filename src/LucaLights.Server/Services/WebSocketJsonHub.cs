@@ -13,9 +13,16 @@ public sealed class WebSocketJsonHub
 
     public int ClientCount => _clients.Count;
 
+    public Task AcceptAsync(
+        WebSocket socket,
+        IEnumerable<object>? initialMessages,
+        CancellationToken cancellationToken)
+        => AcceptAsync(socket, initialMessages, null, cancellationToken);
+
     public async Task AcceptAsync(
         WebSocket socket,
         IEnumerable<object>? initialMessages,
+        IEnumerable<ReadOnlyMemory<byte>>? initialBinaryMessages,
         CancellationToken cancellationToken)
     {
         var clientId = Guid.NewGuid();
@@ -29,6 +36,14 @@ public sealed class WebSocketJsonHub
                 foreach (var message in initialMessages)
                 {
                     await SendObjectAsync(connection, message, cancellationToken);
+                }
+            }
+
+            if (initialBinaryMessages is not null)
+            {
+                foreach (var message in initialBinaryMessages)
+                {
+                    await SendBinaryAsync(connection, message, cancellationToken);
                 }
             }
 

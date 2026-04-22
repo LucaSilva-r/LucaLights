@@ -12,6 +12,9 @@ public sealed class PreviewBroadcaster : IHostedService
     private readonly Settings _settings;
     private readonly LightingManager _lightingManager;
     private readonly WebSocketJsonHub _hub = new();
+    private readonly object _frameCacheLock = new();
+
+    private byte[]? _lastBroadcastFrame;
 
     public PreviewBroadcaster(Settings settings, LightingManager lightingManager)
     {
@@ -28,8 +31,9 @@ public sealed class PreviewBroadcaster : IHostedService
             CreateEvent("preview.connected", new { clientCount = ClientCount + 1 }),
             CreateEvent("preview.topology", CaptureTopology())
         };
+        ReadOnlyMemory<byte>[] initialFrames = [CaptureFrame()];
 
-        return _hub.AcceptAsync(socket, initialMessages, cancellationToken);
+        return _hub.AcceptAsync(socket, initialMessages, initialFrames, cancellationToken);
     }
 
     public Task StartAsync(CancellationToken cancellationToken)
@@ -57,7 +61,7 @@ public sealed class PreviewBroadcaster : IHostedService
             return;
         }
 
-        _ = _hub.BroadcastBinaryAsync(CaptureFrame()).AsTask();
+        BroadcastFrameIfChanged();
     }
 
     private void HandleOutputCleared()
@@ -67,7 +71,7 @@ public sealed class PreviewBroadcaster : IHostedService
             return;
         }
 
-        _ = _hub.BroadcastBinaryAsync(CaptureFrame()).AsTask();
+        BroadcastFrameIfChanged();
     }
 
     private void HandleSettingsApplied()
@@ -77,7 +81,50 @@ public sealed class PreviewBroadcaster : IHostedService
             return;
         }
 
-        _ = _hub.BroadcastAsync(CreateEvent("preview.topology", CaptureTopology())).AsTask();
+        ClearLastBroadcastFrame();
+        _ = BroadcastTopologyAndFrameAsync().AsTask();
+    }
+
+    private async ValueTask BroadcastTopologyAndFrameAsync()
+    {
+        await _hub.BroadcastAsync(CreateEvent("preview.topology", CaptureTopology()));
+        BroadcastFrameIfChanged(force: true);
+    }
+
+    private void BroadcastFrameIfChanged(bool force = false)
+    {
+        var frame = CaptureFrame();
+
+        if (!ShouldBroadcastFrame(frame, force))
+        {
+            return;
+        }
+
+        _ = _hub.BroadcastBinaryAsync(frame).AsTask();
+    }
+
+    private bool ShouldBroadcastFrame(byte[] frame, bool force)
+    {
+        lock (_frameCacheLock)
+        {
+            if (!force
+                && _lastBroadcastFrame is not null
+                && frame.AsSpan().SequenceEqual(_lastBroadcastFrame))
+            {
+                return false;
+            }
+
+            _lastBroadcastFrame = frame;
+            return true;
+        }
+    }
+
+    private void ClearLastBroadcastFrame()
+    {
+        lock (_frameCacheLock)
+        {
+            _lastBroadcastFrame = null;
+        }
     }
 
     private object CaptureTopology()

@@ -3,7 +3,6 @@
 	import {
 		Background,
 		Controls,
-		MiniMap,
 		SvelteFlow,
 		type Connection,
 		type Edge,
@@ -1582,7 +1581,7 @@
 				<SvelteFlow
 					bind:nodes
 					bind:edges
-					bind:viewport
+					initialViewport={viewport}
 					nodeTypes={flowNodeTypes}
 					colorMode={theme.resolved}
 					snapGrid={editorSnapGrid}
@@ -1602,7 +1601,6 @@
 				>
 					<Background />
 					<Controls />
-					<MiniMap />
 				</SvelteFlow>
 
 				{#if nodes.length === 0 && edges.length === 0}
