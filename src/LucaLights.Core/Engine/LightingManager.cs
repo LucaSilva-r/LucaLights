@@ -11,7 +11,6 @@ public sealed class LightingManager : IDisposable
     private readonly LightingManagerOptions _options;
     private readonly Func<bool> _shouldSendOutput;
     private readonly GameInputManager? _gameInputManager;
-    private readonly Func<bool> _isRenderingActiveFallback;
     private readonly Action<string>? _log;
     private readonly object _syncRoot = new();
     private readonly Stopwatch _globalTimer = new();
@@ -28,7 +27,6 @@ public sealed class LightingManager : IDisposable
         ILightingRenderer renderer,
         LightingManagerOptions? options = null,
         GameInputManager? gameInputManager = null,
-        Func<bool>? isRenderingActive = null,
         Func<bool>? shouldSendOutput = null,
         Action<string>? log = null)
     {
@@ -36,7 +34,6 @@ public sealed class LightingManager : IDisposable
         _renderer = renderer ?? throw new ArgumentNullException(nameof(renderer));
         _options = options ?? new LightingManagerOptions();
         _gameInputManager = gameInputManager;
-        _isRenderingActiveFallback = isRenderingActive ?? (() => true);
         _shouldSendOutput = shouldSendOutput ?? (() => true);
         _log = log;
     }
@@ -106,26 +103,6 @@ public sealed class LightingManager : IDisposable
         {
             sw.Restart();
             var inputSnapshot = _gameInputManager?.LatestSnapshot ?? InputSnapshot.Empty;
-
-            if (!IsRenderingActive(inputSnapshot))
-            {
-                if (!_cleared && _options.ClearOutputWhenInactive)
-                {
-                    var shouldNotifyCleared = false;
-                    lock (_syncRoot)
-                    {
-                        shouldNotifyCleared = ClearOutputsUnsafe();
-                    }
-
-                    if (shouldNotifyCleared)
-                    {
-                        OutputCleared?.Invoke();
-                    }
-                }
-
-                Thread.Sleep(1);
-                continue;
-            }
 
             LightingFrameContext frameContext;
             var shouldRaiseSettingsApplied = false;
@@ -232,15 +209,5 @@ public sealed class LightingManager : IDisposable
     private void ThrowIfDisposed()
     {
         ObjectDisposedException.ThrowIf(_disposed, this);
-    }
-
-    private bool IsRenderingActive(InputSnapshot inputSnapshot)
-    {
-        if (_gameInputManager is not null)
-        {
-            return inputSnapshot.IsActive;
-        }
-
-        return _isRenderingActiveFallback();
     }
 }
