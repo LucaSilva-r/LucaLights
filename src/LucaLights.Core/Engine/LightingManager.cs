@@ -104,6 +104,26 @@ public sealed class LightingManager : IDisposable
             sw.Restart();
             var inputSnapshot = _gameInputManager?.LatestSnapshot ?? InputSnapshot.Empty;
 
+            if (!IsInputConnected(inputSnapshot))
+            {
+                if (!_cleared && _options.ClearOutputWhenInactive)
+                {
+                    var shouldNotifyCleared = false;
+                    lock (_syncRoot)
+                    {
+                        shouldNotifyCleared = ClearOutputsUnsafe();
+                    }
+
+                    if (shouldNotifyCleared)
+                    {
+                        OutputCleared?.Invoke();
+                    }
+                }
+
+                Thread.Sleep(1);
+                continue;
+            }
+
             LightingFrameContext frameContext;
             var shouldRaiseSettingsApplied = false;
 
@@ -209,5 +229,15 @@ public sealed class LightingManager : IDisposable
     private void ThrowIfDisposed()
     {
         ObjectDisposedException.ThrowIf(_disposed, this);
+    }
+
+    private bool IsInputConnected(InputSnapshot inputSnapshot)
+    {
+        if (_gameInputManager is null)
+        {
+            return true;
+        }
+
+        return inputSnapshot.IsConnected;
     }
 }
