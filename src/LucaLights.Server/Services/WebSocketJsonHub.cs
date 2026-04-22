@@ -89,6 +89,50 @@ public sealed class WebSocketJsonHub
         }
     }
 
+    public async ValueTask BroadcastBinaryAsync(ReadOnlyMemory<byte> message, CancellationToken cancellationToken = default)
+    {
+        if (_clients.IsEmpty)
+        {
+            return;
+        }
+
+        var staleClients = new List<Guid>();
+
+        foreach (var (clientId, connection) in _clients)
+        {
+            if (connection.Socket.State != WebSocketState.Open)
+            {
+                staleClients.Add(clientId);
+                continue;
+            }
+
+            try
+            {
+                await SendBinaryAsync(connection, message, cancellationToken);
+            }
+            catch (WebSocketException)
+            {
+                staleClients.Add(clientId);
+            }
+            catch (OperationCanceledException) when (cancellationToken.IsCancellationRequested)
+            {
+                throw;
+            }
+            catch (Exception)
+            {
+                staleClients.Add(clientId);
+            }
+        }
+
+        foreach (var clientId in staleClients)
+        {
+            if (_clients.TryRemove(clientId, out var connection))
+            {
+                await CloseAndDisposeAsync(connection, CancellationToken.None);
+            }
+        }
+    }
+
     private static async Task ReadUntilCloseAsync(WebSocket socket, CancellationToken cancellationToken)
     {
         var buffer = new byte[4096];
@@ -131,6 +175,26 @@ public sealed class WebSocketJsonHub
             if (connection.Socket.State == WebSocketState.Open)
             {
                 await connection.Socket.SendAsync(bytes, WebSocketMessageType.Text, true, cancellationToken);
+            }
+        }
+        finally
+        {
+            connection.SendLock.Release();
+        }
+    }
+
+    private static async Task SendBinaryAsync(
+        ClientConnection connection,
+        ReadOnlyMemory<byte> message,
+        CancellationToken cancellationToken)
+    {
+        await connection.SendLock.WaitAsync(cancellationToken);
+
+        try
+        {
+            if (connection.Socket.State == WebSocketState.Open)
+            {
+                await connection.Socket.SendAsync(message, WebSocketMessageType.Binary, true, cancellationToken);
             }
         }
         finally

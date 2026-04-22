@@ -26,7 +26,7 @@ public sealed class PreviewBroadcaster : IHostedService
         var initialMessages = new[]
         {
             CreateEvent("preview.connected", new { clientCount = ClientCount + 1 }),
-            CreateEvent("preview.snapshot", CapturePreview(null))
+            CreateEvent("preview.topology", CaptureTopology())
         };
 
         return _hub.AcceptAsync(socket, initialMessages, cancellationToken);
@@ -36,6 +36,7 @@ public sealed class PreviewBroadcaster : IHostedService
     {
         _lightingManager.FrameRendered += HandleFrameRendered;
         _lightingManager.OutputCleared += HandleOutputCleared;
+        _lightingManager.SettingsApplied += HandleSettingsApplied;
 
         return Task.CompletedTask;
     }
@@ -44,33 +45,49 @@ public sealed class PreviewBroadcaster : IHostedService
     {
         _lightingManager.FrameRendered -= HandleFrameRendered;
         _lightingManager.OutputCleared -= HandleOutputCleared;
+        _lightingManager.SettingsApplied -= HandleSettingsApplied;
 
         return Task.CompletedTask;
     }
 
     private void HandleFrameRendered(LightingFrameContext frameContext)
     {
-        if (frameContext.FrameIndex % SampleEveryFrame != 0)
+        if (ClientCount == 0 || frameContext.FrameIndex % SampleEveryFrame != 0)
         {
             return;
         }
 
-        _ = _hub.BroadcastAsync(CreateEvent("preview.frame", CapturePreview(frameContext))).AsTask();
+        _ = _hub.BroadcastBinaryAsync(CaptureFrame()).AsTask();
     }
 
     private void HandleOutputCleared()
     {
-        _ = _hub.BroadcastAsync(CreateEvent("preview.cleared", CapturePreview(null))).AsTask();
+        if (ClientCount == 0)
+        {
+            return;
+        }
+
+        _ = _hub.BroadcastBinaryAsync(CaptureFrame()).AsTask();
     }
 
-    private object CapturePreview(LightingFrameContext? frameContext)
+    private void HandleSettingsApplied()
+    {
+        if (ClientCount == 0)
+        {
+            return;
+        }
+
+        _ = _hub.BroadcastAsync(CreateEvent("preview.topology", CaptureTopology())).AsTask();
+    }
+
+    private object CaptureTopology()
     {
         lock (_lightingManager.SyncRoot)
         {
+            var sampledLedOffset = 0;
+
             return new
             {
-                frameIndex = frameContext?.FrameIndex,
-                totalElapsedMs = frameContext?.TotalElapsed.TotalMilliseconds,
                 totalLedCount = _settings.Devices.Sum(device => device.Segments.Sum(segment => segment.Length)),
                 maxPreviewLedsPerSegment = MaxPreviewLedsPerSegment,
                 devices = _settings.Devices.Select(device => new
@@ -85,14 +102,47 @@ public sealed class PreviewBroadcaster : IHostedService
                         segment.Id,
                         segment.Name,
                         segment.Length,
-                        colors = segment.Leds
-                            .Take(MaxPreviewLedsPerSegment)
-                            .Select(color => new[] { color.R, color.G, color.B })
-                            .ToArray()
+                        sampledLedOffset,
+                        sampledLedCount = AdvanceSampledLedOffset(ref sampledLedOffset, segment)
                     }).ToArray()
                 }).ToArray()
             };
         }
+    }
+
+    private byte[] CaptureFrame()
+    {
+        lock (_lightingManager.SyncRoot)
+        {
+            var sampledLedCount = _settings.Devices.Sum(device =>
+                device.Segments.Sum(segment => Math.Min(segment.Leds.Length, MaxPreviewLedsPerSegment)));
+            var frame = new byte[sampledLedCount * 3];
+            var offset = 0;
+
+            foreach (var device in _settings.Devices)
+            {
+                foreach (var segment in device.Segments)
+                {
+                    var count = Math.Min(segment.Leds.Length, MaxPreviewLedsPerSegment);
+                    for (var i = 0; i < count; i++)
+                    {
+                        var color = segment.Leds[i];
+                        frame[offset++] = color.R;
+                        frame[offset++] = color.G;
+                        frame[offset++] = color.B;
+                    }
+                }
+            }
+
+            return frame;
+        }
+    }
+
+    private static int AdvanceSampledLedOffset(ref int sampledLedOffset, Segment segment)
+    {
+        var sampledLedCount = Math.Min(segment.Leds.Length, MaxPreviewLedsPerSegment);
+        sampledLedOffset += sampledLedCount;
+        return sampledLedCount;
     }
 
     private static object CreateEvent(string type, object payload)

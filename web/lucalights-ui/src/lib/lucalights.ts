@@ -182,6 +182,14 @@ export interface PreviewSegment {
 	colors: RgbColor[];
 }
 
+export interface PreviewTopologySegment {
+	id: string;
+	name: string;
+	length: number;
+	sampledLedOffset: number;
+	sampledLedCount: number;
+}
+
 export interface PreviewDevice {
 	id: string;
 	name: string;
@@ -189,6 +197,21 @@ export interface PreviewDevice {
 	protocol: DeviceProtocol;
 	ledCount: number;
 	segments: PreviewSegment[];
+}
+
+export interface PreviewTopologyDevice {
+	id: string;
+	name: string;
+	ip: string;
+	protocol: DeviceProtocol;
+	ledCount: number;
+	segments: PreviewTopologySegment[];
+}
+
+export interface PreviewTopology {
+	totalLedCount: number;
+	maxPreviewLedsPerSegment: number;
+	devices: PreviewTopologyDevice[];
 }
 
 export interface PreviewPayload {
@@ -286,7 +309,54 @@ export function createSocket(path: string): WebSocket {
 	}
 
 	const protocol = window.location.protocol === 'https:' ? 'wss:' : 'ws:';
-	return new WebSocket(`${protocol}//${window.location.host}${path}`);
+	const socket = new WebSocket(`${protocol}//${window.location.host}${path}`);
+	socket.binaryType = 'arraybuffer';
+	return socket;
+}
+
+export function previewPayloadFromTopology(
+	topology: PreviewTopology,
+	frame: ArrayBuffer | Uint8Array
+): PreviewPayload {
+	const bytes = frame instanceof Uint8Array ? frame : new Uint8Array(frame);
+
+	return {
+		totalLedCount: topology.totalLedCount,
+		maxPreviewLedsPerSegment: topology.maxPreviewLedsPerSegment,
+		devices: topology.devices.map(
+			(device): PreviewDevice => ({
+				id: device.id,
+				name: device.name,
+				ip: device.ip,
+				protocol: device.protocol,
+				ledCount: device.ledCount,
+				segments: device.segments.map(
+					(segment): PreviewSegment => ({
+						id: segment.id,
+						name: segment.name,
+						length: segment.length,
+						colors: readPreviewColors(bytes, segment.sampledLedOffset, segment.sampledLedCount)
+					})
+				)
+			})
+		)
+	};
+}
+
+function readPreviewColors(bytes: Uint8Array, ledOffset: number, ledCount: number): RgbColor[] {
+	const colors: RgbColor[] = [];
+	const startByte = ledOffset * 3;
+
+	for (let i = 0; i < ledCount; i += 1) {
+		const offset = startByte + i * 3;
+		colors.push([
+			offset < bytes.length ? bytes[offset] : 0,
+			offset + 1 < bytes.length ? bytes[offset + 1] : 0,
+			offset + 2 < bytes.length ? bytes[offset + 2] : 0
+		]);
+	}
+
+	return colors;
 }
 
 export function entriesOf<T>(record: Record<string, T> | null | undefined): Array<[string, T]> {

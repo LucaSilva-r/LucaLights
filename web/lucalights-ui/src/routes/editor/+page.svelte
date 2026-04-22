@@ -26,6 +26,7 @@
 	import { headerActions } from '$lib/header-actions.svelte';
 	import { theme } from '$lib/theme.svelte';
 	import GraphNode from '$lib/components/editor/GraphNode.svelte';
+	import OutputPreviewPanel from '$lib/components/editor/OutputPreviewPanel.svelte';
 	import {
 		Dialog,
 		DialogContent,
@@ -87,6 +88,12 @@
 		edges: GraphClipboardEdge[];
 	};
 
+	type SelectedOutputTarget = {
+		label: string;
+		segmentIds: string[];
+		targetsAll: boolean;
+	};
+
 	const centeredRerouteOrigin: [number, number] = [0.5, 0.5];
 
 	let nodeTypes = $state<NodeTypeDefinition[]>([]);
@@ -103,6 +110,7 @@
 	let canvasHost = $state<HTMLDivElement | null>(null);
 	let paletteFilter = $state('');
 	let paletteCollapsed = $state(false);
+	let previewCollapsed = $state(false);
 	let collapsedPaletteCategories = $state<string[]>([]);
 	let loading = $state(true);
 	let saving = $state(false);
@@ -167,6 +175,52 @@
 			.sort()
 			.join('|')
 	);
+	let editorGridTemplateColumns = $derived.by(() => {
+		const columns = [];
+
+		if (!paletteCollapsed) {
+			columns.push('20rem');
+		}
+
+		columns.push('minmax(0, 1fr)');
+
+		if (!previewCollapsed) {
+			columns.push('22rem');
+		}
+
+		return columns.join(' ');
+	});
+	let selectedOutputTarget = $derived.by((): SelectedOutputTarget | null => {
+		const outputNodes = nodes.filter(
+			(node) => node.selected && node.data.typeId === 'output.segment-color'
+		);
+
+		if (outputNodes.length === 0) {
+			return null;
+		}
+
+		const segmentIds = new Set<string>();
+		let targetsAll = false;
+
+		for (const node of outputNodes) {
+			const parsedSegmentIds = parseTargetSegmentIds(node.data.properties.segmentIds);
+
+			if (parsedSegmentIds.length === 0) {
+				targetsAll = true;
+				continue;
+			}
+
+			for (const segmentId of parsedSegmentIds) {
+				segmentIds.add(segmentId);
+			}
+		}
+
+		return {
+			label: outputNodes.length === 1 ? outputNodes[0].data.label : `${outputNodes.length} outputs`,
+			segmentIds: Array.from(segmentIds),
+			targetsAll
+		};
+	});
 
 	function buildDeviceOptions() {
 		return devices.map(
@@ -264,6 +318,17 @@
 					.map((edge) => edge.targetHandle as string)
 			)
 		);
+	}
+
+	function parseTargetSegmentIds(value: unknown) {
+		if (typeof value !== 'string') {
+			return [];
+		}
+
+		return value
+			.split(',')
+			.map((part) => part.trim())
+			.filter((part, index, values) => part.length > 0 && values.indexOf(part) === index);
 	}
 
 	function defaultPropertiesFor(nodeType: NodeTypeDefinition) {
@@ -1367,8 +1432,8 @@
 	{/if}
 
 	<div
-		class="grid min-h-0 flex-1 xl:grid-cols-[20rem_minmax(0,1fr)]"
-		style:grid-template-columns={paletteCollapsed ? 'minmax(0, 1fr)' : undefined}
+		class="editor-shell-grid grid min-h-0 flex-1"
+		style={`--editor-grid-columns: ${editorGridTemplateColumns};`}
 	>
 		{#if !paletteCollapsed}
 			<aside
@@ -1493,6 +1558,19 @@
 				</button>
 			{/if}
 
+			{#if previewCollapsed}
+				<button
+					type="button"
+					class="absolute right-3 top-3 z-20 flex size-9 items-center justify-center rounded-full border border-border/70 bg-background/95 text-muted-foreground shadow-lg outline-none transition hover:border-primary/40 hover:text-foreground focus:border-ring focus:ring-4 focus:ring-ring/20"
+					aria-label="Show live preview"
+					aria-expanded="false"
+					title="Show live preview"
+					onclick={() => (previewCollapsed = false)}
+				>
+					<ChevronLeft class="size-4" />
+				</button>
+			{/if}
+
 			{#if loading}
 				<div class="flex h-full items-center justify-center">
 					<div class="flex flex-col items-center gap-3 text-muted-foreground">
@@ -1547,6 +1625,14 @@
 				{/if}
 			{/if}
 		</div>
+
+		{#if !previewCollapsed}
+			<OutputPreviewPanel
+				{devices}
+				{selectedOutputTarget}
+				onCollapse={() => (previewCollapsed = true)}
+			/>
+		{/if}
 	</div>
 
 	{#if validationErrors.length > 0 || validationWarnings.length > 0}
@@ -1566,3 +1652,15 @@
 		</div>
 	{/if}
 </div>
+
+<style>
+	.editor-shell-grid {
+		grid-template-columns: minmax(0, 1fr);
+	}
+
+	@media (min-width: 1280px) {
+		.editor-shell-grid {
+			grid-template-columns: var(--editor-grid-columns);
+		}
+	}
+</style>
