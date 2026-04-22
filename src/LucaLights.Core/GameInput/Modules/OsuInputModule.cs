@@ -140,6 +140,7 @@ public sealed partial class OsuInputModule : IGameInputModule, IDisposable
         run?.Cancel();
         await _osuProcessWatcher.StopAsync().ConfigureAwait(false);
         StopNoteEngine();
+        StopPaletteExtraction();
         StopTosuProcess();
 
         try
@@ -398,6 +399,11 @@ public sealed partial class OsuInputModule : IGameInputModule, IDisposable
         // Module is active if connected AND (tosu says playing OR there is any current activity)
         var hasAnyActivity = _noteActive || k1Hit || k2Hit || m1Hit || m2Hit || _k1Pressed || _k2Pressed || _m1Pressed || _m2Pressed;
 
+        var palette = _palette;
+        var colors  = new Dictionary<string, Color>(StringComparer.OrdinalIgnoreCase);
+        for (var i = 0; i < CoverArtPalette.Size; i++)
+            colors[$"raw.osu.palette.color_{i}"] = palette[i];
+
         return new InputSnapshot
         {
             TimestampUtc = DateTimeOffset.UtcNow,
@@ -406,6 +412,7 @@ public sealed partial class OsuInputModule : IGameInputModule, IDisposable
             IsActive     = connected && (playing || hasAnyActivity),
             BoolValues   = bools,
             FloatValues  = floats,
+            ColorValues  = colors,
             Metadata     = metadata
         };
     }
@@ -502,6 +509,16 @@ public sealed partial class OsuInputModule : IGameInputModule, IDisposable
         def.Channels.Add(Float("raw.osu.bpm",           "BPM",           "Gameplay", "Raw / Gameplay", "Current realtime BPM.",                 0f, 0f, null));
         def.Channels.Add(Float("raw.osu.unstable_rate", "Unstable Rate", "Gameplay", "Raw / Gameplay", "Unstable rate (lower = more consistent).", 0f, 0f, null));
 
+        // Cover art palette — median-cut clusters from the beatmap background image, sorted
+        // by LED visibility (saturation × mid-lightness). color_0 is always the most-lit
+        // candidate; missing slots on monochrome covers repeat the last available cluster
+        // so effects never receive pure black.
+        def.Channels.Add(ColorCh("raw.osu.palette.color_0", "Palette Color 1", "Palette", "Raw / Palette", "Most LED-visible cluster in the cover art. Prefer this when you want a color that will always be lit."));
+        def.Channels.Add(ColorCh("raw.osu.palette.color_1", "Palette Color 2", "Palette", "Raw / Palette", "Second most LED-visible cluster."));
+        def.Channels.Add(ColorCh("raw.osu.palette.color_2", "Palette Color 3", "Palette", "Raw / Palette", "Third most LED-visible cluster."));
+        def.Channels.Add(ColorCh("raw.osu.palette.color_3", "Palette Color 4", "Palette", "Raw / Palette", "Fourth cluster — may be dark or desaturated on simple covers."));
+        def.Channels.Add(ColorCh("raw.osu.palette.color_4", "Palette Color 5", "Palette", "Raw / Palette", "Fifth cluster — may be dark or desaturated on simple covers."));
+
         return def;
     }
 
@@ -512,4 +529,7 @@ public sealed partial class OsuInputModule : IGameInputModule, IDisposable
         float? def = null, float? min = null, float? max = null)
         => new() { Key = key, Label = label, Group = group, ValueType = InputValueType.Float, Category = category,
                    Description = desc, DefaultFloatValue = def, MinFloatValue = min, MaxFloatValue = max };
+
+    private static InputChannelDefinition ColorCh(string key, string label, string group, string category, string desc)
+        => new() { Key = key, Label = label, Group = group, ValueType = InputValueType.Color, Category = category, Description = desc };
 }

@@ -138,7 +138,8 @@ public sealed class TosuFolders
 
 public sealed class TosuDirectPath
 {
-    [JsonPropertyName("beatmapFile")] public string BeatmapFile { get; set; } = string.Empty;
+    [JsonPropertyName("beatmapFile")]       public string BeatmapFile       { get; set; } = string.Empty;
+    [JsonPropertyName("beatmapBackground")] public string BeatmapBackground { get; set; } = string.Empty;
 }
 
 // ---------------------------------------------------------------------------

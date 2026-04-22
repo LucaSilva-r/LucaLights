@@ -403,6 +403,15 @@ public sealed class GraphRuntimeEvaluator
                         GetInputFloat(preparedEffect, node, 2))));
                     break;
 
+                case NodeOp.ColorToHsv:
+                {
+                    var hsv = ColorToHsv(NormalizeColor(GetInputColor(preparedEffect, node, 0)));
+                    WriteOutput(preparedEffect, node, 0, RuntimeValue.FromFloat(hsv.Hue));
+                    WriteOutput(preparedEffect, node, 1, RuntimeValue.FromFloat(hsv.Saturation));
+                    WriteOutput(preparedEffect, node, 2, RuntimeValue.FromFloat(hsv.Value));
+                    break;
+                }
+
                 case NodeOp.ColorGradient:
                     WriteOutput(preparedEffect, node, 0, RuntimeValue.FromColor(SampleGradient(
                         node.GradientStops,
@@ -1633,6 +1642,7 @@ public sealed class GraphRuntimeEvaluator
             "math.tan" => NodeOp.MathTan,
             "color.brightness" => NodeOp.ColorBrightness,
             "color.hsv" => NodeOp.ColorHsv,
+            "color.to-hsv" => NodeOp.ColorToHsv,
             "color.gradient" => NodeOp.ColorGradient,
             "time.elapsed" => NodeOp.TimeElapsed,
             "time.oscillator" => NodeOp.TimeOscillator,
@@ -1998,6 +2008,7 @@ internal enum NodeOp
     MathTan,
     ColorBrightness,
     ColorHsv,
+    ColorToHsv,
     ColorGradient,
     TimeElapsed,
     TimeOscillator,

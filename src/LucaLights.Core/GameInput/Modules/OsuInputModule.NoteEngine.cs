@@ -79,6 +79,7 @@ public sealed partial class OsuInputModule
                 _currentChecksum = string.Empty;
                 ResetV2TimingStateUnsafe();
             }
+            StopPaletteExtraction();
         }
     }
 
@@ -137,6 +138,8 @@ public sealed partial class OsuInputModule
             lock (_syncRoot) { _hitObjects = []; }
             _currentChecksum = data.Beatmap.Checksum;
         }
+
+        StartPaletteExtraction(data.Beatmap.Checksum, songs, data.DirectPath.BeatmapBackground);
     }
 
     private void StartNoteEngine()

@@ -43,6 +43,7 @@ public sealed class DefaultNodeTypeCatalog : INodeTypeCatalog
             MathTan(),
             ColorBrightness(),
             ColorHsv(),
+            ColorToHsv(),
             ColorGradient(),
             TimeElapsed(),
             TimeOscillator(),
@@ -570,6 +571,22 @@ public sealed class DefaultNodeTypeCatalog : INodeTypeCatalog
                 Property("saturation", "Saturation", NodeValueType.Float, "Fallback saturation.", 1, 0, 1),
                 Property("brightness", "Brightness", NodeValueType.Float, "Fallback brightness.", 1, 0, 1)
             ]);
+    }
+
+    private static NodeTypeDefinition ColorToHsv()
+    {
+        return new NodeTypeDefinition(
+            "color.to-hsv",
+            "Color to HSV",
+            "Color",
+            "Decomposes an RGB color into hue, saturation, and value components. Pair with 'HSV to Color' to manipulate individual channels (e.g. lock saturation to 1 for always-vivid output).",
+            [Input("color", "Color", NodeValueType.Color, "The color to decompose.")],
+            [
+                Output("hue", "Hue", NodeValueType.Float, "Hue in degrees (0-360)."),
+                Output("saturation", "Saturation", NodeValueType.Float, "Saturation (0-1)."),
+                Output("brightness", "Brightness", NodeValueType.Float, "Value/brightness (0-1).")
+            ],
+            [ColorProperty("color", "Color", "Fallback color when no input is connected.", 255, 255, 255)]);
     }
 
     private static NodeTypeDefinition ColorGradient()

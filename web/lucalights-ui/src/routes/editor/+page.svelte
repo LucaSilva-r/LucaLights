@@ -1666,6 +1666,7 @@
 <style>
 	.editor-shell-grid {
 		grid-template-columns: minmax(0, 1fr);
+		grid-template-rows: minmax(0, 1fr);
 	}
 
 	@media (min-width: 1280px) {
