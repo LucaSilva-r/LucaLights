@@ -390,6 +390,29 @@ public sealed class GraphRuntimeEvaluator
                         MathF.Tan(GetInputFloat(preparedEffect, node, 0))));
                     break;
 
+                case NodeOp.MathRandom:
+                    WriteOutput(preparedEffect, node, 0, RuntimeValue.FromFloat(
+                        NextRandomFloat(
+                            node,
+                            GetInputFloat(preparedEffect, node, 0),
+                            GetInputFloat(preparedEffect, node, 1),
+                            GetInputFloat(preparedEffect, node, 2))));
+                    break;
+
+                case NodeOp.MathPerlinNoise2D:
+                    WriteOutput(preparedEffect, node, 0, RuntimeValue.FromFloat(
+                        PerlinNoise2D(
+                            GetInputFloat(preparedEffect, node, 0),
+                            GetInputFloat(preparedEffect, node, 1))));
+                    break;
+
+                case NodeOp.MathValueNoise2D:
+                    WriteOutput(preparedEffect, node, 0, RuntimeValue.FromFloat(
+                        ValueNoise2D(
+                            GetInputFloat(preparedEffect, node, 0),
+                            GetInputFloat(preparedEffect, node, 1))));
+                    break;
+
                 case NodeOp.ColorBrightness:
                     WriteOutput(preparedEffect, node, 0, RuntimeValue.FromColor(ScaleColor(
                         GetInputColor(preparedEffect, node, 0),
@@ -645,6 +668,17 @@ public sealed class GraphRuntimeEvaluator
             case NodeOp.MathSmoothStep:
                 compiledNode.PropFloatA = ReadFloat(properties, "edge0", 0f);
                 compiledNode.PropFloatB = ReadFloat(properties, "edge1", 1f);
+                break;
+
+            case NodeOp.MathRandom:
+                compiledNode.RandomNodeSeed = HashNodeId(node.Id);
+                compiledNode.RandomSeed = SeedFromFloat(ReadFloat(properties, "seed", 0f));
+                compiledNode.RandomState = BuildRandomState(compiledNode.RandomNodeSeed, compiledNode.RandomSeed);
+                if (compiledNode.RandomState == 0)
+                {
+                    compiledNode.RandomState = 0x9E3779B9u;
+                }
+
                 break;
 
             case NodeOp.ColorGradient:
@@ -1121,6 +1155,127 @@ public sealed class GraphRuntimeEvaluator
         return wrapped <= amplitude ? wrapped : cycle - wrapped;
     }
 
+    private static float NextRandomFloat(CompiledNode node, float min, float max, float seed)
+    {
+        if (max < min)
+        {
+            (min, max) = (max, min);
+        }
+
+        var seedValue = SeedFromFloat(seed);
+        if (seedValue != node.RandomSeed)
+        {
+            node.RandomSeed = seedValue;
+            node.RandomState = BuildRandomState(node.RandomNodeSeed, seedValue);
+        }
+
+        var state = node.RandomState;
+        state ^= state << 13;
+        state ^= state >> 17;
+        state ^= state << 5;
+        node.RandomState = state == 0 ? 0x9E3779B9u : state;
+
+        var normalized = (state >> 8) * (1f / 16777216f);
+        return min + ((max - min) * normalized);
+    }
+
+    private static uint BuildRandomState(uint nodeSeed, uint seed)
+    {
+        var state = nodeSeed ^ seed;
+        state ^= state >> 16;
+        state *= 0x85EBCA6Bu;
+        state ^= state >> 13;
+        state *= 0xC2B2AE35u;
+        state ^= state >> 16;
+        return state == 0 ? 0x9E3779B9u : state;
+    }
+
+    private static float PerlinNoise2D(float x, float y)
+    {
+        var x0 = FastFloor(x);
+        var y0 = FastFloor(y);
+        var xf = x - x0;
+        var yf = y - y0;
+        var u = Fade(xf);
+        var v = Fade(yf);
+
+        var aa = PerlinGradient(HashGrid(x0, y0), xf, yf);
+        var ba = PerlinGradient(HashGrid(x0 + 1, y0), xf - 1f, yf);
+        var ab = PerlinGradient(HashGrid(x0, y0 + 1), xf, yf - 1f);
+        var bb = PerlinGradient(HashGrid(x0 + 1, y0 + 1), xf - 1f, yf - 1f);
+
+        var x1 = Lerp(aa, ba, u);
+        var x2 = Lerp(ab, bb, u);
+        return Math.Clamp((Lerp(x1, x2, v) + 1f) * 0.5f, 0f, 1f);
+    }
+
+    private static float ValueNoise2D(float x, float y)
+    {
+        var x0 = FastFloor(x);
+        var y0 = FastFloor(y);
+        var xf = x - x0;
+        var yf = y - y0;
+        var u = Fade(xf);
+        var v = Fade(yf);
+
+        var aa = HashToUnitFloat(HashGrid(x0, y0));
+        var ba = HashToUnitFloat(HashGrid(x0 + 1, y0));
+        var ab = HashToUnitFloat(HashGrid(x0, y0 + 1));
+        var bb = HashToUnitFloat(HashGrid(x0 + 1, y0 + 1));
+
+        return Lerp(Lerp(aa, ba, u), Lerp(ab, bb, u), v);
+    }
+
+    private static int FastFloor(float value)
+    {
+        var integer = (int)value;
+        return value < integer ? integer - 1 : integer;
+    }
+
+    private static float Fade(float value)
+    {
+        return value * value * value * (value * ((value * 6f) - 15f) + 10f);
+    }
+
+    private static float Lerp(float from, float to, float factor)
+    {
+        return from + ((to - from) * factor);
+    }
+
+    private static float PerlinGradient(uint hash, float x, float y)
+    {
+        const float diagonalScale = 0.70710678118f;
+        return (hash & 7u) switch
+        {
+            0u => (x + y) * diagonalScale,
+            1u => (-x + y) * diagonalScale,
+            2u => (x - y) * diagonalScale,
+            3u => (-x - y) * diagonalScale,
+            4u => x,
+            5u => -x,
+            6u => y,
+            _ => -y
+        };
+    }
+
+    private static uint HashGrid(int x, int y)
+    {
+        unchecked
+        {
+            var hash = (uint)x * 0x8DA6B343u;
+            hash ^= (uint)y * 0xD8163841u;
+            hash ^= hash >> 13;
+            hash *= 0x85EBCA6Bu;
+            hash ^= hash >> 16;
+            return hash;
+        }
+    }
+
+    private static float HashToUnitFloat(uint hash)
+    {
+        return (hash >> 8) * (1f / 16777216f);
+    }
+
     private static Color SampleGradient(GradientStop[] stops, float factor, InterpolationOp interpolation)
     {
         if (stops.Length == 0)
@@ -1490,6 +1645,34 @@ public sealed class GraphRuntimeEvaluator
         return distinctValues.ToArray();
     }
 
+    private static uint HashNodeId(string value)
+    {
+        unchecked
+        {
+            var hash = 2166136261u;
+            for (var i = 0; i < value.Length; i++)
+            {
+                hash = (hash ^ value[i]) * 16777619u;
+            }
+
+            return hash;
+        }
+    }
+
+    private static uint SeedFromFloat(float value)
+    {
+        unchecked
+        {
+            var seed = (uint)BitConverter.SingleToInt32Bits(value);
+            seed ^= seed >> 16;
+            seed *= 0x7FEB352Du;
+            seed ^= seed >> 15;
+            seed *= 0x846CA68Bu;
+            seed ^= seed >> 16;
+            return seed;
+        }
+    }
+
     private static bool TryReadFloat(JsonNode node, out float value)
     {
         value = default;
@@ -1655,6 +1838,9 @@ public sealed class GraphRuntimeEvaluator
             "math.sin" => NodeOp.MathSin,
             "math.cos" => NodeOp.MathCos,
             "math.tan" => NodeOp.MathTan,
+            "math.random" => NodeOp.MathRandom,
+            "math.perlin-2d" => NodeOp.MathPerlinNoise2D,
+            "math.value-noise-2d" => NodeOp.MathValueNoise2D,
             "color.brightness" => NodeOp.ColorBrightness,
             "color.hsv" => NodeOp.ColorHsv,
             "color.to-hsv" => NodeOp.ColorToHsv,
@@ -1979,7 +2165,10 @@ internal sealed class CompiledNode
     public string[] SegmentIds = [];
     public Segment[] TargetSegments = [];
     public GradientStop[] GradientStops = [];
-          public PulseState? PulseState;
+    public uint RandomNodeSeed;
+    public uint RandomSeed;
+    public uint RandomState;
+    public PulseState? PulseState;
     public EnvelopeState? EnvelopeState;
     public BlinkState? BlinkState;
 
@@ -2023,6 +2212,9 @@ internal enum NodeOp
     MathSin,
     MathCos,
     MathTan,
+    MathRandom,
+    MathPerlinNoise2D,
+    MathValueNoise2D,
     ColorBrightness,
     ColorHsv,
     ColorToHsv,

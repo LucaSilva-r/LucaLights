@@ -22,6 +22,7 @@
 		Workflow
 	} from '@lucide/svelte';
 	import NodeSearchDialog from '$lib/components/editor/NodeSearchDialog.svelte';
+	import { categoryTextTone } from '$lib/components/editor/category-tones';
 	import { headerActions } from '$lib/header-actions.svelte';
 	import { theme } from '$lib/theme.svelte';
 	import GraphNode from '$lib/components/editor/GraphNode.svelte';
@@ -1513,7 +1514,9 @@
 												>
 													<div class="flex items-start justify-between gap-3">
 														<div class="space-y-1">
-															<p class="text-sm font-semibold">{nodeType.displayName}</p>
+															<p class={`text-sm font-semibold ${categoryTextTone(nodeType.category)}`}>
+																{nodeType.displayName}
+															</p>
 															<p class="text-xs leading-5 text-muted-foreground">
 																{nodeType.description}
 															</p>

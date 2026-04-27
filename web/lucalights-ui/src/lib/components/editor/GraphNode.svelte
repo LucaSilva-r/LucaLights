@@ -7,6 +7,7 @@
 	import NodeNumberInput from './NodeNumberInput.svelte';
 	import OutputTargetPicker from './OutputTargetPicker.svelte';
 	import GradientEditor, { type GradientStop } from './GradientEditor.svelte';
+	import { categoryHeaderTone } from './category-tones';
 	import {
 		editorNodeActionsContext,
 		type EditorFlowNode,
@@ -251,31 +252,6 @@
 				return 'String';
 			default:
 				return '';
-		}
-	}
-
-	function categoryHeaderTone(category: string) {
-		switch (category) {
-			case 'Annotations':
-				return 'bg-amber-200 text-amber-950 dark:bg-amber-700 dark:text-amber-100';
-			case 'Constants':
-				return 'bg-amber-500 text-white';
-			case 'Graph Inputs':
-				return 'bg-sky-500 text-white';
-			case 'Math':
-				return 'bg-cyan-600 text-white';
-			case 'Logic':
-				return 'bg-violet-500 text-white';
-			case 'Time':
-				return 'bg-orange-500 text-white';
-			case 'Color':
-				return 'bg-rose-500 text-white';
-			case 'Segment':
-				return 'bg-teal-500 text-white';
-			case 'Outputs':
-				return 'bg-emerald-500 text-white';
-			default:
-				return 'bg-zinc-700 text-white';
 		}
 	}
 

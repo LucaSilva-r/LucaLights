@@ -41,6 +41,9 @@ public sealed class DefaultNodeTypeCatalog : INodeTypeCatalog
             MathSin(),
             MathCos(),
             MathTan(),
+            MathRandom(),
+            MathPerlinNoise2D(),
+            MathValueNoise2D(),
             ColorBrightness(),
             ColorHsv(),
             ColorToHsv(),
@@ -221,7 +224,7 @@ public sealed class DefaultNodeTypeCatalog : INodeTypeCatalog
         return new NodeTypeDefinition(
             "logic.mix-color",
             "Mix Color",
-            "Math",
+            "Color",
             "Blends between two colors using a selectable blend mode and factor from 0 to 1.",
             [
                 Input("a", "A", NodeValueType.Color, "The first color input."),
@@ -534,6 +537,62 @@ public sealed class DefaultNodeTypeCatalog : INodeTypeCatalog
             [Input("value", "Value", NodeValueType.Float, "Input in radians.")],
             [Output("value", "Value", NodeValueType.Float, "Tangent result.")],
             [Property("value", "Value", NodeValueType.Float, "Fallback input value (radians).", 0)]);
+    }
+
+    private static NodeTypeDefinition MathRandom()
+    {
+        return new NodeTypeDefinition(
+            "math.random",
+            "Random Number",
+            "Noise",
+            "Outputs a fast pseudo-random number between the configured minimum and maximum.",
+            [
+                Input("min", "Min", NodeValueType.Float, "Lower bound of the random range."),
+                Input("max", "Max", NodeValueType.Float, "Upper bound of the random range."),
+                Input("seed", "Seed", NodeValueType.Float, "Seed value for the random sequence.")
+            ],
+            [Output("value", "Value", NodeValueType.Float, "Random value in the configured range.")],
+            [
+                Property("min", "Min", NodeValueType.Float, "Fallback minimum.", 0),
+                Property("max", "Max", NodeValueType.Float, "Fallback maximum.", 1),
+                Property("seed", "Seed", NodeValueType.Float, "Fallback random seed.", 0)
+            ]);
+    }
+
+    private static NodeTypeDefinition MathPerlinNoise2D()
+    {
+        return new NodeTypeDefinition(
+            "math.perlin-2d",
+            "Perlin Noise 2D",
+            "Noise",
+            "Samples smooth two-axis Perlin noise and outputs a value from 0 to 1.",
+            [
+                Input("x", "X", NodeValueType.Float, "Horizontal sample coordinate."),
+                Input("y", "Y", NodeValueType.Float, "Vertical sample coordinate.")
+            ],
+            [Output("value", "Value", NodeValueType.Float, "Noise value from 0 to 1.")],
+            [
+                Property("x", "X", NodeValueType.Float, "Fallback horizontal coordinate.", 0),
+                Property("y", "Y", NodeValueType.Float, "Fallback vertical coordinate.", 0)
+            ]);
+    }
+
+    private static NodeTypeDefinition MathValueNoise2D()
+    {
+        return new NodeTypeDefinition(
+            "math.value-noise-2d",
+            "Value Noise 2D",
+            "Noise",
+            "Samples cheap smooth two-axis value noise and outputs a value from 0 to 1.",
+            [
+                Input("x", "X", NodeValueType.Float, "Horizontal sample coordinate."),
+                Input("y", "Y", NodeValueType.Float, "Vertical sample coordinate.")
+            ],
+            [Output("value", "Value", NodeValueType.Float, "Noise value from 0 to 1.")],
+            [
+                Property("x", "X", NodeValueType.Float, "Fallback horizontal coordinate.", 0),
+                Property("y", "Y", NodeValueType.Float, "Fallback vertical coordinate.", 0)
+            ]);
     }
 
     private static NodeTypeDefinition ColorBrightness()
