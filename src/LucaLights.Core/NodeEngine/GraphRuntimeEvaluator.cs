@@ -448,6 +448,15 @@ public sealed class GraphRuntimeEvaluator
                     WriteOutput(preparedEffect, node, 0, RuntimeValue.FromFloat(node.EnvelopeState.CurrentValue));
                     break;
                 }
+
+                case NodeOp.TimeBlink:
+                {
+                    var onTime = GetInputFloat(preparedEffect, node, 0);
+                    var offTime = GetInputFloat(preparedEffect, node, 1);
+                    node.BlinkState!.Update(totalSeconds, onTime, offTime);
+                    WriteOutput(preparedEffect, node, 0, RuntimeValue.FromBool(node.BlinkState.CurrentValue));
+                    break;
+                }
             }
         }
 
@@ -652,8 +661,14 @@ public sealed class GraphRuntimeEvaluator
                 compiledNode.PulseState = new PulseState();
                 break;
 
-            case NodeOp.TimeEnvelope:
+           case NodeOp.TimeEnvelope:
                 compiledNode.EnvelopeState = new EnvelopeState();
+                break;
+
+            case NodeOp.TimeBlink:
+                compiledNode.PropFloatA = ReadFloat(properties, "onTime", 0.5f);
+                compiledNode.PropFloatB = ReadFloat(properties, "offTime", 0.5f);
+                compiledNode.BlinkState = new BlinkState();
                 break;
 
             case NodeOp.OutputSegmentColor:
@@ -1648,6 +1663,7 @@ public sealed class GraphRuntimeEvaluator
             "time.oscillator" => NodeOp.TimeOscillator,
             "time.pulse" => NodeOp.TimePulse,
             "time.envelope" => NodeOp.TimeEnvelope,
+            "time.blink" => NodeOp.TimeBlink,
             "output.segment-color" => NodeOp.OutputSegmentColor,
             _ => NodeOp.Unknown
         };
@@ -1963,8 +1979,9 @@ internal sealed class CompiledNode
     public string[] SegmentIds = [];
     public Segment[] TargetSegments = [];
     public GradientStop[] GradientStops = [];
-    public PulseState? PulseState;
+          public PulseState? PulseState;
     public EnvelopeState? EnvelopeState;
+    public BlinkState? BlinkState;
 
     public float Priority;
     public bool IsActiveStatic;
@@ -2010,11 +2027,12 @@ internal enum NodeOp
     ColorHsv,
     ColorToHsv,
     ColorGradient,
-    TimeElapsed,
-    TimeOscillator,
-    TimePulse,
-    TimeEnvelope,
-    OutputSegmentColor
+           TimeElapsed,
+            TimeOscillator,
+            TimePulse,
+            TimeEnvelope,
+            TimeBlink,
+            OutputSegmentColor
 }
 
 internal enum BlendOp
@@ -2205,6 +2223,45 @@ public sealed class EnvelopeState
         }
 
         CurrentValue = Math.Clamp(1f - (elapsed / releaseDuration), 0f, 1f);
+    }
+}
+
+public sealed class BlinkState
+{
+    private float _switchTime;
+    private bool _started;
+
+    public bool CurrentValue { get; private set; }
+
+    public void Update(float currentTime, float onTime, float offTime)
+    {
+        var cycleDuration = onTime + offTime;
+        if (cycleDuration <= 0f)
+        {
+            return;
+        }
+
+        if (!_started)
+        {
+            _started = true;
+            _switchTime = currentTime;
+            CurrentValue = true;
+            return;
+        }
+
+        var elapsed = currentTime - _switchTime;
+        if (elapsed < 0f)
+        {
+            return;
+        }
+
+        var cyclePhase = elapsed % cycleDuration;
+        var newValue = cyclePhase < onTime;
+        if (CurrentValue != newValue)
+        {
+            CurrentValue = newValue;
+            _started = true;
+        }
     }
 }
 

@@ -49,6 +49,7 @@ public sealed class DefaultNodeTypeCatalog : INodeTypeCatalog
             TimeOscillator(),
             TimePulse(),
             TimeEnvelope(),
+            TimeBlink(),
             PixelInfo(),
             SegmentColorOutput()
         ];
@@ -668,6 +669,24 @@ public sealed class DefaultNodeTypeCatalog : INodeTypeCatalog
             [
                 Property("trigger", "Trigger", NodeValueType.Bool, "Fallback trigger state.", false),
                 Property("release", "Release", NodeValueType.Float, "Fallback release duration in seconds.", 0.5, 0, 10)
+            ]);
+    }
+
+    private static NodeTypeDefinition TimeBlink()
+    {
+        return new NodeTypeDefinition(
+            "time.blink",
+            "Blink",
+            "Time",
+            "Outputs a toggling boolean that switches between true and false at configurable on and off durations.",
+            [
+                Input("onTime", "On Time", NodeValueType.Float, "Duration the output stays true (on), in seconds."),
+                Input("offTime", "Off Time", NodeValueType.Float, "Duration the output stays false (off), in seconds.")
+            ],
+            [Output("value", "Value", NodeValueType.Bool, "The blinking boolean output.")],
+            [
+                Property("onTime", "On Time", NodeValueType.Float, "Fallback duration the output stays true (on), in seconds.", 0.5f, 0.01f, 60f),
+                Property("offTime", "Off Time", NodeValueType.Float, "Fallback duration the output stays false (off), in seconds.", 0.5f, 0.01f, 60f)
             ]);
     }
 
