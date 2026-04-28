@@ -193,9 +193,21 @@ public sealed class LightingManager : IDisposable
         ArgumentException.ThrowIfNullOrWhiteSpace(segmentId);
         ArgumentNullException.ThrowIfNull(colors);
 
+        SetLayoutPreviewFrames([new LayoutPreviewSegmentFrame(deviceId, segmentId, colors.ToArray())]);
+    }
+
+    public void SetLayoutPreviewFrames(IReadOnlyList<LayoutPreviewSegmentFrame> segments)
+    {
+        ArgumentNullException.ThrowIfNull(segments);
+
         lock (_syncRoot)
         {
-            _layoutPreviewFrame = new LayoutPreviewFrame(deviceId, segmentId, colors.ToArray());
+            _layoutPreviewFrame = new LayoutPreviewFrame(
+                segments
+                    .Where(segment => !string.IsNullOrWhiteSpace(segment.DeviceId)
+                        && !string.IsNullOrWhiteSpace(segment.SegmentId))
+                    .Select(segment => segment with { Colors = segment.Colors.ToArray() })
+                    .ToArray());
         }
     }
 
@@ -257,18 +269,21 @@ public sealed class LightingManager : IDisposable
 
     private void ApplyLayoutPreviewFrameUnsafe(LayoutPreviewFrame previewFrame)
     {
-        var device = _settings.Devices.FirstOrDefault(
-            candidate => string.Equals(candidate.Id, previewFrame.DeviceId, StringComparison.OrdinalIgnoreCase));
-        var segment = device?.Segments.FirstOrDefault(
-            candidate => string.Equals(candidate.Id, previewFrame.SegmentId, StringComparison.OrdinalIgnoreCase));
-
-        if (segment is null)
+        foreach (var previewSegment in previewFrame.Segments)
         {
-            return;
-        }
+            var device = _settings.Devices.FirstOrDefault(
+                candidate => string.Equals(candidate.Id, previewSegment.DeviceId, StringComparison.OrdinalIgnoreCase));
+            var segment = device?.Segments.FirstOrDefault(
+                candidate => string.Equals(candidate.Id, previewSegment.SegmentId, StringComparison.OrdinalIgnoreCase));
 
-        var count = Math.Min(segment.Leds.Length, previewFrame.Colors.Length);
-        Array.Copy(previewFrame.Colors, segment.Leds, count);
+            if (segment is null)
+            {
+                continue;
+            }
+
+            var count = Math.Min(segment.Leds.Length, previewSegment.Colors.Length);
+            Array.Copy(previewSegment.Colors, segment.Leds, count);
+        }
     }
 
     private static void SleepUntilNextFrame(Stopwatch sw, int targetFrameTimeMs, CancellationToken token)
@@ -349,5 +364,7 @@ public sealed class LightingManager : IDisposable
         return inputSnapshot.IsConnected;
     }
 
-    private sealed record LayoutPreviewFrame(string DeviceId, string SegmentId, Color[] Colors);
+    public readonly record struct LayoutPreviewSegmentFrame(string DeviceId, string SegmentId, Color[] Colors);
+
+    private sealed record LayoutPreviewFrame(LayoutPreviewSegmentFrame[] Segments);
 }

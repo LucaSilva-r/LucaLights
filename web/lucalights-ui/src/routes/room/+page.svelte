@@ -1,13 +1,15 @@
 <script lang="ts">
-	import { onMount } from 'svelte';
+	import { onDestroy, onMount } from 'svelte';
 	import {
 		BoxSelect,
 		Grid3X3,
 		Loader2,
+		Palette,
 		Plus,
 		RotateCcw,
 		Save,
-		Trash2
+		Trash2,
+		Waves
 	} from '@lucide/svelte';
 	import { Badge } from '$lib/components/ui/badge';
 	import { Button } from '$lib/components/ui/button';
@@ -19,7 +21,9 @@
 		CardTitle
 	} from '$lib/components/ui/card';
 	import {
+		apiDelete,
 		apiGet,
+		apiPost,
 		apiPut,
 		toMessage,
 		type Device,
@@ -38,6 +42,14 @@
 	type SegmentEntry = {
 		device: Device;
 		segment: Segment;
+	};
+
+	type PreviewPattern = 'uv' | 'wave' | 'sweep' | 'checker';
+
+	type PreviewColor = {
+		r: number;
+		g: number;
+		b: number;
 	};
 
 	type PlacementBounds = {
@@ -84,6 +96,10 @@
 	let successMessage = $state('');
 	let canvasElement = $state<SVGSVGElement | null>(null);
 	let dragOperation = $state<DragOperation | null>(null);
+	let previewEnabled = $state(false);
+	let previewSending = $state(false);
+	let previewPattern = $state<PreviewPattern>('uv');
+	let previewTime = $state(0);
 	let marquee = $state<{
 		start: LedLayoutPoint;
 		current: LedLayoutPoint;
@@ -142,6 +158,49 @@
 
 	function clamp01(value: number) {
 		return Number.isFinite(value) ? Math.min(1, Math.max(0, value)) : 0;
+	}
+
+	function previewColor(point: LedLayoutPoint, time = previewTime): PreviewColor {
+		const x = clamp01(point.x);
+		const y = clamp01(point.y);
+
+		if (previewPattern === 'wave') {
+			const wave = (Math.sin((x * 3 - time * 1.35) * Math.PI * 2) + 1) / 2;
+			return {
+				r: Math.round(30 + wave * 225),
+				g: Math.round(80 + wave * 120),
+				b: Math.round(255 - wave * 180)
+			};
+		}
+
+		if (previewPattern === 'sweep') {
+			const head = (time * 0.38) % 1;
+			const distance = Math.min(Math.abs(x - head), 1 - Math.abs(x - head));
+			const intensity = Math.max(0, 1 - distance / 0.075);
+			return {
+				r: Math.round(255 * intensity),
+				g: Math.round(220 * intensity),
+				b: Math.round(80 * intensity)
+			};
+		}
+
+		if (previewPattern === 'checker') {
+			const active = (Math.floor(x * 8) + Math.floor(y * 8)) % 2 === 0;
+			return active
+				? { r: 255, g: 255, b: 255 }
+				: { r: 18, g: 80, b: 255 };
+		}
+
+		return {
+			r: Math.round(x * 255),
+			g: Math.round((1 - y) * 255),
+			b: 0
+		};
+	}
+
+	function previewFill(point: LedLayoutPoint) {
+		const color = previewColor(point);
+		return `fill: rgb(${color.r} ${color.g} ${color.b});`;
 	}
 
 	function findSegment(segmentId: string | null) {
@@ -407,6 +466,60 @@
 		void loadRoom();
 	}
 
+	async function setPreviewEnabled(enabled: boolean) {
+		previewEnabled = enabled;
+
+		if (!enabled) {
+			await clearRoomPreview();
+			return;
+		}
+
+		previewTime = performance.now() / 1000;
+		await sendRoomPreview();
+	}
+
+	async function sendRoomPreview() {
+		if (!previewEnabled) return;
+
+		const segments = roomLayout.placements
+			.map((placement) => {
+				const entry = findSegmentEntry(placement.segmentId);
+				if (!entry) return null;
+
+				return {
+					deviceId: entry.device.id,
+					segmentId: entry.segment.id,
+					colors: Array.from({ length: entry.segment.length }, (_, index) =>
+						previewColor(transformPoint(pointForSegment(entry.segment, index), placement))
+					)
+				};
+			})
+			.filter((entry): entry is { deviceId: string; segmentId: string; colors: PreviewColor[] } => !!entry);
+
+		previewSending = true;
+
+		try {
+			await apiPost<void>('/api/layout-preview/batch', { segments });
+			errorMessage = '';
+		} catch (error) {
+			errorMessage = toMessage(error);
+		} finally {
+			previewSending = false;
+		}
+	}
+
+	async function clearRoomPreview() {
+		previewSending = true;
+
+		try {
+			await apiDelete<void>('/api/layout-preview');
+		} catch (error) {
+			errorMessage = toMessage(error);
+		} finally {
+			previewSending = false;
+		}
+	}
+
 	function updatePlacement(segmentId: string, updater: (placement: SegmentPlacement) => SegmentPlacement) {
 		updatePlacements([segmentId], (placement) => updater(placement));
 	}
@@ -668,6 +781,42 @@
 	onMount(() => {
 		void loadRoom();
 	});
+
+	onDestroy(() => {
+		if (previewEnabled) {
+			void clearRoomPreview();
+		}
+	});
+
+	$effect(() => {
+		if (!previewEnabled) return;
+
+		let frame = 0;
+		const tick = () => {
+			previewTime = performance.now() / 1000;
+			void sendRoomPreview();
+
+			if (previewPattern === 'wave' || previewPattern === 'sweep') {
+				frame = window.setTimeout(tick, 90);
+			}
+		};
+
+		frame = window.setTimeout(tick, previewPattern === 'wave' || previewPattern === 'sweep' ? 90 : 70);
+
+		return () => window.clearTimeout(frame);
+	});
+
+	$effect(() => {
+		if (!previewEnabled) return;
+
+		roomLayout;
+		previewPattern;
+		const timeout = window.setTimeout(() => {
+			void sendRoomPreview();
+		}, 80);
+
+		return () => window.clearTimeout(timeout);
+	});
 </script>
 
 <svelte:head>
@@ -791,7 +940,11 @@
 						<svg
 							bind:this={canvasElement}
 							viewBox="0 0 1 1"
-							class="aspect-square w-full touch-none rounded-xl bg-[linear-gradient(to_right,rgba(127,127,127,0.14)_1px,transparent_1px),linear-gradient(to_bottom,rgba(127,127,127,0.14)_1px,transparent_1px)] bg-[size:10%_10%]"
+							class={`aspect-square w-full touch-none rounded-xl ${
+								previewEnabled && previewPattern === 'uv'
+									? 'bg-[linear-gradient(90deg,rgb(0,255,0),rgb(255,255,0)),linear-gradient(0deg,rgb(255,0,0),transparent)]'
+									: 'bg-[linear-gradient(to_right,rgba(127,127,127,0.14)_1px,transparent_1px),linear-gradient(to_bottom,rgba(127,127,127,0.14)_1px,transparent_1px)] bg-[size:10%_10%]'
+							}`}
 							role="img"
 							aria-label="Room layout canvas"
 							onpointermove={drag}
@@ -837,13 +990,18 @@
 												cx={point.x}
 												cy={point.y}
 												r={pointRadius}
-												class={selectionContains(placement.segmentId)
-													? index === 0
-														? 'fill-emerald-300 stroke-background'
-														: 'fill-amber-200 stroke-background'
-												: index === 0
-													? 'fill-emerald-400 stroke-background'
-													: 'fill-primary stroke-background'}
+												style={previewEnabled ? previewFill(point) : ''}
+												class={previewEnabled
+													? selectionContains(placement.segmentId)
+														? 'stroke-amber-300'
+														: 'stroke-background'
+													: selectionContains(placement.segmentId)
+														? index === 0
+															? 'fill-emerald-300 stroke-background'
+															: 'fill-amber-200 stroke-background'
+													: index === 0
+														? 'fill-emerald-400 stroke-background'
+														: 'fill-primary stroke-background'}
 												stroke-width="0.003"
 											/>
 										{/each}
@@ -928,6 +1086,37 @@
 					<CardDescription>Room transforms affect Global X and Global Y in Pixel Info.</CardDescription>
 				</CardHeader>
 				<CardContent class="space-y-5">
+					<div class="space-y-3">
+						<p class="text-sm font-medium">Preview</p>
+						<div class="grid gap-2">
+							<select
+								bind:value={previewPattern}
+								disabled={previewSending}
+								class="h-10 rounded-xl border border-border/70 bg-background/70 px-3 text-sm outline-none transition focus:border-ring focus:ring-4 focus:ring-ring/20"
+							>
+								<option value="uv">UV Rainbow</option>
+								<option value="wave">Moving Wave</option>
+								<option value="sweep">Left-to-Right Sweep</option>
+								<option value="checker">Checkerboard</option>
+							</select>
+							<Button
+								variant={previewEnabled ? 'default' : 'outline'}
+								onclick={() => void setPreviewEnabled(!previewEnabled)}
+								disabled={roomLayout.placements.length === 0 || previewSending}
+								class="w-full"
+							>
+								{#if previewSending}
+									<Loader2 class="animate-spin" />
+								{:else if previewPattern === 'wave' || previewPattern === 'sweep'}
+									<Waves />
+								{:else}
+									<Palette />
+								{/if}
+								{previewEnabled ? 'Stop Room Preview' : 'Room Preview'}
+							</Button>
+						</div>
+					</div>
+
 					<div class="grid gap-2">
 						<Button
 							variant="outline"

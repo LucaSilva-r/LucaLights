@@ -32,6 +32,7 @@ public static class SettingsEndpoints
         endpoints.MapDelete("/api/devices/{deviceId}/segments/{segmentId}", DeleteSegment);
 
         endpoints.MapPost("/api/layout-preview", SetLayoutPreview);
+        endpoints.MapPost("/api/layout-preview/batch", SetLayoutPreviewBatch);
         endpoints.MapDelete("/api/layout-preview", ClearLayoutPreview);
 
         return endpoints;
@@ -427,6 +428,48 @@ public static class SettingsEndpoints
         return Results.NoContent();
     }
 
+    private static IResult SetLayoutPreviewBatch(
+        LayoutPreviewBatchRequest request,
+        Settings settings,
+        LightingManager lightingManager)
+    {
+        if (request?.Segments is null)
+        {
+            return Results.BadRequest("Preview segments are required.");
+        }
+
+        var frames = new List<LightingManager.LayoutPreviewSegmentFrame>();
+        lock (lightingManager.SyncRoot)
+        {
+            foreach (var segmentRequest in request.Segments)
+            {
+                if (segmentRequest.Colors is null
+                    || string.IsNullOrWhiteSpace(segmentRequest.DeviceId)
+                    || string.IsNullOrWhiteSpace(segmentRequest.SegmentId))
+                {
+                    return Results.BadRequest("Every preview segment requires a device id, segment id, and colors.");
+                }
+
+                var device = FindDevice(settings, segmentRequest.DeviceId);
+                if (device is null || FindSegmentIndex(device, segmentRequest.SegmentId) < 0)
+                {
+                    return Results.NotFound();
+                }
+
+                frames.Add(new LightingManager.LayoutPreviewSegmentFrame(
+                    segmentRequest.DeviceId,
+                    segmentRequest.SegmentId,
+                    segmentRequest.Colors
+                        .Select(color => CoreColor.FromRgb(ClampByte(color.R), ClampByte(color.G), ClampByte(color.B)))
+                        .ToArray()));
+            }
+        }
+
+        lightingManager.SetLayoutPreviewFrames(frames);
+
+        return Results.NoContent();
+    }
+
     private static IResult ClearLayoutPreview(LightingManager lightingManager)
     {
         lightingManager.ClearLayoutPreviewFrame();
@@ -509,6 +552,9 @@ public static class SettingsEndpoints
         string DeviceId,
         string SegmentId,
         IReadOnlyList<LayoutPreviewColor> Colors);
+
+    private sealed record LayoutPreviewBatchRequest(
+        IReadOnlyList<LayoutPreviewRequest> Segments);
 
     private sealed record LayoutPreviewColor(int R, int G, int B);
 
