@@ -15,9 +15,15 @@ export interface Segment {
 	name: string;
 	groupIds: number[];
 	length: number;
+	layout: LedLayoutPoint[];
 }
 
 export type DeviceProtocol = number | 'DDP' | 'UdpRealtime';
+
+export interface LedLayoutPoint {
+	x: number;
+	y: number;
+}
 
 export interface Device {
 	id: string;

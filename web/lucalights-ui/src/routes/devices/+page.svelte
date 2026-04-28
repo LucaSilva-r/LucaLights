@@ -95,7 +95,8 @@
 			id: segment.id,
 			name: segment.name,
 			groupIds: [...segment.groupIds],
-			length: segment.length
+			length: segment.length,
+			layout: segment.layout?.map((point) => ({ x: point.x, y: point.y })) ?? []
 		};
 	}
 
@@ -235,7 +236,8 @@
 						id: '',
 						name: 'Main',
 						groupIds: [],
-						length: 60
+						length: 60,
+						layout: []
 					}
 				]
 			});
@@ -352,7 +354,8 @@
 					id: '',
 					name: `Segment ${segmentDrafts.length + 1}`,
 					groupIds: [],
-					length: 60
+					length: 60,
+					layout: []
 				}
 			);
 

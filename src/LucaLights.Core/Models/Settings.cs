@@ -40,6 +40,18 @@ public sealed class Settings
             ? new Dictionary<string, JsonObject>(StringComparer.OrdinalIgnoreCase)
             : new Dictionary<string, JsonObject>(InputModuleSettings, StringComparer.OrdinalIgnoreCase);
 
+        foreach (var device in Devices)
+        {
+            device.Segments ??= [];
+
+            foreach (var segment in device.Segments)
+            {
+                segment.GroupIds ??= [];
+                segment.Length = segment.Length;
+                segment.NormalizeLayout();
+            }
+        }
+
         EnsureDefaults();
     }
 

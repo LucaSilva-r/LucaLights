@@ -392,6 +392,7 @@ public static class SettingsEndpoints
 
         segment.GroupIds ??= [];
         segment.Length = segment.Length;
+        segment.NormalizeLayout();
     }
 
     private static Device? FindDevice(Settings settings, string deviceId)

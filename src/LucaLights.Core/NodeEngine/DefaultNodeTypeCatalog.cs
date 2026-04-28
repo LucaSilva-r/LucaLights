@@ -768,7 +768,9 @@ public sealed class DefaultNodeTypeCatalog : INodeTypeCatalog
                 Output("deviceNormalized", "Device Position", NodeValueType.Float, "Pixel position normalized across the current device."),
                 Output("globalIndex", "Global Pixel", NodeValueType.Float, "Zero-based pixel index across all rendered target segments."),
                 Output("globalLength", "Global Count", NodeValueType.Float, "Total number of LEDs across all rendered target segments."),
-                Output("globalNormalized", "Global Position", NodeValueType.Float, "Pixel position normalized across all rendered target segments.")
+                Output("globalNormalized", "Global Position", NodeValueType.Float, "Pixel position normalized across all rendered target segments."),
+                Output("layoutX", "Layout X", NodeValueType.Float, "Authored LED X coordinate normalized from 0 to 1."),
+                Output("layoutY", "Layout Y", NodeValueType.Float, "Authored LED Y coordinate normalized from 0 to 1.")
             ],
             []);
     }

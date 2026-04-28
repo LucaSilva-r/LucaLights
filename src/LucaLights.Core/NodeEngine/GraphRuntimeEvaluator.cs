@@ -23,7 +23,9 @@ public sealed class GraphRuntimeEvaluator
         float DeviceNormalized,
         int GlobalIndex,
         int GlobalLength,
-        float GlobalNormalized);
+        float GlobalNormalized,
+        float LayoutX,
+        float LayoutY);
 
     private readonly NodeGraphCompiler _nodeGraphCompiler;
     private readonly INodeTypeCatalog _nodeTypeCatalog;
@@ -158,6 +160,10 @@ public sealed class GraphRuntimeEvaluator
                         ? (float)globalIndex / (target.GlobalLength - 1)
                         : 0f;
 
+                    var layoutPoint = i < segment.Layout.Count
+                        ? segment.Layout[i].Clamp()
+                        : Segment.CreateLinearFallbackPoint(i, length);
+
                     _currentPixel = new PixelContext(
                         i,
                         length,
@@ -169,7 +175,9 @@ public sealed class GraphRuntimeEvaluator
                         deviceNormalized,
                         globalIndex,
                         target.GlobalLength,
-                        globalNormalized);
+                        globalNormalized,
+                        layoutPoint.X,
+                        layoutPoint.Y);
                     _currentSegment = segment;
 
                     EvaluateGraph(preparedEffect, frameContext);
@@ -235,7 +243,7 @@ public sealed class GraphRuntimeEvaluator
 
                 case NodeOp.PixelInfo:
                 {
-                    var px = _currentPixel ?? new PixelContext(0, 1, 0f, 0, 0, 0, 1, 0f, 0, 1, 0f);
+                    var px = _currentPixel ?? new PixelContext(0, 1, 0f, 0, 0, 0, 1, 0f, 0, 1, 0f, 0f, 0f);
                     WriteOutput(preparedEffect, node, 0, RuntimeValue.FromFloat(px.Index));
                     WriteOutput(preparedEffect, node, 1, RuntimeValue.FromFloat(px.Length));
                     WriteOutput(preparedEffect, node, 2, RuntimeValue.FromFloat(px.Normalized));
@@ -247,6 +255,8 @@ public sealed class GraphRuntimeEvaluator
                     WriteOutput(preparedEffect, node, 8, RuntimeValue.FromFloat(px.GlobalIndex));
                     WriteOutput(preparedEffect, node, 9, RuntimeValue.FromFloat(px.GlobalLength));
                     WriteOutput(preparedEffect, node, 10, RuntimeValue.FromFloat(px.GlobalNormalized));
+                    WriteOutput(preparedEffect, node, 11, RuntimeValue.FromFloat(px.LayoutX));
+                    WriteOutput(preparedEffect, node, 12, RuntimeValue.FromFloat(px.LayoutY));
                     break;
                 }
 

@@ -5,7 +5,7 @@
 	import { headerActions } from '$lib/header-actions.svelte';
 	import { Button } from '$lib/components/ui/button';
 	import { Separator } from '$lib/components/ui/separator';
-	import { Cable, Info, LayoutDashboard, Loader2, Moon, Save, Settings, Sun, Workflow } from '@lucide/svelte';
+	import { Cable, Info, LayoutDashboard, Loader2, Map, Moon, Save, Settings, Sun, Workflow } from '@lucide/svelte';
 	import { theme } from '$lib/theme.svelte';
 
 	let { children } = $props();
@@ -13,6 +13,7 @@
 	const navItems = [
 		{ href: '/', label: 'Dashboard', icon: LayoutDashboard },
 		{ href: '/devices', label: 'Devices', icon: Cable },
+		{ href: '/layout', label: 'Layout', icon: Map },
 		{ href: '/editor', label: 'Graph Editor', icon: Workflow },
 		{ href: '/settings', label: 'Settings', icon: Settings },
 	] as const;
