@@ -117,6 +117,7 @@ public static class LucaLightsServerHost
         app.MapSettingsEndpoints();
         app.MapGraphEndpoints();
         app.MapSystemEndpoints();
+        app.MapInputSimulationEndpoints();
         app.MapRuntimeWebSockets();
         app.MapFallback(async context =>
         {

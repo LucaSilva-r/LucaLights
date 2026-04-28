@@ -105,6 +105,15 @@ export interface InputSnapshot {
 	metadata: Record<string, string>;
 }
 
+export interface InputSimulationState {
+	enabled: boolean;
+	moduleId: string;
+	boolValues: Record<string, boolean>;
+	floatValues: Record<string, number>;
+	colorValues: Record<string, ColorValue>;
+	pulseKeys: string[];
+}
+
 export interface NodePortDefinition {
 	id: string;
 	label: string;

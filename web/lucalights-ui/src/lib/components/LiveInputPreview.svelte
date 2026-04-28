@@ -53,12 +53,22 @@
 		snapshot = null,
 		moduleDefinition = undefined,
 		moduleLabel = 'No active module',
-		connected = false
+		connected = false,
+		simulationEnabled = false,
+		onBoolChange,
+		onPulseTrigger,
+		onFloatChange,
+		onColorChange
 	}: {
 		snapshot?: InputSnapshot | null;
 		moduleDefinition?: InputDefinition;
 		moduleLabel?: string;
 		connected?: boolean;
+		simulationEnabled?: boolean;
+		onBoolChange?: (key: string, value: boolean) => void | Promise<void>;
+		onPulseTrigger?: (key: string) => void | Promise<void>;
+		onFloatChange?: (key: string, value: number) => void | Promise<void>;
+		onColorChange?: (key: string, value: ColorValue) => void | Promise<void>;
 	} = $props();
 
 	let collapsedGroupKeys = $state<string[]>([]);
@@ -419,6 +429,27 @@
 	function metadataLabel(key: string) {
 		return labelFromKey(key);
 	}
+
+	function colorToHex(value: ColorValue | null) {
+		const color = value ?? { r: 0, g: 0, b: 0 };
+		const hex = (channel: number) => Math.max(0, Math.min(255, Math.round(channel)))
+			.toString(16)
+			.padStart(2, '0');
+		return `#${hex(color.r)}${hex(color.g)}${hex(color.b)}`;
+	}
+
+	function colorFromHex(hex: string): ColorValue {
+		const clean = hex.replace('#', '').trim();
+		const value = clean.length === 3
+			? clean.split('').map((part) => `${part}${part}`).join('')
+			: clean.padEnd(6, '0').slice(0, 6);
+
+		return {
+			r: Number.parseInt(value.slice(0, 2), 16) || 0,
+			g: Number.parseInt(value.slice(2, 4), 16) || 0,
+			b: Number.parseInt(value.slice(4, 6), 16) || 0
+		};
+	}
 </script>
 
 <Card class="border-surface-card-border bg-surface-card-alt shadow-sm backdrop-blur">
@@ -436,6 +467,9 @@
 				<Badge variant={connected ? 'default' : 'outline'}>
 					{connected ? 'Connected' : 'Disconnected'}
 				</Badge>
+				{#if simulationEnabled}
+					<Badge variant="secondary">Simulated</Badge>
+				{/if}
 			</div>
 		</div>
 	</CardHeader>
@@ -503,15 +537,26 @@
 													class={boolSignalClass(channel)}
 													aria-pressed={channel.visualActive}
 													title={`${channel.label} - ${channel.key}`}
+													onclick={() => {
+														if (!simulationEnabled) return;
+														if (channel.pulseLike) {
+															void onPulseTrigger?.(channel.key);
+														} else {
+															void onBoolChange?.(channel.key, !channel.currentValue);
+														}
+													}}
 												>
 													{#if channel.pulseActive}
 														{#key channel.pulseToken}
 															<span class="input-signal__pulse" aria-hidden="true"></span>
 														{/key}
 													{/if}
-													<span class={`input-signal__content size-2 shrink-0 rounded-full ${boolDotClass(channel)}`}></span>
-													<span class="input-signal__content min-w-0 flex-1 truncate">{channel.label}</span>
-												</button>
+														<span class={`input-signal__content size-2 shrink-0 rounded-full ${boolDotClass(channel)}`}></span>
+														<span class="input-signal__content min-w-0 flex-1 truncate">{channel.label}</span>
+														{#if simulationEnabled && channel.pulseLike}
+															<span class="input-signal__content ml-auto text-[10px] uppercase tracking-wide text-muted-foreground">Trigger</span>
+														{/if}
+													</button>
 											{/each}
 										</div>
 									{/if}
@@ -536,6 +581,20 @@
 															></div>
 														</div>
 													{/if}
+													{#if simulationEnabled}
+														<input
+															class="mt-2 h-8 w-full rounded-lg border border-border/70 bg-background/80 px-2 text-xs outline-none focus:border-ring"
+															type="number"
+															value={channel.currentValue}
+															min={channel.minFloatValue ?? undefined}
+															max={channel.maxFloatValue ?? undefined}
+															step={channel.minFloatValue === 0 && channel.maxFloatValue === 1 ? 0.01 : 0.1}
+															onchange={(event) => {
+																const value = Number((event.currentTarget as HTMLInputElement).value);
+																void onFloatChange?.(channel.key, Number.isFinite(value) ? value : 0);
+															}}
+														/>
+													{/if}
 												</div>
 											{/each}
 										</div>
@@ -545,10 +604,19 @@
 										<div class="flex flex-wrap gap-2">
 											{#each group.colorChannels as channel (channel.key)}
 												<div class="flex h-8 items-center gap-2 rounded-lg border border-border/70 bg-background/55 px-2.5 text-xs" title={`${channel.label} - ${channel.key}`}>
-													<span
-														class="size-4 rounded-full border border-black/10"
-														style={`background: ${channel.currentValue ? rgb(channel.currentValue) : 'transparent'}`}
-													></span>
+													{#if simulationEnabled}
+														<input
+															class="size-5 rounded border border-black/10 bg-transparent p-0"
+															type="color"
+															value={colorToHex(channel.currentValue)}
+															onchange={(event) => onColorChange?.(channel.key, colorFromHex((event.currentTarget as HTMLInputElement).value))}
+														/>
+													{:else}
+														<span
+															class="size-4 rounded-full border border-black/10"
+															style={`background: ${channel.currentValue ? rgb(channel.currentValue) : 'transparent'}`}
+														></span>
+													{/if}
 													<span>{channel.label}</span>
 												</div>
 											{/each}

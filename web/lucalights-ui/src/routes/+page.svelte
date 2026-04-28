@@ -23,11 +23,14 @@
 	import {
 		apiGet,
 		apiPost,
+		apiPut,
 		createSocket,
 		protocolLabel,
 		toMessage,
+		type ColorValue,
 		type Device,
 		type InputDefinition,
+		type InputSimulationState,
 		type InputSnapshot,
 		type NodeTypesResponse,
 		type RuntimeEnvelope,
@@ -36,6 +39,8 @@
 
 	let systemStatus = $state<SystemStatus | null>(null);
 	let inputSnapshot = $state<InputSnapshot | null>(null);
+	let inputSimulation = $state<InputSimulationState | null>(null);
+	let simulationModuleId = $state("");
 	let inputModules = $state<InputDefinition[]>([]);
 	let devices = $state<Device[]>([]);
 	let nodeTypeCount = $state(0);
@@ -46,7 +51,7 @@
 	let errorMessage = $state("");
 
 	let activeModuleDefinition = $derived(
-		inputModules.find((moduleDefinition) => moduleDefinition.moduleId === systemStatus?.input.activeModuleId)
+		inputModules.find((moduleDefinition) => moduleDefinition.moduleId === (inputSimulation?.enabled ? inputSimulation.moduleId : systemStatus?.input.activeModuleId))
 	);
 	let inputConnected = $derived(inputSnapshot?.isConnected ?? systemStatus?.input.connected ?? false);
 
@@ -54,10 +59,11 @@
 		refreshing = true;
 
 		try {
-			const [status, snapshot, moduleDefinitions, deviceList, nodeTypes] =
+			const [status, snapshot, simulation, moduleDefinitions, deviceList, nodeTypes] =
 				await Promise.all([
 					apiGet<SystemStatus>("/api/system/status"),
 					apiGet<InputSnapshot>("/api/input-state"),
+					apiGet<InputSimulationState>("/api/input-simulation"),
 					apiGet<InputDefinition[]>("/api/input-modules"),
 					apiGet<Device[]>("/api/devices"),
 					apiGet<NodeTypesResponse>("/api/node-types")
@@ -65,7 +71,9 @@
 
 			systemStatus = status;
 			inputSnapshot = snapshot;
+			inputSimulation = simulation;
 			inputModules = moduleDefinitions;
+			simulationModuleId = simulation.moduleId || status.input.activeModuleId || moduleDefinitions[0]?.moduleId || "";
 			devices = deviceList;
 			nodeTypeCount = nodeTypes.nodeTypes.length;
 			errorMessage = "";
@@ -86,6 +94,71 @@
 			errorMessage = toMessage(error);
 		} finally {
 			restarting = false;
+		}
+	}
+
+	async function setInputSimulation(enabled: boolean) {
+		const moduleId = simulationModuleId || inputModules[0]?.moduleId;
+		if (!moduleId) {
+			return;
+		}
+
+		try {
+			const result = await apiPut<{ simulation: InputSimulationState; snapshot: InputSnapshot | null }>("/api/input-simulation", {
+				moduleId,
+				enabled
+			});
+			inputSimulation = result.simulation;
+			if (result.snapshot) {
+				applySnapshot(result.snapshot);
+			}
+			if (systemStatus) {
+				systemStatus = {
+					...systemStatus,
+					input: {
+						...systemStatus.input,
+						activeModuleId: enabled ? moduleId : systemStatus.input.activeModuleId,
+						connected: result.snapshot?.isConnected ?? systemStatus.input.connected,
+						active: result.snapshot?.isActive ?? systemStatus.input.active
+					}
+				};
+			}
+			errorMessage = "";
+		} catch (error) {
+			errorMessage = toMessage(error);
+		}
+	}
+
+	async function setSimulationBool(key: string, value: boolean) {
+		await applySimulationSnapshot(
+			apiPut<InputSnapshot>(`/api/input-simulation/bool/${encodeURIComponent(key)}`, { value })
+		);
+	}
+
+	async function triggerSimulationPulse(key: string) {
+		await applySimulationSnapshot(
+			apiPost<InputSnapshot>(`/api/input-simulation/pulse/${encodeURIComponent(key)}`)
+		);
+	}
+
+	async function setSimulationFloat(key: string, value: number) {
+		await applySimulationSnapshot(
+			apiPut<InputSnapshot>(`/api/input-simulation/float/${encodeURIComponent(key)}`, { value })
+		);
+	}
+
+	async function setSimulationColor(key: string, value: ColorValue) {
+		await applySimulationSnapshot(
+			apiPut<InputSnapshot>(`/api/input-simulation/color/${encodeURIComponent(key)}`, value)
+		);
+	}
+
+	async function applySimulationSnapshot(request: Promise<InputSnapshot>) {
+		try {
+			applySnapshot(await request);
+			errorMessage = "";
+		} catch (error) {
+			errorMessage = toMessage(error);
 		}
 	}
 
@@ -337,12 +410,50 @@
 				<LiveInputPreview
 					snapshot={inputSnapshot}
 					moduleDefinition={activeModuleDefinition}
-					moduleLabel={moduleLabel(systemStatus?.input.activeModuleId)}
+					moduleLabel={moduleLabel(inputSimulation?.enabled ? inputSimulation.moduleId : systemStatus?.input.activeModuleId)}
 					connected={inputConnected}
+					simulationEnabled={inputSimulation?.enabled ?? false}
+					onBoolChange={setSimulationBool}
+					onPulseTrigger={triggerSimulationPulse}
+					onFloatChange={setSimulationFloat}
+					onColorChange={setSimulationColor}
 				/>
 			</div>
 
 			<div class="space-y-6">
+				<Card class="border-surface-card-border bg-surface-card-alt shadow-sm backdrop-blur">
+					<CardHeader>
+						<CardTitle>Input Simulation</CardTitle>
+						<CardDescription>
+							Publish a fake module snapshot through the normal graph input pipeline.
+						</CardDescription>
+						<CardAction>
+							<Badge variant={inputSimulation?.enabled ? "default" : "outline"}>
+								{inputSimulation?.enabled ? "Active" : "Off"}
+							</Badge>
+						</CardAction>
+					</CardHeader>
+					<CardContent class="space-y-3">
+						<select
+							class="h-10 w-full rounded-xl border border-border/70 bg-background/80 px-3 text-sm outline-none focus:border-ring"
+							value={simulationModuleId}
+							disabled={inputSimulation?.enabled}
+							onchange={(event) => simulationModuleId = (event.currentTarget as HTMLSelectElement).value}
+						>
+							{#each inputModules as moduleDefinition}
+								<option value={moduleDefinition.moduleId}>{moduleDefinition.displayName}</option>
+							{/each}
+						</select>
+						<div class="flex flex-wrap gap-2">
+							{#if inputSimulation?.enabled}
+								<Button variant="outline" onclick={() => setInputSimulation(false)}>Stop Simulation</Button>
+							{:else}
+								<Button onclick={() => setInputSimulation(true)} disabled={!simulationModuleId}>Simulate Module</Button>
+							{/if}
+						</div>
+					</CardContent>
+				</Card>
+
 				<Card class="border-surface-card-border bg-surface-card-alt shadow-sm backdrop-blur">
 					<CardHeader>
 						<CardTitle>Devices</CardTitle>

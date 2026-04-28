@@ -123,6 +123,21 @@ public sealed class LightingManager : IDisposable
                 continue;
             }
 
+            var shouldRaiseSettingsApplied = false;
+            lock (_syncRoot)
+            {
+                if (_settings.Dirty)
+                {
+                    ApplySettingsUnsafe();
+                    shouldRaiseSettingsApplied = true;
+                }
+            }
+
+            if (shouldRaiseSettingsApplied)
+            {
+                SettingsApplied?.Invoke();
+            }
+
             if (!IsInputConnected(inputSnapshot))
             {
                 if (!_cleared && _options.ClearOutputWhenInactive)
@@ -144,7 +159,6 @@ public sealed class LightingManager : IDisposable
             }
 
             LightingFrameContext frameContext;
-            var shouldRaiseSettingsApplied = false;
 
             lock (_syncRoot)
             {
