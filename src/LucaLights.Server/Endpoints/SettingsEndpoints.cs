@@ -4,6 +4,7 @@ using LucaLights.Core.GameInput;
 using LucaLights.Core.GameInput.Modules;
 using LucaLights.Core.Models;
 using LucaLights.Core.NodeEngine;
+using CoreColor = LucaLights.Core.Color;
 using LucaLights.Server.Services;
 using Microsoft.AspNetCore.Mvc;
 
@@ -27,6 +28,9 @@ public static class SettingsEndpoints
         endpoints.MapGet("/api/devices/{deviceId}/segments/{segmentId}", GetSegment);
         endpoints.MapPut("/api/devices/{deviceId}/segments/{segmentId}", UpdateSegment);
         endpoints.MapDelete("/api/devices/{deviceId}/segments/{segmentId}", DeleteSegment);
+
+        endpoints.MapPost("/api/layout-preview", SetLayoutPreview);
+        endpoints.MapDelete("/api/layout-preview", ClearLayoutPreview);
 
         return endpoints;
     }
@@ -345,6 +349,56 @@ public static class SettingsEndpoints
         return Results.NoContent();
     }
 
+    private static IResult SetLayoutPreview(
+        LayoutPreviewRequest request,
+        Settings settings,
+        LightingManager lightingManager)
+    {
+        if (request is null)
+        {
+            return Results.BadRequest("Preview body is required.");
+        }
+
+        if (string.IsNullOrWhiteSpace(request.DeviceId) || string.IsNullOrWhiteSpace(request.SegmentId))
+        {
+            return Results.BadRequest("Preview target is required.");
+        }
+
+        if (request.Colors is null)
+        {
+            return Results.BadRequest("Preview colors are required.");
+        }
+
+        lock (lightingManager.SyncRoot)
+        {
+            var device = FindDevice(settings, request.DeviceId);
+            if (device is null)
+            {
+                return Results.NotFound();
+            }
+
+            var segmentIndex = FindSegmentIndex(device, request.SegmentId);
+            if (segmentIndex < 0)
+            {
+                return Results.NotFound();
+            }
+        }
+
+        var colors = request.Colors
+            .Select(color => CoreColor.FromRgb(ClampByte(color.R), ClampByte(color.G), ClampByte(color.B)))
+            .ToArray();
+
+        lightingManager.SetLayoutPreviewFrame(request.DeviceId, request.SegmentId, colors);
+
+        return Results.NoContent();
+    }
+
+    private static IResult ClearLayoutPreview(LightingManager lightingManager)
+    {
+        lightingManager.ClearLayoutPreviewFrame();
+        return Results.NoContent();
+    }
+
     private static void SaveDirty(
         Settings settings,
         ConfigManager configManager,
@@ -414,4 +468,13 @@ public static class SettingsEndpoints
     }
 
     private sealed record SettingsResponse(string SettingsPath, Settings Settings);
+
+    private sealed record LayoutPreviewRequest(
+        string DeviceId,
+        string SegmentId,
+        IReadOnlyList<LayoutPreviewColor> Colors);
+
+    private sealed record LayoutPreviewColor(int R, int G, int B);
+
+    private static byte ClampByte(int value) => (byte)Math.Clamp(value, byte.MinValue, byte.MaxValue);
 }

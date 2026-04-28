@@ -17,6 +17,7 @@ public sealed class LightingManager : IDisposable
 
     private CancellationTokenSource? _run;
     private Thread? _thread;
+    private LayoutPreviewFrame? _layoutPreviewFrame;
     private bool _disposed;
     private bool _cleared = true;
     private long _frameIndex;
@@ -47,6 +48,17 @@ public sealed class LightingManager : IDisposable
     public object SyncRoot => _syncRoot;
 
     public bool IsRunning => _thread?.IsAlive == true;
+
+    public bool IsLayoutPreviewActive
+    {
+        get
+        {
+            lock (_syncRoot)
+            {
+                return _layoutPreviewFrame is not null;
+            }
+        }
+    }
 
     public void Start()
     {
@@ -103,6 +115,13 @@ public sealed class LightingManager : IDisposable
         {
             sw.Restart();
             var inputSnapshot = _gameInputManager?.LatestSnapshot ?? InputSnapshot.Empty;
+
+            if (TryRenderLayoutPreviewFrame(inputSnapshot, out var previewFrameContext))
+            {
+                FrameRendered?.Invoke(previewFrameContext);
+                SleepUntilNextFrame(sw, targetFrameTimeMs, token);
+                continue;
+            }
 
             if (!IsInputConnected(inputSnapshot))
             {
@@ -162,19 +181,108 @@ public sealed class LightingManager : IDisposable
             // Clear any pulse/edge-triggered inputs now that this frame has consumed them.
             _gameInputManager?.AcknowledgePulses(inputSnapshot);
 
-            var remaining = targetFrameTimeMs - (int)sw.ElapsedMilliseconds;
-            if (remaining > 1)
-            {
-                Thread.Sleep(remaining - 1);
-            }
-
-            while (sw.ElapsedMilliseconds < targetFrameTimeMs && !token.IsCancellationRequested)
-            {
-                Thread.SpinWait(64);
-            }
+            SleepUntilNextFrame(sw, targetFrameTimeMs, token);
         }
 
         _log?.Invoke("LightingManager stopped.");
+    }
+
+    public void SetLayoutPreviewFrame(string deviceId, string segmentId, IReadOnlyList<Color> colors)
+    {
+        ArgumentException.ThrowIfNullOrWhiteSpace(deviceId);
+        ArgumentException.ThrowIfNullOrWhiteSpace(segmentId);
+        ArgumentNullException.ThrowIfNull(colors);
+
+        lock (_syncRoot)
+        {
+            _layoutPreviewFrame = new LayoutPreviewFrame(deviceId, segmentId, colors.ToArray());
+        }
+    }
+
+    public void ClearLayoutPreviewFrame()
+    {
+        lock (_syncRoot)
+        {
+            if (_layoutPreviewFrame is null)
+            {
+                return;
+            }
+
+            _layoutPreviewFrame = null;
+            ClearSegmentBuffersUnsafe();
+
+            if (_shouldSendOutput())
+            {
+                SendDevicesUnsafe();
+            }
+
+            _cleared = true;
+        }
+    }
+
+    private bool TryRenderLayoutPreviewFrame(InputSnapshot inputSnapshot, out LightingFrameContext frameContext)
+    {
+        frameContext = default!;
+
+        lock (_syncRoot)
+        {
+            if (_layoutPreviewFrame is not { } previewFrame)
+            {
+                return false;
+            }
+
+            if (_settings.Dirty)
+            {
+                ApplySettingsUnsafe();
+                SettingsApplied?.Invoke();
+            }
+
+            ClearSegmentBuffersUnsafe();
+            ApplyLayoutPreviewFrameUnsafe(previewFrame);
+
+            var elapsed = _globalTimer.Elapsed;
+            var delta = elapsed - _previousElapsed;
+            _previousElapsed = elapsed;
+            frameContext = new LightingFrameContext(++_frameIndex, elapsed, delta, inputSnapshot);
+
+            if (_shouldSendOutput())
+            {
+                SendDevicesUnsafe();
+            }
+
+            _cleared = false;
+            return true;
+        }
+    }
+
+    private void ApplyLayoutPreviewFrameUnsafe(LayoutPreviewFrame previewFrame)
+    {
+        var device = _settings.Devices.FirstOrDefault(
+            candidate => string.Equals(candidate.Id, previewFrame.DeviceId, StringComparison.OrdinalIgnoreCase));
+        var segment = device?.Segments.FirstOrDefault(
+            candidate => string.Equals(candidate.Id, previewFrame.SegmentId, StringComparison.OrdinalIgnoreCase));
+
+        if (segment is null)
+        {
+            return;
+        }
+
+        var count = Math.Min(segment.Leds.Length, previewFrame.Colors.Length);
+        Array.Copy(previewFrame.Colors, segment.Leds, count);
+    }
+
+    private static void SleepUntilNextFrame(Stopwatch sw, int targetFrameTimeMs, CancellationToken token)
+    {
+        var remaining = targetFrameTimeMs - (int)sw.ElapsedMilliseconds;
+        if (remaining > 1)
+        {
+            Thread.Sleep(remaining - 1);
+        }
+
+        while (sw.ElapsedMilliseconds < targetFrameTimeMs && !token.IsCancellationRequested)
+        {
+            Thread.SpinWait(64);
+        }
     }
 
     private void ApplySettingsUnsafe()
@@ -240,4 +348,6 @@ public sealed class LightingManager : IDisposable
 
         return inputSnapshot.IsConnected;
     }
+
+    private sealed record LayoutPreviewFrame(string DeviceId, string SegmentId, Color[] Colors);
 }

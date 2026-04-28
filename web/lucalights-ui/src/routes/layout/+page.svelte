@@ -1,11 +1,12 @@
 <script lang="ts">
-	import { onMount } from 'svelte';
+	import { onDestroy, onMount } from 'svelte';
 	import {
 		Circle,
 		FlipHorizontal,
 		FlipVertical,
 		Grid3X3,
 		Loader2,
+		Palette,
 		Route,
 		RotateCcw,
 		RotateCw,
@@ -23,7 +24,9 @@
 		CardTitle
 	} from '$lib/components/ui/card';
 	import {
+		apiDelete,
 		apiGet,
+		apiPost,
 		apiPut,
 		toMessage,
 		type Device,
@@ -33,6 +36,7 @@
 
 	const pointRadius = 0.014;
 	const handleSize = 0.026;
+	const previewBandCount = 64;
 
 	type SelectionBounds = {
 		x: number;
@@ -84,6 +88,8 @@
 	let canvasElement = $state<SVGSVGElement | null>(null);
 	let selectedLedIndices = $state<number[]>([]);
 	let dragOperation = $state<DragOperation | null>(null);
+	let previewEnabled = $state(false);
+	let previewSending = $state(false);
 	let marquee = $state<{
 		start: LedLayoutPoint;
 		current: LedLayoutPoint;
@@ -119,6 +125,18 @@
 	let activeSelectionRotation = $derived(
 		dragOperation?.type === 'rotate' ? (dragOperation.currentDelta * 180) / Math.PI : 0
 	);
+	let previewBands = $derived(
+		Array.from({ length: previewBandCount }, (_, index) => {
+			const y = (index + 0.5) / previewBandCount;
+			const green = Math.round((1 - y) * 255);
+			return {
+				y: index / previewBandCount,
+				height: 1 / previewBandCount + 0.001,
+				left: `rgb(0 ${green} 0)`,
+				right: `rgb(255 ${green} 0)`
+			};
+		})
+	);
 
 	function cloneLayout(segment: Segment | null) {
 		return normalizeLayout(segment?.layout ?? [], segment?.length ?? 0);
@@ -145,6 +163,19 @@
 
 	function clamp01(value: number) {
 		return Number.isFinite(value) ? Math.min(1, Math.max(0, value)) : 0;
+	}
+
+	function sampleUvColor(point: LedLayoutPoint) {
+		return {
+			r: Math.round(clamp01(point.x) * 255),
+			g: Math.round((1 - clamp01(point.y)) * 255),
+			b: 0
+		};
+	}
+
+	function previewColorCss(point: LedLayoutPoint) {
+		const color = sampleUvColor(point);
+		return `fill: rgb(${color.r} ${color.g} ${color.b});`;
 	}
 
 	function selectSegment(deviceId: string, segmentId: string) {
@@ -749,6 +780,48 @@
 		successMessage = '';
 	}
 
+	async function setPreviewEnabled(enabled: boolean) {
+		previewEnabled = enabled;
+
+		if (!enabled) {
+			await clearLayoutPreview();
+			return;
+		}
+
+		await sendLayoutPreview();
+	}
+
+	async function sendLayoutPreview() {
+		if (!previewEnabled || !selectedDevice || !selectedSegment) return;
+
+		previewSending = true;
+
+		try {
+			await apiPost<void>('/api/layout-preview', {
+				deviceId: selectedDevice.id,
+				segmentId: selectedSegment.id,
+				colors: normalizeLayout(layoutDraft, selectedSegment.length).map(sampleUvColor)
+			});
+			errorMessage = '';
+		} catch (error) {
+			errorMessage = toMessage(error);
+		} finally {
+			previewSending = false;
+		}
+	}
+
+	async function clearLayoutPreview() {
+		previewSending = true;
+
+		try {
+			await apiDelete<void>('/api/layout-preview');
+		} catch (error) {
+			errorMessage = toMessage(error);
+		} finally {
+			previewSending = false;
+		}
+	}
+
 	function startSegmentLayoutDrag(segment: Segment, event: DragEvent) {
 		if (!event.dataTransfer) return;
 
@@ -835,6 +908,23 @@
 
 	onMount(() => {
 		void loadDevices();
+	});
+
+	onDestroy(() => {
+		if (previewEnabled) {
+			void clearLayoutPreview();
+		}
+	});
+
+	$effect(() => {
+		if (!previewEnabled || !selectedDevice || !selectedSegment) return;
+
+		layoutDraft;
+		const timeout = window.setTimeout(() => {
+			void sendLayoutPreview();
+		}, 80);
+
+		return () => window.clearTimeout(timeout);
 	});
 </script>
 
@@ -959,7 +1049,11 @@
 						<svg
 							bind:this={canvasElement}
 							viewBox="0 0 1 1"
-							class="aspect-square w-full touch-none rounded-xl bg-[linear-gradient(to_right,rgba(127,127,127,0.14)_1px,transparent_1px),linear-gradient(to_bottom,rgba(127,127,127,0.14)_1px,transparent_1px)] bg-[size:10%_10%]"
+							class={`aspect-square w-full touch-none rounded-xl ${
+								previewEnabled
+									? 'bg-background'
+									: 'bg-[linear-gradient(to_right,rgba(127,127,127,0.14)_1px,transparent_1px),linear-gradient(to_bottom,rgba(127,127,127,0.14)_1px,transparent_1px)] bg-[size:10%_10%]'
+							}`}
 							role="img"
 							aria-label="LED layout canvas"
 							onpointermove={dragPoint}
@@ -969,6 +1063,34 @@
 							ondragover={allowLayoutDrop}
 							ondrop={dropSegmentLayout}
 						>
+							{#if previewEnabled}
+								<defs>
+									{#each previewBands as band, index}
+										<linearGradient id={`layout-preview-band-${index}`} x1="0" y1="0" x2="1" y2="0">
+											<stop offset="0%" stop-color={band.left} />
+											<stop offset="100%" stop-color={band.right} />
+										</linearGradient>
+									{/each}
+									<pattern id="layout-preview-grid" width="0.1" height="0.1" patternUnits="userSpaceOnUse">
+										<path
+											d="M 0.1 0 L 0 0 0 0.1"
+											fill="none"
+											stroke="rgba(255,255,255,0.24)"
+											stroke-width="0.002"
+										/>
+									</pattern>
+								</defs>
+								{#each previewBands as band, index}
+									<rect
+										x="0"
+										y={band.y}
+										width="1"
+										height={band.height}
+										fill={`url(#layout-preview-band-${index})`}
+									/>
+								{/each}
+								<rect x="0" y="0" width="1" height="1" fill="url(#layout-preview-grid)" />
+							{/if}
 							<rect x="0" y="0" width="1" height="1" fill="transparent" />
 							{#if layoutDraft.length > 1}
 								<polyline
@@ -1002,11 +1124,18 @@
 										cx={point.x}
 										cy={point.y}
 										r={pointRadius}
-										class={index === 0
-											? 'fill-emerald-400 stroke-background'
-											: isSelected(index)
-												? 'fill-amber-300 stroke-primary'
-												: 'fill-primary stroke-background'}
+										style={previewEnabled ? previewColorCss(point) : ''}
+										class={previewEnabled
+											? index === 0
+												? 'stroke-fuchsia-300'
+												: isSelected(index)
+													? 'stroke-amber-300'
+													: 'stroke-background'
+											: index === 0
+												? 'fill-emerald-400 stroke-background'
+												: isSelected(index)
+													? 'fill-amber-300 stroke-primary'
+													: 'fill-primary stroke-background'}
 										stroke-width={isSelected(index) ? '0.01' : '0.006'}
 									/>
 								</g>
@@ -1076,6 +1205,23 @@
 					<CardDescription>Generate a starting shape, then drag points into place.</CardDescription>
 				</CardHeader>
 				<CardContent class="space-y-5">
+					<div class="space-y-3">
+						<p class="text-sm font-medium">Preview</p>
+						<Button
+							variant={previewEnabled ? 'default' : 'outline'}
+							onclick={() => void setPreviewEnabled(!previewEnabled)}
+							disabled={!selectedSegment || previewSending}
+							class="w-full"
+						>
+							{#if previewSending}
+								<Loader2 class="animate-spin" />
+							{:else}
+								<Palette />
+							{/if}
+							{previewEnabled ? 'Stop UV Preview' : 'UV Preview'}
+						</Button>
+					</div>
+
 					<div class="grid gap-2">
 						<Button variant="outline" onclick={applyLine} disabled={!selectedSegment}>
 							<Route />
