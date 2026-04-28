@@ -25,7 +25,9 @@ public sealed class GraphRuntimeEvaluator
         int GlobalLength,
         float GlobalNormalized,
         float LayoutX,
-        float LayoutY);
+        float LayoutY,
+        float GlobalX,
+        float GlobalY);
 
     private readonly NodeGraphCompiler _nodeGraphCompiler;
     private readonly INodeTypeCatalog _nodeTypeCatalog;
@@ -160,9 +162,9 @@ public sealed class GraphRuntimeEvaluator
                         ? (float)globalIndex / (target.GlobalLength - 1)
                         : 0f;
 
-                    var layoutPoint = i < segment.Layout.Count
-                        ? segment.Layout[i].Clamp()
-                        : Segment.CreateLinearFallbackPoint(i, length);
+                    var pixelLayout = i < target.Pixels.Length
+                        ? target.Pixels[i]
+                        : PixelLayoutCoordinate.CreateFallback(i, length);
 
                     _currentPixel = new PixelContext(
                         i,
@@ -176,8 +178,10 @@ public sealed class GraphRuntimeEvaluator
                         globalIndex,
                         target.GlobalLength,
                         globalNormalized,
-                        layoutPoint.X,
-                        layoutPoint.Y);
+                        pixelLayout.LayoutX,
+                        pixelLayout.LayoutY,
+                        pixelLayout.GlobalX,
+                        pixelLayout.GlobalY);
                     _currentSegment = segment;
 
                     EvaluateGraph(preparedEffect, frameContext);
@@ -243,7 +247,7 @@ public sealed class GraphRuntimeEvaluator
 
                 case NodeOp.PixelInfo:
                 {
-                    var px = _currentPixel ?? new PixelContext(0, 1, 0f, 0, 0, 0, 1, 0f, 0, 1, 0f, 0f, 0f);
+                    var px = _currentPixel ?? new PixelContext(0, 1, 0f, 0, 0, 0, 1, 0f, 0, 1, 0f, 0f, 0f, 0f, 0f);
                     WriteOutput(preparedEffect, node, 0, RuntimeValue.FromFloat(px.Index));
                     WriteOutput(preparedEffect, node, 1, RuntimeValue.FromFloat(px.Length));
                     WriteOutput(preparedEffect, node, 2, RuntimeValue.FromFloat(px.Normalized));
@@ -257,6 +261,8 @@ public sealed class GraphRuntimeEvaluator
                     WriteOutput(preparedEffect, node, 10, RuntimeValue.FromFloat(px.GlobalNormalized));
                     WriteOutput(preparedEffect, node, 11, RuntimeValue.FromFloat(px.LayoutX));
                     WriteOutput(preparedEffect, node, 12, RuntimeValue.FromFloat(px.LayoutY));
+                    WriteOutput(preparedEffect, node, 13, RuntimeValue.FromFloat(px.GlobalX));
+                    WriteOutput(preparedEffect, node, 14, RuntimeValue.FromFloat(px.GlobalY));
                     break;
                 }
 
@@ -1968,7 +1974,21 @@ internal readonly record struct PixelTarget(
     int DeviceStartIndex,
     int DeviceLength,
     int GlobalStartIndex,
-    int GlobalLength);
+    int GlobalLength,
+    PixelLayoutCoordinate[] Pixels);
+
+internal readonly record struct PixelLayoutCoordinate(
+    float LayoutX,
+    float LayoutY,
+    float GlobalX,
+    float GlobalY)
+{
+    public static PixelLayoutCoordinate CreateFallback(int index, int length)
+    {
+        var point = Segment.CreateLinearFallbackPoint(index, length);
+        return new PixelLayoutCoordinate(point.X, point.Y, point.X, point.Y);
+    }
+}
 
 internal static class PixelTargetLayout
 {
@@ -2010,7 +2030,8 @@ internal static class PixelTargetLayout
                         deviceStartIndex,
                         deviceLength,
                         globalStartIndex,
-                        globalLength));
+                        globalLength,
+                        BuildPixelCoordinates(settings, segment)));
                     globalStartIndex += segment.Leds.Length;
                 }
 
@@ -2019,6 +2040,39 @@ internal static class PixelTargetLayout
         }
 
         return targets.ToArray();
+    }
+
+    private static PixelLayoutCoordinate[] BuildPixelCoordinates(Settings settings, Segment segment)
+    {
+        var pixels = new PixelLayoutCoordinate[segment.Leds.Length];
+        var placement = settings.RoomLayout?.FindPlacement(segment.Id);
+
+        for (var i = 0; i < pixels.Length; i++)
+        {
+            var point = i < segment.Layout.Count
+                ? segment.Layout[i].Clamp()
+                : Segment.CreateLinearFallbackPoint(i, pixels.Length);
+            var global = placement is null
+                ? point
+                : TransformPoint(point, placement);
+
+            pixels[i] = new PixelLayoutCoordinate(point.X, point.Y, global.X, global.Y);
+        }
+
+        return pixels;
+    }
+
+    private static LedLayoutPoint TransformPoint(LedLayoutPoint point, SegmentPlacement placement)
+    {
+        var radians = placement.Rotation * MathF.PI / 180f;
+        var cos = MathF.Cos(radians);
+        var sin = MathF.Sin(radians);
+        var localX = (point.X - 0.5f) * placement.ScaleX;
+        var localY = (point.Y - 0.5f) * placement.ScaleY;
+
+        return new LedLayoutPoint(
+            placement.X + localX * cos - localY * sin,
+            placement.Y + localX * sin + localY * cos);
     }
 }
 

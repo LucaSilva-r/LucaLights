@@ -19,6 +19,9 @@ public sealed class Settings
     [JsonPropertyName("graph")]
     public NodeGraph Graph { get; set; } = new();
 
+    [JsonPropertyName("roomLayout")]
+    public RoomLayout RoomLayout { get; set; } = new();
+
     [JsonPropertyName("activeInputModuleId")]
     public string ActiveInputModuleId { get; set; } = DefaultInputModuleId;
 
@@ -33,6 +36,7 @@ public sealed class Settings
     {
         Devices ??= [];
         Graph ??= new NodeGraph();
+        RoomLayout ??= new RoomLayout();
         ActiveInputModuleId = string.IsNullOrWhiteSpace(ActiveInputModuleId)
             ? DefaultInputModuleId
             : ActiveInputModuleId;
@@ -52,6 +56,7 @@ public sealed class Settings
             }
         }
 
+        RoomLayout.Normalize(Devices);
         EnsureDefaults();
     }
 

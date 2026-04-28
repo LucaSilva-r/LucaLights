@@ -33,6 +33,19 @@ export interface Device {
 	segments: Segment[];
 }
 
+export interface SegmentPlacement {
+	segmentId: string;
+	x: number;
+	y: number;
+	rotation: number;
+	scaleX: number;
+	scaleY: number;
+}
+
+export interface RoomLayout {
+	placements: SegmentPlacement[];
+}
+
 export interface SystemStatus {
 	lighting: {
 		running: boolean;

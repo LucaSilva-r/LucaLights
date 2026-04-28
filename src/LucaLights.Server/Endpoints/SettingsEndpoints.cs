@@ -16,6 +16,8 @@ public static class SettingsEndpoints
     {
         endpoints.MapGet("/api/settings", GetSettings);
         endpoints.MapPut("/api/settings", ReplaceSettings);
+        endpoints.MapGet("/api/room-layout", GetRoomLayout);
+        endpoints.MapPut("/api/room-layout", UpdateRoomLayout);
 
         endpoints.MapGet("/api/devices", ListDevices);
         endpoints.MapPost("/api/devices", CreateDevice);
@@ -75,6 +77,7 @@ public static class SettingsEndpoints
 
             settings.Devices = replacement.Devices;
             settings.Graph = replacement.Graph;
+            settings.RoomLayout = replacement.RoomLayout;
             settings.ActiveInputModuleId = activeInputModuleId;
             settings.InputModuleSettings = replacement.InputModuleSettings;
 
@@ -102,6 +105,37 @@ public static class SettingsEndpoints
         {
             return Results.Ok(settings.Devices.ToArray());
         }
+    }
+
+    private static IResult GetRoomLayout(Settings settings, LightingManager lightingManager)
+    {
+        lock (lightingManager.SyncRoot)
+        {
+            settings.RoomLayout.Normalize(settings.Devices);
+            return Results.Ok(settings.RoomLayout);
+        }
+    }
+
+    private static IResult UpdateRoomLayout(
+        RoomLayout roomLayout,
+        Settings settings,
+        ConfigManager configManager,
+        RuntimeEventBroadcaster eventBroadcaster,
+        LightingManager lightingManager)
+    {
+        if (roomLayout is null)
+        {
+            return Results.BadRequest("Room layout body is required.");
+        }
+
+        lock (lightingManager.SyncRoot)
+        {
+            roomLayout.Normalize(settings.Devices);
+            settings.RoomLayout = roomLayout;
+            SaveDirty(settings, configManager, eventBroadcaster, "room-layout.updated");
+        }
+
+        return Results.Ok(settings.RoomLayout);
     }
 
     private static IResult CreateDevice(
@@ -414,6 +448,8 @@ public static class SettingsEndpoints
     private static void NormalizeSettings(Settings settings)
     {
         settings.Normalize();
+        settings.RoomLayout ??= new RoomLayout();
+        settings.RoomLayout.Normalize(settings.Devices);
         NodeGraphCompiler.NormalizeGraph(settings.Graph);
 
         foreach (var device in settings.Devices)

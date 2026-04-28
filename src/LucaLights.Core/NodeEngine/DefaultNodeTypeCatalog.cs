@@ -770,7 +770,9 @@ public sealed class DefaultNodeTypeCatalog : INodeTypeCatalog
                 Output("globalLength", "Global Count", NodeValueType.Float, "Total number of LEDs across all rendered target segments."),
                 Output("globalNormalized", "Global Position", NodeValueType.Float, "Pixel position normalized across all rendered target segments."),
                 Output("layoutX", "Layout X", NodeValueType.Float, "Authored LED X coordinate normalized from 0 to 1."),
-                Output("layoutY", "Layout Y", NodeValueType.Float, "Authored LED Y coordinate normalized from 0 to 1.")
+                Output("layoutY", "Layout Y", NodeValueType.Float, "Authored LED Y coordinate normalized from 0 to 1."),
+                Output("globalX", "Global X", NodeValueType.Float, "LED X coordinate after room layout placement."),
+                Output("globalY", "Global Y", NodeValueType.Float, "LED Y coordinate after room layout placement.")
             ],
             []);
     }
