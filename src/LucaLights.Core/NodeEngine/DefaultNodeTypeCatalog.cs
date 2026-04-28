@@ -53,7 +53,11 @@ public sealed class DefaultNodeTypeCatalog : INodeTypeCatalog
             TimePulse(),
             TimeEnvelope(),
             TimeBlink(),
-            PixelInfo(),
+            PixelSegmentIndex(),
+            PixelDeviceIndex(),
+            PixelGlobalIndex(),
+            PixelLocalPosition(),
+            PixelGlobalPosition(),
             SegmentColorOutput()
         ];
 
@@ -749,33 +753,70 @@ public sealed class DefaultNodeTypeCatalog : INodeTypeCatalog
             ]);
     }
 
-    private static NodeTypeDefinition PixelInfo()
-    {
-        return new NodeTypeDefinition(
-            "pixel.info",
-            "Pixel Info",
-            "Segment",
-            "Outputs current pixel layout coordinates when evaluated per-pixel.",
-            [],
-            [
-                Output("index", "Segment Pixel", NodeValueType.Float, "Zero-based pixel index within the segment."),
-                Output("length", "Segment Count", NodeValueType.Float, "Total number of LEDs in the segment."),
-                Output("normalized", "Segment Position", NodeValueType.Float, "Pixel position normalized within the segment."),
-                Output("deviceIndex", "Device #", NodeValueType.Float, "Zero-based index of the device containing the current pixel."),
-                Output("segmentIndex", "Segment #", NodeValueType.Float, "Zero-based index of the segment within its device."),
-                Output("devicePixelIndex", "Device Pixel", NodeValueType.Float, "Zero-based pixel index within the device, spanning its segments."),
-                Output("deviceLength", "Device Count", NodeValueType.Float, "Total number of LEDs in the current device."),
-                Output("deviceNormalized", "Device Position", NodeValueType.Float, "Pixel position normalized across the current device."),
-                Output("globalIndex", "Global Pixel", NodeValueType.Float, "Zero-based pixel index across all rendered target segments."),
-                Output("globalLength", "Global Count", NodeValueType.Float, "Total number of LEDs across all rendered target segments."),
-                Output("globalNormalized", "Global Position", NodeValueType.Float, "Pixel position normalized across all rendered target segments."),
-                Output("layoutX", "Layout X", NodeValueType.Float, "Authored LED X coordinate normalized from 0 to 1."),
-                Output("layoutY", "Layout Y", NodeValueType.Float, "Authored LED Y coordinate normalized from 0 to 1."),
-                Output("globalX", "Global X", NodeValueType.Float, "LED X coordinate after room layout placement."),
-                Output("globalY", "Global Y", NodeValueType.Float, "LED Y coordinate after room layout placement.")
-            ],
-            []);
-    }
+    private static NodeTypeDefinition PixelSegmentIndex() => new(
+        "pixel.segment-index",
+        "Segment Pixel",
+        "Segment",
+        "Outputs the current pixel index within its segment.",
+        [],
+        [
+            Output("index", "Pixel", NodeValueType.Float, "Zero-based pixel index within the segment."),
+            Output("length", "Count", NodeValueType.Float, "Total number of LEDs in the segment."),
+            Output("normalized", "Position", NodeValueType.Float, "Pixel position normalized within the segment.")
+        ],
+        []);
+
+    private static NodeTypeDefinition PixelDeviceIndex() => new(
+        "pixel.device-index",
+        "Device Pixel",
+        "Segment",
+        "Outputs the current pixel index within its device.",
+        [],
+        [
+            Output("deviceIndex", "Device #", NodeValueType.Float, "Zero-based index of the current device."),
+            Output("segmentIndex", "Segment #", NodeValueType.Float, "Zero-based segment index within the device."),
+            Output("index", "Pixel", NodeValueType.Float, "Zero-based pixel index within the device."),
+            Output("length", "Count", NodeValueType.Float, "Total number of LEDs in the current device."),
+            Output("normalized", "Position", NodeValueType.Float, "Pixel position normalized across the current device.")
+        ],
+        []);
+
+    private static NodeTypeDefinition PixelGlobalIndex() => new(
+        "pixel.global-index",
+        "Global Pixel",
+        "Segment",
+        "Outputs the current pixel index across all rendered graph targets.",
+        [],
+        [
+            Output("index", "Pixel", NodeValueType.Float, "Zero-based pixel index across rendered target segments."),
+            Output("length", "Count", NodeValueType.Float, "Total LEDs across rendered target segments."),
+            Output("normalized", "Position", NodeValueType.Float, "Pixel position normalized across rendered target segments.")
+        ],
+        []);
+
+    private static NodeTypeDefinition PixelLocalPosition() => new(
+        "pixel.local-position",
+        "Local Position",
+        "Segment",
+        "Outputs the authored LED position inside the segment's local layout.",
+        [],
+        [
+            Output("x", "X", NodeValueType.Float, "Authored local X coordinate."),
+            Output("y", "Y", NodeValueType.Float, "Authored local Y coordinate.")
+        ],
+        []);
+
+    private static NodeTypeDefinition PixelGlobalPosition() => new(
+        "pixel.global-position",
+        "Global Position",
+        "Segment",
+        "Outputs the LED position after room layout placement.",
+        [],
+        [
+            Output("x", "X", NodeValueType.Float, "Room/global X coordinate."),
+            Output("y", "Y", NodeValueType.Float, "Room/global Y coordinate.")
+        ],
+        []);
 
     private static NodeTypeDefinition SegmentColorOutput()
     {

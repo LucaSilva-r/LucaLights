@@ -125,7 +125,7 @@ public sealed class GraphRuntimeEvaluator
             preparedEffect.ResolveTargets(settings);
         }
 
-        if (preparedEffect.HasPixelInfoNodes)
+        if (preparedEffect.HasPixelContextNodes)
         {
             RenderPerPixel(preparedEffect, frameContext);
         }
@@ -245,24 +245,48 @@ public sealed class GraphRuntimeEvaluator
                         ReadMergedColor(frameContext.InputSnapshot, node.InputKeys, node.MergeOp)));
                     break;
 
-                case NodeOp.PixelInfo:
+                case NodeOp.PixelSegmentIndex:
                 {
                     var px = _currentPixel ?? new PixelContext(0, 1, 0f, 0, 0, 0, 1, 0f, 0, 1, 0f, 0f, 0f, 0f, 0f);
                     WriteOutput(preparedEffect, node, 0, RuntimeValue.FromFloat(px.Index));
                     WriteOutput(preparedEffect, node, 1, RuntimeValue.FromFloat(px.Length));
                     WriteOutput(preparedEffect, node, 2, RuntimeValue.FromFloat(px.Normalized));
-                    WriteOutput(preparedEffect, node, 3, RuntimeValue.FromFloat(px.DeviceIndex));
-                    WriteOutput(preparedEffect, node, 4, RuntimeValue.FromFloat(px.SegmentIndex));
-                    WriteOutput(preparedEffect, node, 5, RuntimeValue.FromFloat(px.DevicePixelIndex));
-                    WriteOutput(preparedEffect, node, 6, RuntimeValue.FromFloat(px.DeviceLength));
-                    WriteOutput(preparedEffect, node, 7, RuntimeValue.FromFloat(px.DeviceNormalized));
-                    WriteOutput(preparedEffect, node, 8, RuntimeValue.FromFloat(px.GlobalIndex));
-                    WriteOutput(preparedEffect, node, 9, RuntimeValue.FromFloat(px.GlobalLength));
-                    WriteOutput(preparedEffect, node, 10, RuntimeValue.FromFloat(px.GlobalNormalized));
-                    WriteOutput(preparedEffect, node, 11, RuntimeValue.FromFloat(px.LayoutX));
-                    WriteOutput(preparedEffect, node, 12, RuntimeValue.FromFloat(px.LayoutY));
-                    WriteOutput(preparedEffect, node, 13, RuntimeValue.FromFloat(px.GlobalX));
-                    WriteOutput(preparedEffect, node, 14, RuntimeValue.FromFloat(px.GlobalY));
+                    break;
+                }
+
+                case NodeOp.PixelDeviceIndex:
+                {
+                    var px = _currentPixel ?? new PixelContext(0, 1, 0f, 0, 0, 0, 1, 0f, 0, 1, 0f, 0f, 0f, 0f, 0f);
+                    WriteOutput(preparedEffect, node, 0, RuntimeValue.FromFloat(px.DeviceIndex));
+                    WriteOutput(preparedEffect, node, 1, RuntimeValue.FromFloat(px.SegmentIndex));
+                    WriteOutput(preparedEffect, node, 2, RuntimeValue.FromFloat(px.DevicePixelIndex));
+                    WriteOutput(preparedEffect, node, 3, RuntimeValue.FromFloat(px.DeviceLength));
+                    WriteOutput(preparedEffect, node, 4, RuntimeValue.FromFloat(px.DeviceNormalized));
+                    break;
+                }
+
+                case NodeOp.PixelGlobalIndex:
+                {
+                    var px = _currentPixel ?? new PixelContext(0, 1, 0f, 0, 0, 0, 1, 0f, 0, 1, 0f, 0f, 0f, 0f, 0f);
+                    WriteOutput(preparedEffect, node, 0, RuntimeValue.FromFloat(px.GlobalIndex));
+                    WriteOutput(preparedEffect, node, 1, RuntimeValue.FromFloat(px.GlobalLength));
+                    WriteOutput(preparedEffect, node, 2, RuntimeValue.FromFloat(px.GlobalNormalized));
+                    break;
+                }
+
+                case NodeOp.PixelLocalPosition:
+                {
+                    var px = _currentPixel ?? new PixelContext(0, 1, 0f, 0, 0, 0, 1, 0f, 0, 1, 0f, 0f, 0f, 0f, 0f);
+                    WriteOutput(preparedEffect, node, 0, RuntimeValue.FromFloat(px.LayoutX));
+                    WriteOutput(preparedEffect, node, 1, RuntimeValue.FromFloat(px.LayoutY));
+                    break;
+                }
+
+                case NodeOp.PixelGlobalPosition:
+                {
+                    var px = _currentPixel ?? new PixelContext(0, 1, 0f, 0, 0, 0, 1, 0f, 0, 1, 0f, 0f, 0f, 0f, 0f);
+                    WriteOutput(preparedEffect, node, 0, RuntimeValue.FromFloat(px.GlobalX));
+                    WriteOutput(preparedEffect, node, 1, RuntimeValue.FromFloat(px.GlobalY));
                     break;
                 }
 
@@ -1833,7 +1857,11 @@ public sealed class GraphRuntimeEvaluator
             "input.bool" => NodeOp.InputBool,
             "input.float" => NodeOp.InputFloat,
             "input.color" => NodeOp.InputColor,
-            "pixel.info" => NodeOp.PixelInfo,
+            "pixel.segment-index" => NodeOp.PixelSegmentIndex,
+            "pixel.device-index" => NodeOp.PixelDeviceIndex,
+            "pixel.global-index" => NodeOp.PixelGlobalIndex,
+            "pixel.local-position" => NodeOp.PixelLocalPosition,
+            "pixel.global-position" => NodeOp.PixelGlobalPosition,
             "logic.select-color" => NodeOp.LogicSelectColor,
             "logic.select-float" => NodeOp.LogicSelectFloat,
             "logic.not" => NodeOp.LogicNot,
@@ -2098,7 +2126,7 @@ public sealed class PreparedGraph
         TargetSegments = targetSegments;
         PixelTargets = pixelTargets;
         TargetsResolved = targetsResolved;
-        HasPixelInfoNodes = ComputeHasPixelInfoNodes(compiledNodes);
+        HasPixelContextNodes = ComputeHasPixelContextNodes(compiledNodes);
     }
 
     public CompiledNodeGraph CompiledGraph { get; }
@@ -2121,7 +2149,7 @@ public sealed class PreparedGraph
 
     public bool CanRender => CompiledGraph.Validation.IsValid && CompiledNodes.Length > 0;
 
-    public bool HasPixelInfoNodes { get; }
+    public bool HasPixelContextNodes { get; }
 
     internal void ResolveTargets(Settings settings)
     {
@@ -2146,17 +2174,26 @@ public sealed class PreparedGraph
         TargetsResolved = true;
     }
 
-    private static bool ComputeHasPixelInfoNodes(CompiledNode[] compiledNodes)
+    private static bool ComputeHasPixelContextNodes(CompiledNode[] compiledNodes)
     {
         for (var i = 0; i < compiledNodes.Length; i++)
         {
-            if (compiledNodes[i].Op == NodeOp.PixelInfo)
+            if (IsPixelContextOp(compiledNodes[i].Op))
             {
                 return true;
             }
         }
 
         return false;
+    }
+
+    private static bool IsPixelContextOp(NodeOp op)
+    {
+        return op is NodeOp.PixelSegmentIndex
+            or NodeOp.PixelDeviceIndex
+            or NodeOp.PixelGlobalIndex
+            or NodeOp.PixelLocalPosition
+            or NodeOp.PixelGlobalPosition;
     }
 
     private static Segment[] ResolveTargetSegments(Settings settings, string[] segmentIds)
@@ -2255,7 +2292,11 @@ internal enum NodeOp
     InputBool,
     InputFloat,
     InputColor,
-    PixelInfo,
+    PixelSegmentIndex,
+    PixelDeviceIndex,
+    PixelGlobalIndex,
+    PixelLocalPosition,
+    PixelGlobalPosition,
     LogicSelectColor,
     LogicSelectFloat,
     LogicNot,
