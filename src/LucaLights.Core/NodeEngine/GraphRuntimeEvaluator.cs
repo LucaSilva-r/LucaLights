@@ -520,6 +520,37 @@ public sealed class GraphRuntimeEvaluator
                     WriteOutput(preparedEffect, node, 0, RuntimeValue.FromBool(node.BlinkState.CurrentValue));
                     break;
                 }
+
+                case NodeOp.SpatialRipple:
+                {
+                    var trigger = GetInputBool(preparedEffect, node, 0);
+                    var centerX = GetInputFloat(preparedEffect, node, 1);
+                    var centerY = GetInputFloat(preparedEffect, node, 2);
+                    var speed = GetInputFloat(preparedEffect, node, 5);
+                    var width = GetInputFloat(preparedEffect, node, 6);
+                    var duration = GetInputFloat(preparedEffect, node, 7);
+                    var softness = GetInputFloat(preparedEffect, node, 8);
+
+                    node.RippleState!.UpdateOncePerFrame(
+                        frameContext.FrameIndex,
+                        totalSeconds,
+                        trigger,
+                        centerX,
+                        centerY,
+                        speed,
+                        width,
+                        duration,
+                        softness,
+                        node.RippleShapeOp);
+
+                    var intensity = node.RippleState.Sample(
+                        totalSeconds,
+                        GetInputFloat(preparedEffect, node, 3),
+                        GetInputFloat(preparedEffect, node, 4));
+                    WriteOutput(preparedEffect, node, 0, RuntimeValue.FromFloat(intensity));
+                    WriteOutput(preparedEffect, node, 1, RuntimeValue.FromBool(intensity > 0.001f));
+                    break;
+                }
             }
         }
 
@@ -743,6 +774,11 @@ public sealed class GraphRuntimeEvaluator
                 compiledNode.PropFloatA = ReadFloat(properties, "onTime", 0.5f);
                 compiledNode.PropFloatB = ReadFloat(properties, "offTime", 0.5f);
                 compiledNode.BlinkState = new BlinkState();
+                break;
+
+            case NodeOp.SpatialRipple:
+                compiledNode.RippleShapeOp = ParseRippleShapeOp(ReadString(properties, "shape", "circle"));
+                compiledNode.RippleState = new RippleState();
                 break;
 
             case NodeOp.OutputSegmentColor:
@@ -1894,6 +1930,7 @@ public sealed class GraphRuntimeEvaluator
             "time.pulse" => NodeOp.TimePulse,
             "time.envelope" => NodeOp.TimeEnvelope,
             "time.blink" => NodeOp.TimeBlink,
+            "spatial.ripple" => NodeOp.SpatialRipple,
             "output.segment-color" => NodeOp.OutputSegmentColor,
             _ => NodeOp.Unknown
         };
@@ -1985,6 +2022,16 @@ public sealed class GraphRuntimeEvaluator
     private static InterpolationOp ParseInterpolationOp(string interpolation)
     {
         return NormalizeMode(interpolation) == "constant" ? InterpolationOp.Constant : InterpolationOp.Linear;
+    }
+
+    private static RippleShapeOp ParseRippleShapeOp(string shape)
+    {
+        return NormalizeMode(shape) switch
+        {
+            "square" => RippleShapeOp.Square,
+            "triangle" => RippleShapeOp.Triangle,
+            _ => RippleShapeOp.Circle
+        };
     }
 
     private static string NormalizeMode(string value)
@@ -2261,6 +2308,7 @@ internal sealed class CompiledNode
     public EdgeOp EdgeOp;
     public InterpolationOp InterpolationOp;
     public CompareOp CompareOp;
+    public RippleShapeOp RippleShapeOp;
 
     public string[] InputKeys = [];
     public string[] SegmentIds = [];
@@ -2272,6 +2320,7 @@ internal sealed class CompiledNode
     public PulseState? PulseState;
     public EnvelopeState? EnvelopeState;
     public BlinkState? BlinkState;
+    public RippleState? RippleState;
 
     public float Priority;
     public bool IsActiveStatic;
@@ -2329,6 +2378,7 @@ internal enum NodeOp
             TimePulse,
             TimeEnvelope,
             TimeBlink,
+            SpatialRipple,
             OutputSegmentColor
 }
 
@@ -2391,6 +2441,13 @@ internal enum CompareOp
     Greater,
     Less,
     Equal
+}
+
+internal enum RippleShapeOp
+{
+    Circle,
+    Square,
+    Triangle
 }
 
 public readonly record struct GradientStop(float Position, byte R, byte G, byte B)
@@ -2560,6 +2617,117 @@ public sealed class BlinkState
             _started = true;
         }
     }
+}
+
+internal sealed class RippleState
+{
+    private const int MaxRipples = 32;
+    private readonly List<RippleInstance> _ripples = [];
+    private bool _previousTrigger;
+    private long _lastUpdatedFrame = -1;
+
+    public void UpdateOncePerFrame(
+        long frameIndex,
+        float currentTime,
+        bool trigger,
+        float centerX,
+        float centerY,
+        float speed,
+        float width,
+        float duration,
+        float softness,
+        RippleShapeOp shape)
+    {
+        if (_lastUpdatedFrame == frameIndex)
+        {
+            return;
+        }
+
+        _lastUpdatedFrame = frameIndex;
+
+        var clampedDuration = Math.Max(0.001f, duration);
+        for (var i = _ripples.Count - 1; i >= 0; i--)
+        {
+            if (currentTime - _ripples[i].StartTime > _ripples[i].Duration)
+            {
+                _ripples.RemoveAt(i);
+            }
+        }
+
+        if (trigger && !_previousTrigger)
+        {
+            if (_ripples.Count >= MaxRipples)
+            {
+                _ripples.RemoveAt(0);
+            }
+
+            _ripples.Add(new RippleInstance(
+                currentTime,
+                centerX,
+                centerY,
+                Math.Max(0f, speed),
+                Math.Max(0.0001f, width),
+                clampedDuration,
+                Math.Max(0f, softness),
+                shape));
+        }
+
+        _previousTrigger = trigger;
+    }
+
+    public float Sample(float currentTime, float sampleX, float sampleY)
+    {
+        var result = 0f;
+        for (var i = 0; i < _ripples.Count; i++)
+        {
+            var ripple = _ripples[i];
+            var age = currentTime - ripple.StartTime;
+            if (age < 0f || age > ripple.Duration)
+            {
+                continue;
+            }
+
+            var distance = ShapeDistance(sampleX - ripple.CenterX, sampleY - ripple.CenterY, ripple.Shape);
+            var radius = age * ripple.Speed;
+            var delta = MathF.Abs(distance - radius);
+            var halfWidth = ripple.Width * 0.5f;
+            var wave = delta <= halfWidth
+                ? 1f
+                : ripple.Softness <= 0f
+                    ? 0f
+                    : 1f - Smooth01((delta - halfWidth) / ripple.Softness);
+            var fade = 1f - Math.Clamp(age / ripple.Duration, 0f, 1f);
+            result = MathF.Max(result, Math.Clamp(wave * fade, 0f, 1f));
+        }
+
+        return result;
+    }
+
+    private static float ShapeDistance(float x, float y, RippleShapeOp shape)
+    {
+        return shape switch
+        {
+            RippleShapeOp.Square => MathF.Max(MathF.Abs(x), MathF.Abs(y)),
+            RippleShapeOp.Triangle => MathF.Max(-y, (MathF.Abs(x) * 0.8660254f) + (y * 0.5f)),
+            _ => MathF.Sqrt((x * x) + (y * y))
+        };
+    }
+
+    private static float Smooth01(float value)
+    {
+        var t = Math.Clamp(value, 0f, 1f);
+        return t * t * (3f - (2f * t));
+    }
+
+    private readonly record struct RippleInstance(
+        float StartTime,
+        float CenterX,
+        float CenterY,
+        float Speed,
+        float Width,
+        float Duration,
+        float Softness,
+        RippleShapeOp Shape);
 }
 
 public readonly record struct RuntimeConnectionSource(

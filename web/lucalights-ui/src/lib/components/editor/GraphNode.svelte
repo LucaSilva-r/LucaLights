@@ -350,6 +350,13 @@
 		'time.pulse': {
 			edge: edgeOptions
 		},
+		'spatial.ripple': {
+			shape: [
+				{ value: 'circle', label: 'Circle' },
+				{ value: 'square', label: 'Square' },
+				{ value: 'triangle', label: 'Triangle' }
+			]
+		},
 		'logic.compare': {
 			mode: [
 				{ value: 'greater', label: 'Greater than' },

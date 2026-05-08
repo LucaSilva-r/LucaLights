@@ -53,6 +53,7 @@ public sealed class DefaultNodeTypeCatalog : INodeTypeCatalog
             TimePulse(),
             TimeEnvelope(),
             TimeBlink(),
+            SpatialRipple(),
             PixelSegmentIndex(),
             PixelDeviceIndex(),
             PixelGlobalIndex(),
@@ -750,6 +751,42 @@ public sealed class DefaultNodeTypeCatalog : INodeTypeCatalog
             [
                 Property("onTime", "On Time", NodeValueType.Float, "Fallback duration the output stays true (on), in seconds.", 0.5f, 0.01f, 60f),
                 Property("offTime", "Off Time", NodeValueType.Float, "Fallback duration the output stays false (off), in seconds.", 0.5f, 0.01f, 60f)
+            ]);
+    }
+
+    private static NodeTypeDefinition SpatialRipple()
+    {
+        return new NodeTypeDefinition(
+            "spatial.ripple",
+            "Ripple",
+            "Spatial",
+            "Spawns expanding ripples in global layout space and samples them at the current pixel position.",
+            [
+                Input("trigger", "Trigger", NodeValueType.Bool, "Rising edge spawns a new ripple."),
+                Input("centerX", "Center X", NodeValueType.Float, "Ripple origin X in global layout space."),
+                Input("centerY", "Center Y", NodeValueType.Float, "Ripple origin Y in global layout space."),
+                Input("sampleX", "Sample X", NodeValueType.Float, "Pixel X coordinate to sample, usually Global Position X."),
+                Input("sampleY", "Sample Y", NodeValueType.Float, "Pixel Y coordinate to sample, usually Global Position Y."),
+                Input("speed", "Speed", NodeValueType.Float, "Ripple expansion speed in layout units per second."),
+                Input("width", "Width", NodeValueType.Float, "Thickness of the illuminated wavefront."),
+                Input("duration", "Duration", NodeValueType.Float, "Seconds before each ripple fades out."),
+                Input("softness", "Softness", NodeValueType.Float, "Soft falloff around the wavefront edge.")
+            ],
+            [
+                Output("value", "Value", NodeValueType.Float, "Soft ripple intensity from 0 to 1."),
+                Output("active", "Lit", NodeValueType.Bool, "True while the sampled pixel is illuminated.")
+            ],
+            [
+                Property("trigger", "Trigger", NodeValueType.Bool, "Fallback trigger state.", false),
+                Property("centerX", "Center X", NodeValueType.Float, "Fallback ripple origin X.", 0.5f, 0f, 1f),
+                Property("centerY", "Center Y", NodeValueType.Float, "Fallback ripple origin Y.", 0.5f, 0f, 1f),
+                Property("sampleX", "Sample X", NodeValueType.Float, "Fallback sample X.", 0.5f, 0f, 1f),
+                Property("sampleY", "Sample Y", NodeValueType.Float, "Fallback sample Y.", 0.5f, 0f, 1f),
+                Property("speed", "Speed", NodeValueType.Float, "Fallback expansion speed.", 0.65f, 0f, 10f),
+                Property("width", "Width", NodeValueType.Float, "Fallback wavefront thickness.", 0.08f, 0f, 1f),
+                Property("duration", "Duration", NodeValueType.Float, "Fallback ripple lifetime.", 2f, 0.01f, 30f),
+                Property("softness", "Softness", NodeValueType.Float, "Fallback edge softness.", 0.04f, 0f, 1f),
+                Property("shape", "Shape", NodeValueType.String, "Ripple shape: circle, square, or triangle.", "circle")
             ]);
     }
 
